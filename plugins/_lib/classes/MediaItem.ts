@@ -109,10 +109,11 @@ class MediaItem extends ContentBase {
 	public artist: () => Promise<Artist | undefined> = memoize(async () => {
 		if (this.tidalItem.artist?.id) return Artist.fromId(this.tidalItem.artist.id);
 		if (this.tidalItem.artists?.[0]?.id) return Artist.fromId(this.tidalItem.artists?.[0].id);
+		return (await this.album())?.artist();
 	});
-	public artists: () => Promise<Artist | undefined>[] = memoize(() => {
-		if (!this.tidalItem.artists) return [];
-		return this.tidalItem.artists.map((artist) => Artist.fromId(artist.id));
+	public artists: () => Promise<Promise<Artist | undefined>[]> = memoize(async () => {
+		if (this.tidalItem.artists) return this.tidalItem.artists.map((artist) => Artist.fromId(artist.id));
+		return (await this.album())?.artists() ?? [];
 	});
 
 	public isrcs: () => Promise<Set<string>> = memoize(async () => {
@@ -241,17 +242,6 @@ class MediaItem extends ContentBase {
 	public brainzId: () => Promise<string | undefined> = memoize(async () => {
 		const brainzItem = await this.brainzItem();
 		return brainzItem?.recording.id;
-	});
-	public artistTitles: () => Promise<string[]> = memoize(async () => {
-		const album = await this.album();
-		const itemArtists = this.tidalItem.artists;
-		if (itemArtists) {
-			const sharedAlbumArtist = itemArtists?.find((artist) => artist?.id === album?.tidalAlbum.artist?.id);
-			if (sharedAlbumArtist !== undefined) return ContentBase.formatArtists([sharedAlbumArtist]);
-			if ((itemArtists.length ?? -1) > 0) return ContentBase.formatArtists(itemArtists);
-		}
-		if (this.tidalItem.artist !== undefined) return ContentBase.formatArtists([this.tidalItem.artist]);
-		return [];
 	});
 
 	public flacTags: () => Promise<MetaTags> = memoize(() => makeTags(this));

@@ -25,6 +25,10 @@ class Artist extends ContentBase {
 		if (this.tidalArtist.picture === undefined) return;
 		return ContentBase.formatCoverUrl(this.tidalArtist.picture, res);
 	}
+
+	public get name() {
+		return this.tidalArtist.name;
+	}
 }
 
 // @ts-expect-error Ensure window.Estr is prepped

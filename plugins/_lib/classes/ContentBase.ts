@@ -1,20 +1,13 @@
 import { store } from "@neptune";
 import type { IArtistCredit } from "musicbrainz-api";
 import type { ContentStateFields, ItemId } from "neptune-types/tidal";
+import type Artist from "./Artist";
 
 type ContentType = keyof ContentStateFields;
 type ContentItem<K extends ContentType> = Exclude<ReturnType<ContentStateFields[K]["get"]>, undefined>;
 type ContentClass<K extends ContentType> = {
 	new (itemId: ItemId, contentItem: ContentItem<K>): any;
 };
-
-type Artist = {
-	id?: number;
-	name?: string;
-	picture?: string;
-	type?: "MAIN" | "FEATURED";
-};
-
 export type TImageSize = "1280" | "640" | "320" | "160" | "80";
 
 export class ContentBase {
@@ -30,16 +23,6 @@ export class ContentBase {
 		}
 	}
 
-	protected static formatArtists(artists?: Artist[]): string[] {
-		if (artists === undefined) return [];
-		return artists.reduce((artistTitles, artist) => {
-			if (artist !== undefined) {
-				if (typeof artist === "string") artistTitles.push(artist);
-				else if (artist?.name !== undefined) artistTitles.push(artist.name);
-			}
-			return artistTitles;
-		}, [] as string[]);
-	}
 	protected static formatTitle(tidalTitle?: string, tidalVersion?: string, brainzTitle?: string, brainzCredit?: IArtistCredit[]): string | undefined {
 		brainzTitle = brainzTitle?.replaceAll("’", "'");
 
@@ -58,7 +41,17 @@ export class ContentBase {
 		return title;
 	}
 
-	protected static formatCoverUrl(uuid: string, res: TImageSize = "1280") {
-		return `https://resources.tidal.com/images/${uuid.split("-").join("/")}/${res}x${res}.jpg`;
+	protected static formatCoverUrl(uuid?: string, res: TImageSize = "1280") {
+		if (uuid) return `https://resources.tidal.com/images/${uuid.split("-").join("/")}/${res}x${res}.jpg`;
+	}
+
+	public static async artistNames(artists?: Promise<Promise<Artist | undefined>[]> | Promise<Artist | undefined>[]): Promise<string[]> {
+		const _artists = await artists;
+		if (!_artists) return [];
+		const artistNames = [];
+		for await (const artist of _artists) {
+			if (artist?.name) artistNames.push(artist?.name);
+		}
+		return artistNames;
 	}
 }

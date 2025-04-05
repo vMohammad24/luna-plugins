@@ -1,4 +1,4 @@
-import type MediaItem from "./MediaItem";
+import MediaItem from "./MediaItem";
 
 export type FlacTags = {
 	title?: string;
@@ -66,6 +66,9 @@ export const makeTags = async (mediaItem: MediaItem): Promise<MetaTags> => {
 	tags.bpm = mediaItem.bpm?.toString();
 	tags.discNumber = mediaItem.volumeNumber?.toString();
 
+	tags.artist = await MediaItem.artistNames(mediaItem.artists());
+	if (tags.artist.length === 0) tags.artist = ["Unknown Artist"];
+
 	tags.musicbrainz_trackid = await mediaItem.brainzId();
 
 	for (const isrc of await mediaItem.isrcs()) {
@@ -79,7 +82,9 @@ export const makeTags = async (mediaItem: MediaItem): Promise<MetaTags> => {
 		tags.musicbrainz_albumid = await album.brainzId();
 		tags.album = await album.title();
 
-		tags.albumArtist = album.albumArtist;
+		tags.albumArtist = await MediaItem.artistNames(album.artists());
+		if (tags.albumArtist.length === 0) tags.albumArtist = ["Unknown Artist"];
+
 		tags.genres = album.genre;
 		tags.organization = album.recordLabel;
 
@@ -87,14 +92,11 @@ export const makeTags = async (mediaItem: MediaItem): Promise<MetaTags> => {
 		tags.year = album.releaseYear;
 	}
 
-	tags.artist = await mediaItem.artistTitles();
-
 	const lyrics = await mediaItem.lyrics();
 	tags.lyrics = lyrics?.lyrics;
 
 	// Ensure core tags are set
 	tags.album ??= "Unknown Album";
-	tags.artist ??= ["Unknown Artist"];
 
 	return { tags, coverUrl: await mediaItem.coverUrl() };
 };

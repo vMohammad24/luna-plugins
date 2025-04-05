@@ -52,8 +52,7 @@ class Album extends ContentBase {
 		if (this.tidalAlbum.artists?.[0]?.id) return Artist.fromId(this.tidalAlbum.artists?.[0].id);
 	});
 	public artists: () => Promise<Artist | undefined>[] = memoize(() => {
-		if (!this.tidalAlbum.artists) return [];
-		return this.tidalAlbum.artists.map((artist) => Artist.fromId(artist.id));
+		return this.tidalAlbum.artists?.map((artist) => Artist.fromId(artist.id)) ?? [];
 	});
 
 	public mediaItems: () => Promise<MediaItem[]> = memoize(async () => {
@@ -83,12 +82,6 @@ class Album extends ContentBase {
 
 	public async brainzId(): Promise<string | undefined> {
 		return (await this.brainzAlbum())?.id;
-	}
-
-	public get albumArtist(): string[] {
-		if ((this.tidalAlbum.artists?.length ?? -1) > 0) return ContentBase.formatArtists(this.tidalAlbum.artists);
-		if (this.tidalAlbum.artist) return ContentBase.formatArtists([this.tidalAlbum.artist]);
-		return [];
 	}
 
 	public get genre(): string | undefined {

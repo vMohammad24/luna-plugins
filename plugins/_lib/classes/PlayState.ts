@@ -1,7 +1,7 @@
 import { Tracer } from "../helpers/trace";
 const trace = Tracer("[lib.PlayState]");
 
-import { intercept, store } from "@neptune";
+import { intercept } from "@neptune";
 
 import type { MediaItemListener } from "./MediaItem";
 import MediaItem, { runListeners } from "./MediaItem";
@@ -12,16 +12,19 @@ class PlayState {
 	public static trackPlayTime: number = 0;
 	public static lastPlayStart?: number;
 
-	public static state() {
-		const {
-			playbackControls: { desiredPlaybackState, playbackState },
-		} = store.getState();
+	public static get playbackControls() {
+		return neptune.store.getState().playbackControls;
+	}
+
+	public static get state() {
+		const { desiredPlaybackState, playbackState } = this.playbackControls;
 		if (desiredPlaybackState === "PLAYING" && playbackState !== desiredPlaybackState) return "STARTING";
 		return desiredPlaybackState;
 	}
 
-	public static get playbackControls() {
-		return neptune.store.getState().playbackControls;
+	public static get paused(): boolean {
+		const state = this.state;
+		return state !== "PLAYING" && state !== "STARTING";
 	}
 
 	public static get latestCurrentTime() {
