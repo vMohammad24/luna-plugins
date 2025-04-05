@@ -1,7 +1,7 @@
 export { Settings } from "./Settings";
-import "./editor.native";
+import { StyleTag } from "@inrixia/lib/";
 import { getStorage } from "@inrixia/lib/storage";
-import { setStyle } from "@inrixia/lib/css/setStyle";
+import "./editor.native";
 import { closeEditor, openEditor as openEditorNative } from "./editor.native";
 
 const setCSS = (_: unknown, css: string) => {
@@ -11,7 +11,7 @@ const setCSS = (_: unknown, css: string) => {
 
 const storage = getStorage({ css: "" });
 export const openEditor = () => openEditorNative(storage.css);
-const style = setStyle(storage.css);
+const style = new StyleTag(storage.css);
 
 window.electron.ipcRenderer.on("THEMER_SET_CSS", setCSS);
 
