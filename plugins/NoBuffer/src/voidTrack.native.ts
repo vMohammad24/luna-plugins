@@ -1,16 +1,9 @@
-import { Writable } from "stream";
+import type { PlaybackInfo } from "@inrixia/lib/classes/MediaItem.playbackInfo.types";
 import { requestTrackStream } from "@inrixia/lib/native/request/requestTrack.native";
-import type { ExtendedPlayackInfo } from "@inrixia/lib/Caches/PlaybackInfoTypes";
+import { Writable } from "stream";
 
-export const voidTrack = (extPlaybackInfo: ExtendedPlayackInfo): Promise<void> =>
-	new Promise((res) =>
-		requestTrackStream(extPlaybackInfo).then((stream) =>
-			stream
-				.pipe(
-					new Writable({
-						write: (_: any, __: any, cb: () => void) => cb(),
-					})
-				)
-				.on("end", res)
-		)
-	);
+const VoidWriable = new Writable({ write: (_, __, cb) => cb() });
+export const voidTrack = async (playbackInfo: PlaybackInfo): Promise<void> => {
+	const stream = await requestTrackStream(playbackInfo);
+	return new Promise((res) => stream.pipe(VoidWriable).on("end", res));
+};

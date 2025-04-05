@@ -17,14 +17,14 @@ class PlayState {
 	}
 
 	public static get state() {
-		const { desiredPlaybackState, playbackState } = this.playbackControls;
-		if (desiredPlaybackState === "PLAYING" && playbackState !== desiredPlaybackState) return "STARTING";
-		return desiredPlaybackState;
+		return this.playbackControls.playbackState;
+	}
+	public static get desiredState() {
+		return this.playbackControls.desiredPlaybackState;
 	}
 
 	public static get paused(): boolean {
-		const state = this.state;
-		return state !== "PLAYING" && state !== "STARTING";
+		return this.desiredState !== "PLAYING";
 	}
 
 	public static get latestCurrentTime() {

@@ -1,23 +1,18 @@
 import { intercept } from "@neptune";
 
-import getPlaybackControl from "@inrixia/lib/getPlaybackControl";
-
-import { Tracer } from "@inrixia/lib/trace";
-import { PlaybackInfoCache } from "@inrixia/lib/Caches/PlaybackInfoCache";
+import { asyncDebounce } from "@inrixia/helpers";
+import { Tracer } from "@inrixia/lib/helpers/trace";
 import { voidTrack } from "./voidTrack.native";
+
+import { MediaItem } from "@inrixia/lib";
 const trace = Tracer("[NoBuffer]");
 
-let unblocking = false;
+const onStalled = asyncDebounce(async () => {
+	const mediaItem = await MediaItem.fromPlaybackContext();
+	if (mediaItem === undefined) return;
+	trace.msg.log(`Playback stalled... Kicking tidal CDN!`);
+	await voidTrack(await mediaItem?.playbackInfo()).catch(trace.err.withContext("voidTrack"));
+});
 export const onUnload = intercept("playbackControls/SET_PLAYBACK_STATE", ([state]) => {
-	const { playbackContext, latestCurrentTime } = getPlaybackControl();
-	if ((latestCurrentTime ?? 0) > 5 && state === "STALLED" && unblocking === false) {
-		unblocking = true;
-		(async () => {
-			if (playbackContext === undefined) return;
-			const { actualProductId, actualAudioQuality } = playbackContext;
-			trace.msg.log(`Playback stalled... Kicking tidal CDN!`);
-			await voidTrack(await PlaybackInfoCache.ensure(+actualProductId, actualAudioQuality));
-			unblocking = false;
-		})();
-	}
+	if (state === "STALLED") onStalled();
 });
