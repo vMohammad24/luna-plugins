@@ -1,39 +1,36 @@
-import { ListenBrainz } from "./ListenBrainz";
-
-import { Tracer } from "@inrixia/lib/trace";
+import { Tracer } from "@inrixia/lib/helpers/trace";
 const trace = Tracer("[ListenBrainz]");
+
+import { ListenBrainz } from "./ListenBrainz";
 
 export { Settings } from "./Settings";
 
-import { CurrentTrack, registerOnScrobble } from "@inrixia/lib/scrobbleHelpers";
+import { MediaItem, PlayState } from "@inrixia/lib";
 import { MusicServiceDomain, type Payload } from "./ListenBrainzTypes";
 
-const makeTrackPayload = async ({ metaTags, playbackStart, playbackContext, extTrackItem }: CurrentTrack): Promise<Payload> => {
-	const tags = metaTags.tags;
+const makeTrackPayload = async (mediaItem: MediaItem): Promise<Payload> => {
+	const album = await mediaItem.album();
+
 	const trackPayload: Payload = {
-		listened_at: +(playbackStart / 1000).toFixed(0),
+		listened_at: Math.floor(Date.now() / 1000),
 		track_metadata: {
-			artist_name: tags.artist![0],
-			track_name: tags.title!,
-			release_name: tags.album,
+			artist_name: (await mediaItem.artist())?.name!,
+			track_name: (await mediaItem.title())!,
+			release_name: await album?.title(),
 		},
 	};
 
-	const releaseTrack = await extTrackItem.releaseTrack();
-	const additional_info = {
-		recording_mbid: releaseTrack?.recording?.id,
-		isrc: extTrackItem.tidalTrack.isrc ?? releaseTrack?.recording.isrcs?.[0],
-		tracknumber: extTrackItem.tidalTrack.trackNumber,
+	trackPayload.track_metadata.additional_info = {
+		recording_mbid: await mediaItem.brainzId(),
+		isrc: await mediaItem.isrc(),
+		tracknumber: mediaItem.trackNumber,
 		music_service: MusicServiceDomain.TIDAL,
-		origin_url: extTrackItem.tidalTrack.url,
-		duration: extTrackItem.tidalTrack.duration,
+		origin_url: mediaItem.url,
+		duration: mediaItem.duration,
 		media_player: "Tidal Desktop",
 		submission_client: "Neptune Scrobbler",
 	};
-	removeUndefinedValues(additional_info);
-	trackPayload.track_metadata.additional_info = additional_info;
-
-	trace.debug("makeTrackPayload", trackPayload);
+	removeUndefinedValues(trackPayload.track_metadata.additional_info);
 	return trackPayload;
 };
 
@@ -41,7 +38,14 @@ const removeUndefinedValues = (obj: Record<any, any>) => {
 	for (const key in obj) if (obj[key] === undefined) delete obj[key];
 };
 
-export const onUnload = registerOnScrobble({
-	onNowPlaying: async (currentTrack) => ListenBrainz.updateNowPlaying(await makeTrackPayload(currentTrack)).catch(trace.msg.err.withContext(`Failed to updateNowPlaying!`)),
-	onScrobble: async (currentTrack) => ListenBrainz.scrobble([await makeTrackPayload(currentTrack)]).catch(trace.msg.err.withContext(`Failed to scrobble!`)),
-});
+const unloads = [
+	MediaItem.onMediaTransition((mediaItem) => {
+		makeTrackPayload(mediaItem).then(ListenBrainz.updateNowPlaying).catch(trace.msg.err.withContext(`Failed to update NowPlaying!`));
+	}),
+	PlayState.onScrobble((mediaItem) => {
+		makeTrackPayload(mediaItem).then(ListenBrainz.scrobble).catch(trace.msg.err.withContext(`Failed to scrobble!`));
+	}),
+];
+export const onUnload = () => {
+	for (const unload of unloads) unload();
+};

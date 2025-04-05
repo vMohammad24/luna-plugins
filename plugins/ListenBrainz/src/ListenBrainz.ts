@@ -27,10 +27,10 @@ export class ListenBrainz {
 		});
 	}
 
-	public static scrobble(payload: Payload[]) {
+	public static scrobble(payload: Payload) {
 		return this.sendRequest({
 			listen_type: "single",
-			payload,
+			payload: [payload],
 		});
 	}
 }
