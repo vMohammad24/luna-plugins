@@ -7,6 +7,6 @@
 		"music-metadata": "^11.0.5"
 	},
 	"devDependencies": {
-		"musicbrainz-api": "^0.21.0"
+		"musicbrainz-api": "^0.22.0"
 	}
 }

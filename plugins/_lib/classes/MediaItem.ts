@@ -4,7 +4,6 @@ const trace = Tracer("[lib.MediaItem]");
 import { asyncDebounce, memoize } from "@inrixia/helpers";
 import { actions, intercept } from "@neptune";
 import { PayloadActionTypeTuple } from "neptune-types/api/intercept";
-import getPlaybackControl, { type PlaybackContext } from "../helpers/getPlaybackControl";
 import { interceptPromise } from "../intercept/interceptPromise";
 import { requestJsonCached } from "../native/request/requestJsonCached";
 
@@ -22,6 +21,7 @@ import { ManifestMimeType, type PlaybackInfo } from "./MediaItem.playbackInfo.ty
 
 import Album from "./Album";
 import Artist from "./Artist";
+import PlayState, { type PlaybackContext } from "./PlayState";
 
 export type MediaItemListener = (mediaItem: MediaItem) => unknown;
 export const runListeners = (item: MediaItem, listeners: Set<MediaItemListener>, errorHandler: typeof console.error) => {
@@ -91,7 +91,7 @@ class MediaItem extends ContentBase {
 		return mediaItems;
 	}
 	public static async fromPlaybackContext(playbackContext?: PlaybackContext) {
-		playbackContext ??= getPlaybackControl()?.playbackContext;
+		playbackContext ??= PlayState.playbackContext;
 		if (playbackContext?.actualProductId === undefined) return undefined;
 		const mediaItem = await this.fromId(playbackContext.actualProductId, playbackContext.actualVideoQuality === null ? "track" : "video");
 		mediaItem?.setFormatAttrs({
@@ -124,6 +124,9 @@ class MediaItem extends ContentBase {
 		if (this.tidalItem.isrc) isrcs.add(this.tidalItem.isrc);
 
 		return isrcs;
+	});
+	public isrc: () => Promise<string | undefined> = memoize(async () => {
+		for (const isrc of await this.isrcs()) return isrc;
 	});
 
 	public lyrics: () => Promise<TLyrics | undefined> = memoize(async () =>
@@ -218,7 +221,6 @@ class MediaItem extends ContentBase {
 		let releaseDate = this.tidalItem.releaseDate ?? this.tidalItem.streamStartDate;
 		if (releaseDate === undefined) {
 			const brainzItem = await this.brainzItem();
-			// @ts-expect-error musicbrainz-api lib missing types
 			releaseDate = brainzItem?.recording?.["first-release-date"];
 		}
 		if (releaseDate === undefined) {

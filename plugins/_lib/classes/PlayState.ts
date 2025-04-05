@@ -6,14 +6,38 @@ import { intercept } from "@neptune";
 import type { MediaItemListener } from "./MediaItem";
 import MediaItem, { runListeners } from "./MediaItem";
 
+import type { CoreState, TrackItem } from "neptune-types/tidal";
+import type { MediaItemAudioQuality } from "../classes/Quality";
+
+export type PlaybackContext = {
+	actualAssetPresentation: string;
+	actualAudioMode: TrackItem["audioModes"];
+	actualAudioQuality: MediaItemAudioQuality;
+	actualDuration: number;
+	actualProductId: string;
+	actualStreamType: unknown;
+	actualVideoQuality: unknown;
+	assetPosition: number;
+	bitDepth: number | null;
+	codec: string;
+	playbackSessionId: string;
+	sampleRate: number | null;
+};
+
+type PlaybackControl = CoreState["playbackControls"] & { playbackContext: PlaybackContext };
+
 class PlayState {
 	public static readonly MIN_SCROBBLE_DURATION = 240000; // 4 minutes in milliseconds
 	public static readonly MIN_SCROBBLE_PERCENTAGE = 0.5; // Minimum percentage of song duration required to scrobble
 	public static trackPlayTime: number = 0;
 	public static lastPlayStart?: number;
 
-	public static get playbackControls() {
-		return neptune.store.getState().playbackControls;
+	public static get playbackControls(): PlaybackControl {
+		return neptune.store.getState().playbackControls as PlaybackControl;
+	}
+
+	public static get playbackContext(): PlaybackContext {
+		return this.playbackControls.playbackContext;
 	}
 
 	public static get state() {
