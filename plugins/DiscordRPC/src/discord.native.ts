@@ -19,4 +19,4 @@ export const setActivity = async (activity?: SetActivity) => {
 	return client.user.setActivity(activity);
 };
 
-export const cleanup = () => rpcClient?.destroy();
+export const cleanupRPC = () => rpcClient?.destroy()!;

@@ -5,6 +5,6 @@
 	"main": "./src/index.js",
 	"dependencies": {
 		"@inrixia/lib": "workspace:*",
-		"@xhayper/discord-rpc": "^1.2.0"
+		"@xhayper/discord-rpc": "^1.2.1"
 	}
 }

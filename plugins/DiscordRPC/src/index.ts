@@ -1,112 +1,75 @@
-import { intercept } from "@neptune";
-import { Tracer } from "@inrixia/lib/trace";
-import { settings } from "./Settings";
-import getPlaybackControl from "@inrixia/lib/getPlaybackControl";
-import { MediaItem, MediaItemCache } from "@inrixia/lib/Caches/MediaItemCache";
-import type { SetActivity } from "@xhayper/discord-rpc";
-import { cleanup, setActivity } from "./discord.native";
-export { Settings } from "./Settings";
-
+import { Tracer } from "@inrixia/lib/helpers/trace";
 const trace = Tracer("[DiscordRPC]");
+
+import { MediaItem, PlayState } from "@inrixia/lib";
+import { intercept } from "@neptune";
+import type { SetActivity } from "@xhayper/discord-rpc";
+import { cleanupRPC, setActivity } from "./discord.native";
+
 const STR_MAX_LEN = 127;
-const formatString = (s?: string) => {
+const fmtStr = (s?: string) => {
 	if (!s) return;
 	if (s.length < 2) s += " ";
 	return s.length >= STR_MAX_LEN ? s.slice(0, STR_MAX_LEN - 3) + "..." : s;
 };
-const getMediaURL = (id?: string, path = "/1280x1280.jpg") => id && "https://resources.tidal.com/images/" + id.split("-").join("/") + path;
 
-let track: MediaItem | undefined;
-let paused = true;
-let time = 0;
-
-export function update(data?: { track?: MediaItem; time?: number; paused?: boolean }) {
-	track = data?.track ?? track;
-	paused = data?.paused ?? paused;
-	time = data?.time ?? time;
-
-	// Clear activity if no track or paused
-	if (!track || (paused && !settings.keepRpcOnPause)) return setRPC();
+export const updateActivity = async (mediaItem?: MediaItem) => {
+	mediaItem ??= await MediaItem.fromPlaybackContext();
+	if (mediaItem === undefined) return;
 
 	const activity: SetActivity = { type: 2 }; // Listening type
 
-	if (settings.displayPlayButton)
-		activity.buttons = [
-			{
-				url: `https://tidal.com/browse/${track.contentType}/${track.id}?u`,
-				label: "Play Song",
-			},
-		];
+	activity.buttons = [
+		{
+			url: `https://tidal.com/browse/${mediaItem.tidalItem.contentType}/${mediaItem.id}?u`,
+			label: "Play Song",
+		},
+	];
+
+	// Title
+	activity.details = await mediaItem.title().then(fmtStr);
+	// Artists
+	const artistNames = await MediaItem.artistNames(await mediaItem.artists());
+	activity.state = fmtStr(artistNames.join(", ")) ?? "Unknown Artist";
 
 	// Pause indicator
-	if (paused) {
+	if (PlayState.paused) {
 		activity.smallImageKey = "paused-icon";
 		activity.smallImageText = "Paused";
+		activity.endTimestamp = Date.now();
 	} else {
-		// Playback/Time
-		if (track.duration !== undefined) {
-			activity.startTimestamp = Date.now() - time * 1000;
-			activity.endTimestamp = activity.startTimestamp + track.duration * 1000;
-		}
+		// Small Artist image
+		const artist = await mediaItem.artist();
+		activity.smallImageKey = artist?.coverUrl("320");
+		console.log(activity.smallImageKey);
+		activity.smallImageText = fmtStr(artist?.name);
 
-		// Artist image
-		if (settings.displayArtistImage) {
-			const artist = track.artist ?? track.artists?.[0];
-			activity.smallImageKey = getMediaURL(artist?.picture, "/320x320.jpg");
-			activity.smallImageText = formatString(artist?.name);
+		// Playback/Time
+		if (mediaItem.duration !== undefined) {
+			activity.startTimestamp = Date.now() - PlayState.latestCurrentTime * 1000;
+			activity.endTimestamp = activity.startTimestamp + mediaItem.duration * 1000;
 		}
 	}
 
 	// Album
-	if (track.album) {
-		activity.largeImageKey = getMediaURL(track.album.cover);
-		activity.largeImageText = formatString(track.album.title);
+	const album = await mediaItem.album();
+	if (album) {
+		activity.largeImageKey = album.coverUrl();
+		activity.largeImageText = await album.title().then(fmtStr);
 	}
 
-	// Title/Artist
-	activity.details = formatString(track.title);
-	activity.state = formatString(track.artists?.map((a) => a.name).join(", ")) ?? "Unknown Artist";
+	return setActivity(activity).catch(trace.err.withContext("Failed to set activity"));
+};
 
-	return setRPC(activity);
-}
+const unloadIntercept = intercept(["playbackControls/TIME_UPDATE", "playbackControls/SEEK", "playbackControls/SET_PLAYBACK_STATE"], () => {
+	setTimeout(updateActivity);
+});
+const unloadTransition = MediaItem.onMediaTransition(updateActivity);
 
-const setRPC = (activity?: SetActivity) => setActivity(activity).catch(trace.err.withContext("Failed to set activity"));
-
-const unloadTransition = intercept("playbackControls/MEDIA_PRODUCT_TRANSITION", ([media]) => {
-	const mediaProduct = media.mediaProduct as { productId: string };
-	MediaItemCache.ensureTrack(mediaProduct.productId)
-		.then((track) => {
-			if (track) update({ track, time: 0 });
-		})
-		.catch(trace.err.withContext("Failed to fetch media item"));
-});
-
-const unloadTime = intercept("playbackControls/TIME_UPDATE", ([newTime]) => {
-	time = newTime;
-});
-const unloadSeek = intercept("playbackControls/SEEK", ([newTime]) => {
-	if (typeof newTime === "number") update({ time: newTime });
-});
-const unloadPlay = intercept("playbackControls/SET_PLAYBACK_STATE", ([state]) => {
-	if (paused && state === "PLAYING") update({ paused: false });
-});
-const unloadPause = intercept("playbackControls/PAUSE", () => {
-	update({ paused: true });
-});
-
-const { playbackContext, playbackState, latestCurrentTime } = getPlaybackControl();
-
-update({
-	track: await MediaItemCache.ensureTrack(playbackContext?.actualProductId),
-	time: latestCurrentTime,
-	paused: playbackState !== "PLAYING",
-});
+setTimeout(updateActivity);
 
 export const onUnload = () => {
+	unloadIntercept();
 	unloadTransition();
-	unloadTime();
-	unloadSeek();
-	unloadPlay();
-	unloadPause();
-	cleanup()!.catch(trace.msg.err.withContext("Failed to cleanup RPC"));
+	cleanupRPC().catch(trace.msg.err.withContext("Failed to cleanup RPC"));
 };
