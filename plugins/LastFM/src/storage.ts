@@ -1,4 +1,4 @@
-import { getStorage } from "@inrixia/lib/storage";
+import { getStorage } from "@inrixia/lib";
 import type { LastFmSession } from "./LastFM";
 
 export default getStorage<{

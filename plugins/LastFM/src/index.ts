@@ -1,36 +1,39 @@
+import { MediaItem, PlayState, Tracer, delUndefined } from "@inrixia/lib";
+const trace = Tracer("[last.fm]");
+
 import { actions } from "@neptune";
 import { LastFM, ScrobbleOpts } from "./LastFM";
 
-import { Tracer } from "@inrixia/lib/trace";
-const trace = Tracer("[last.fm]");
-
-import { CurrentTrack, registerOnScrobble } from "@inrixia/lib/scrobbleHelpers";
 actions.lastFm.disconnect();
 
-const makeScrobbleOpts = ({ metaTags, playbackStart, playbackContext }: CurrentTrack): ScrobbleOpts => {
-	const tags = metaTags.tags;
-	const scrobbleOpts = {
-		track: tags.title!,
-		artist: tags.artist?.[0]!,
-		album: tags.album,
-		albumArtist: tags.albumArtist?.[0],
-		trackNumber: tags.trackNumber,
-		mbid: tags.musicbrainz_trackid,
-		timestamp: (playbackStart / 1000).toFixed(0),
-		// duration: playbackContext.actualDuration.toFixed(0),
+const makeScrobbleOpts = async (mediaItem: MediaItem): Promise<ScrobbleOpts> => {
+	const album = await mediaItem.album();
+	const scrobbleOpts: Partial<ScrobbleOpts> = {
+		track: await mediaItem.title(),
+		artist: (await mediaItem.artist())?.name,
+		album: await album?.title(),
+		albumArtist: (await album?.artist())?.name,
+		trackNumber: mediaItem.trackNumber?.toString(),
+		mbid: await mediaItem.brainzId(),
+		timestamp: (Date.now() / 1000).toFixed(0),
 	};
-	// @ts-expect-error TS really hates iterating keys cuz its unsafe
-	for (const key in scrobbleOpts) if (scrobbleOpts[key] === undefined) delete scrobbleOpts[key];
-	trace.debug("makeScrobbleOpts", scrobbleOpts);
-	return scrobbleOpts;
+	delUndefined(scrobbleOpts);
+	return scrobbleOpts as ScrobbleOpts;
 };
 
-export const onUnload = registerOnScrobble({
-	onNowPlaying: (currentTrack) => LastFM.updateNowPlaying(makeScrobbleOpts(currentTrack)).catch(trace.msg.err.withContext(`Failed to updateNowPlaying!`)),
-	onScrobble: (currentTrack) =>
-		LastFM.scrobble(makeScrobbleOpts(currentTrack))
+const unloads = [
+	MediaItem.onMediaTransition((mediaItem) => {
+		makeScrobbleOpts(mediaItem).then(LastFM.updateNowPlaying).catch(trace.msg.err.withContext(`Failed to updateNowPlaying!`));
+	}),
+	PlayState.onScrobble(async (mediaItem) => {
+		const scrobbleOpts = await makeScrobbleOpts(mediaItem);
+		LastFM.scrobble(scrobbleOpts)
 			.catch(trace.msg.err.withContext(`Failed to scrobble!`))
 			.then((res) => {
-				if (res?.scrobbles) trace.log("scrobbled", res?.scrobbles["@attr"], res.scrobbles.scrobble);
-			}),
-});
+				if (res?.scrobbles) trace.log("Scrobbled", scrobbleOpts, res?.scrobbles["@attr"], res.scrobbles.scrobble);
+			});
+	}),
+];
+export const onUnload = () => {
+	for (const unload of unloads) unload();
+};
