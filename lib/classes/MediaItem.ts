@@ -13,10 +13,10 @@ import { type PlaybackInfo } from "./MediaItem.playbackInfo.types";
 import { makeTags, MetaTags } from "./MediaItem.tags";
 import { Quality, type MediaItemAudioQuality, type MediaMetadataTag } from "./Quality";
 
-import { fetchIsrcIterable } from "../api/tidal";
 import { requestJsonCached } from "../helpers/requestJsonCached";
 import { interceptPromise } from "../intercept/interceptPromise";
 import { SharedObjectStoreExpirable } from "../storage/SharedObjectStoreExpirable";
+import { fetchIsrcIterable } from "../tidalApi";
 
 import type { IRecording, IRelease, ITrack } from "musicbrainz-api";
 import type { ItemId, MediaItem as TMediaItem } from "neptune-types/tidal";

@@ -1,9 +1,9 @@
-import { requestJsonCached } from "../../helpers/requestJsonCached";
+import { Tracer } from "../helpers/trace";
+const trace = Tracer("[lib.tidalApi]");
+
+import { requestJsonCached } from "../helpers/requestJsonCached";
 import { getToken } from "./auth";
 import { TApiTrack, TApiTracks } from "./types";
-
-import { Tracer } from "../../helpers/trace";
-const trace = Tracer("[lib.tidalApi]");
 
 const fetchTidal = async <T>(url: string) =>
 	requestJsonCached<T>(url, {
