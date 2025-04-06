@@ -7,15 +7,14 @@ import { requestTrackStream } from "./request/requestTrack.native";
 import { FlacStreamTagger, PictureType } from "flac-stream-tagger";
 import { requestStream } from "./request/requestStream.native";
 
-import { ManifestMimeType, type PlaybackInfo } from "../classes/MediaItem.playbackInfo.types";
+import { type MetaTags, type PlaybackInfo } from "@inrixia/lib";
 
 import type { Readable } from "stream";
-import type { MetaTags } from "../classes/MediaItem.tags";
 export type { DownloadProgress } from "./request/helpers.native";
 
 const addTags = async ({ manifestMimeType, manifest }: PlaybackInfo, stream: Readable, metaTags: MetaTags) => {
 	const { tags, coverUrl } = metaTags;
-	if (manifestMimeType === ManifestMimeType.Tidal) {
+	if (manifestMimeType === "application/vnd.tidal.bts") {
 		switch (manifest.codecs) {
 			case "flac": {
 				let picture;

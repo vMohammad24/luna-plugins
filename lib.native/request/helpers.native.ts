@@ -1,9 +1,9 @@
 import { Tracer } from "../helpers/trace.native";
 const trace = Tracer("[lib.native.request]");
 
+import type { TidalManifest } from "@inrixia/lib";
 import type { IncomingHttpHeaders, IncomingMessage } from "http";
 import type { Readable } from "stream";
-import type { TidalManifest } from "../../classes/MediaItem.playbackInfo.types";
 import { ExtendedRequestOptions } from "./requestStream.native";
 
 export type DownloadProgress = { total: number; downloaded: number; percent: number };

@@ -1,16 +1,12 @@
+import type { DashManifest } from "@inrixia/lib.native";
 import type { TrackItem } from "neptune-types/tidal";
-import type { DashManifest } from "../native/dasha.native";
 
-export enum ManifestMimeType {
-	Tidal = "application/vnd.tidal.bts",
-	Dash = "application/dash+xml",
-}
 export type PlaybackInfoResponse = {
 	trackId: number;
 	assetPresentation: string;
 	audioMode: NonNullable<TrackItem["audioModes"]>;
 	audioQuality: NonNullable<TrackItem["audioQuality"]>;
-	manifestMimeType: ManifestMimeType;
+	manifestMimeType: "application/vnd.tidal.bts" | "application/dash+xml";
 	manifestHash: string;
 	manifest: string;
 	albumReplayGain: number;
@@ -28,15 +24,16 @@ export type TidalManifest = {
 	urls: string[];
 };
 
-interface PlaybackInfoBase extends Omit<PlaybackInfoResponse, "manifestMimeType" | "manifest"> {
+interface PlaybackInfoBase extends Omit<PlaybackInfoResponse, "manifest"> {
 	mimeType: string;
 }
-interface DashPlaybackInfo extends PlaybackInfoBase {
-	manifestMimeType: ManifestMimeType.Dash;
-	manifest: DashManifest;
-}
+
 interface TidalPlaybackInfo extends PlaybackInfoBase {
-	manifestMimeType: ManifestMimeType.Tidal;
+	manifestMimeType: "application/vnd.tidal.bts";
 	manifest: TidalManifest;
+}
+interface DashPlaybackInfo extends PlaybackInfoBase {
+	manifestMimeType: "application/dash+xml";
+	manifest: DashManifest;
 }
 export type PlaybackInfo = DashPlaybackInfo | TidalPlaybackInfo;

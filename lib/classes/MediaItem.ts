@@ -1,26 +1,28 @@
 import { Tracer } from "../helpers/trace";
 const trace = Tracer("[lib.MediaItem]");
 
-import { asyncDebounce, memoize } from "@inrixia/helpers";
 import { actions, intercept } from "@neptune";
 import { PayloadActionTypeTuple } from "neptune-types/api/intercept";
-import { interceptPromise } from "../intercept/interceptPromise";
-import { requestJsonCached } from "../native/request/requestJsonCached";
+
+import { asyncDebounce, memoize } from "@inrixia/helpers";
+import { getStreamBytes, parseStreamMeta } from "@inrixia/lib.native";
 
 import { ContentBase, type TImageSize } from "./ContentBase";
+import { getPlaybackInfo } from "./MediaItem.playbackInfo";
+import { type PlaybackInfo } from "./MediaItem.playbackInfo.types";
 import { makeTags, MetaTags } from "./MediaItem.tags";
 import { Quality, type MediaItemAudioQuality, type MediaMetadataTag } from "./Quality";
 
+import { fetchIsrcIterable } from "../api/tidal";
+import { requestJsonCached } from "../helpers/requestJsonCached";
+import { interceptPromise } from "../intercept/interceptPromise";
+import { SharedObjectStoreExpirable } from "../storage/SharedObjectStoreExpirable";
+
 import type { IRecording, IRelease, ITrack } from "musicbrainz-api";
 import type { ItemId, MediaItem as TMediaItem } from "neptune-types/tidal";
-import { fetchIsrcIterable } from "../api/tidal";
-import { getStreamBytes, parseStreamMeta } from "../native/itemFormat.native";
-import { SharedObjectStoreExpirable } from "../storage/SharedObjectStoreExpirable";
-import { getPlaybackInfo } from "./MediaItem.playbackInfo";
-import { ManifestMimeType, type PlaybackInfo } from "./MediaItem.playbackInfo.types";
 
-import Album from "./Album";
-import Artist from "./Artist";
+import { Album } from "./Album";
+import { Artist } from "./Artist";
 import { type PlaybackContext } from "./PlayState";
 
 export type MediaItemListener = (mediaItem: MediaItem) => unknown;
@@ -53,7 +55,7 @@ type MediaFormat = {
 
 type MediaItemType = TMediaItem["type"];
 
-class MediaItem extends ContentBase {
+export class MediaItem extends ContentBase {
 	public readonly tidalItem: Readonly<TMediaItem["item"]>;
 	public readonly duration?: number;
 	constructor(public readonly id: ItemId, tidalMediaItem: TMediaItem) {
@@ -307,7 +309,7 @@ class MediaItem extends ContentBase {
 
 			mediaFormat.codec = format.codec?.toLowerCase() ?? this.codec;
 
-			if (playbackInfo.manifestMimeType === ManifestMimeType.Dash) {
+			if (playbackInfo.manifestMimeType === "application/dash+xml") {
 				mediaFormat.bitrate = playbackInfo.manifest.tracks.audios[0].bitrate.bps ?? this.bitrate;
 				mediaFormat.bytes = playbackInfo.manifest.tracks.audios[0].size?.b ?? this.bytes;
 			}
@@ -364,59 +366,49 @@ class MediaItem extends ContentBase {
 	}
 
 	static {
-		// Ensure that if we are inside a dead object that we do nothing.
-		// If this is called with window.Estr.MediaItem defined we are going to export that instead.
-		if (window.Estr?.MediaItem === undefined) {
-			// Override readonly
-			(this.formatStore as any) = new SharedObjectStoreExpirable("TrackInfoCache", {
-				storeSchema: {
-					keyPath: ["trackId", "audioQuality"],
-				},
-				maxAge: 24 * 6 * 60 * 1000,
-			});
+		// Override readonly
+		(this.formatStore as any) = new SharedObjectStoreExpirable("TrackInfoCache", {
+			storeSchema: {
+				keyPath: ["trackId", "audioQuality"],
+			},
+			maxAge: 24 * 6 * 60 * 1000,
+		});
 
-			// NOTE: Intercept calls will never be unloaded here as this is a global shared object.
-			// To reload this class you must restart the client
-			intercept(
-				// @ts-expect-error Neptune doesn't type this action
-				"player/PRELOAD_ITEM",
-				([item]: [{ productId?: string; productType?: "track" | "video" }]) => {
-					if (item.productId === undefined) return trace.warn("player/PRELOAD_ITEM intercepted without productId!", item);
-					this.fromId(item.productId, item.productType).then((mediaItem) => {
-						if (mediaItem === undefined) return;
-						mediaItem.preload();
-						runListeners(mediaItem, this.preloadListeners, trace.err.withContext("preloadItem.runListeners"));
-					});
-				}
-			);
+		// NOTE: Intercept calls will never be unloaded here as this is a global shared object.
+		// To reload this class you must restart the client
+		intercept(
+			// @ts-expect-error Neptune doesn't type this action
+			"player/PRELOAD_ITEM",
+			([item]: [{ productId?: string; productType?: "track" | "video" }]) => {
+				if (item.productId === undefined) return trace.warn("player/PRELOAD_ITEM intercepted without productId!", item);
+				this.fromId(item.productId, item.productType).then((mediaItem) => {
+					if (mediaItem === undefined) return;
+					mediaItem.preload();
+					runListeners(mediaItem, this.preloadListeners, trace.err.withContext("preloadItem.runListeners"));
+				});
+			}
+		);
 
-			const _onMediaTransition = asyncDebounce(async (playbackContext: PlaybackContext) => {
-				const mediaItem = await this.fromPlaybackContext(playbackContext);
-				if (mediaItem === undefined) return;
-				// Always update format info on playback
-				if (this.useFormat) mediaItem.updateFormat();
-				await runListeners(mediaItem, this.mediaTransitionListeners, trace.err.withContext("mediaProductTransition.runListeners"));
-			});
-			intercept("playbackControls/MEDIA_PRODUCT_TRANSITION", ([{ playbackContext }]) => {
-				_onMediaTransition(playbackContext as PlaybackContext);
-			});
+		const _onMediaTransition = asyncDebounce(async (playbackContext: PlaybackContext) => {
+			const mediaItem = await this.fromPlaybackContext(playbackContext);
+			if (mediaItem === undefined) return;
+			// Always update format info on playback
+			if (this.useFormat) mediaItem.updateFormat();
+			await runListeners(mediaItem, this.mediaTransitionListeners, trace.err.withContext("mediaProductTransition.runListeners"));
+		});
+		intercept("playbackControls/MEDIA_PRODUCT_TRANSITION", ([{ playbackContext }]) => {
+			_onMediaTransition(playbackContext as PlaybackContext);
+		});
 
-			const _onPreMediaTransition = asyncDebounce(async (productId: ItemId, productType: MediaItemType) => {
-				const mediaItem = await this.fromId(productId, productType);
-				if (mediaItem === undefined) return;
-				mediaItem.preload();
-				await runListeners(mediaItem, this.preMediaTransitionListeners, trace.err.withContext("prefillMPT.runListeners"));
-			});
-			intercept("playbackControls/PREFILL_MEDIA_PRODUCT_TRANSITION", ([{ mediaProduct }]) => {
-				const { productId, productType } = mediaProduct as { productId: ItemId; productType: MediaItemType };
-				_onPreMediaTransition(productId, productType);
-			});
-		}
+		const _onPreMediaTransition = asyncDebounce(async (productId: ItemId, productType: MediaItemType) => {
+			const mediaItem = await this.fromId(productId, productType);
+			if (mediaItem === undefined) return;
+			mediaItem.preload();
+			await runListeners(mediaItem, this.preMediaTransitionListeners, trace.err.withContext("prefillMPT.runListeners"));
+		});
+		intercept("playbackControls/PREFILL_MEDIA_PRODUCT_TRANSITION", ([{ mediaProduct }]) => {
+			const { productId, productType } = mediaProduct as { productId: ItemId; productType: MediaItemType };
+			_onPreMediaTransition(productId, productType);
+		});
 	}
 }
-
-// @ts-expect-error Ensure window.Estr is prepped
-window.Estr ??= {};
-// @ts-expect-error Always use the shared class
-MediaItem = window.Estr.MediaItem ??= MediaItem;
-export default MediaItem;

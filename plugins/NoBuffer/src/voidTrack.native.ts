@@ -1,5 +1,5 @@
-import type { PlaybackInfo } from "@inrixia/lib/classes/MediaItem.playbackInfo.types";
-import { requestTrackStream } from "@inrixia/lib/native/request/requestTrack.native";
+import type { PlaybackInfo } from "@inrixia/lib";
+import { requestTrackStream } from "@inrixia/lib.native";
 import { Writable } from "stream";
 
 const VoidWriable = new Writable({ write: (_, __, cb) => cb() });

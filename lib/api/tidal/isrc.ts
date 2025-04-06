@@ -1,4 +1,4 @@
-import { requestJsonCached } from "../../native/request/requestJsonCached";
+import { requestJsonCached } from "../../helpers/requestJsonCached";
 import { getToken } from "./auth";
 import { TApiTrack, TApiTracks } from "./types";
 

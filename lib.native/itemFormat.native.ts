@@ -2,8 +2,8 @@
 import { parseStream } from "music-metadata";
 import { requestTrackStream } from "./request/requestTrack.native";
 
+import type { PlaybackInfo } from "@inrixia/lib";
 import type { IAudioMetadata } from "music-metadata";
-import type { PlaybackInfo } from "../classes/MediaItem.playbackInfo.types";
 
 export const getStreamBytes = async (playbackInfo: PlaybackInfo): Promise<number | undefined> => {
 	let bytes;

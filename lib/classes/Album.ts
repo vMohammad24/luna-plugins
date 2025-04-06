@@ -2,18 +2,20 @@ import { Tracer } from "../helpers/trace";
 const trace = Tracer("[lib.Album]");
 
 import { memoize } from "@inrixia/helpers";
-import { actions } from "@neptune";
-import type { IReleaseMatch } from "musicbrainz-api";
-import { interceptPromise } from "../intercept/interceptPromise";
-import { requestJsonCached } from "../native/request/requestJsonCached";
-import { ContentBase, type TImageSize } from "./ContentBase";
-import MediaItem from "./MediaItem";
 
+import { actions } from "@neptune";
 import type { ItemId, Album as TAlbum, MediaItem as TMediaItem } from "neptune-types/tidal";
 
-import Artist from "./Artist";
+import type { IReleaseMatch } from "musicbrainz-api";
 
-class Album extends ContentBase {
+import { requestJsonCached } from "../helpers/requestJsonCached";
+import { interceptPromise } from "../intercept/interceptPromise";
+
+import { Artist } from "./Artist";
+import { ContentBase, type TImageSize } from "./ContentBase";
+import { MediaItem } from "./MediaItem";
+
+export class Album extends ContentBase {
 	constructor(public readonly id: ItemId, public readonly tidalAlbum: TAlbum) {
 		super();
 	}
@@ -100,9 +102,3 @@ class Album extends ContentBase {
 		return this.tidalAlbum.releaseYear;
 	}
 }
-
-// @ts-expect-error Ensure window.Estr is prepped
-window.Estr ??= {};
-// @ts-expect-error Always use the shared class
-Album = window.Estr.Album ??= Album;
-export default Album;

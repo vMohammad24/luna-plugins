@@ -10,7 +10,7 @@ if (lastFmApiKey === undefined) throw new Error("Last.fm API key not found");
 import { NowPlaying } from "./types/NowPlaying";
 import { Scrobble } from "./types/Scrobble";
 
-import { requestJson } from "@inrixia/lib/native/request/requestJson.native";
+import { requestJson } from "@inrixia/lib.native";
 import { hash } from "./hash.native";
 
 export type NowPlayingOpts = {

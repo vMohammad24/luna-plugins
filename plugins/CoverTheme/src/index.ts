@@ -1,4 +1,5 @@
 import { MediaItem, StyleTag, Tracer } from "@inrixia/lib";
+
 const trace = Tracer("[CoverTheme]");
 
 import { storage } from "@plugin";

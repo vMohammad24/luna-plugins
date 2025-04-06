@@ -1,5 +1,5 @@
+import type { TidalManifest } from "@inrixia/lib";
 import { createDecipheriv } from "crypto";
-import type { TidalManifest } from "../../classes/MediaItem.playbackInfo.types";
 
 // Do not change this
 const mastKey = "UIlTTEMmmLfGowo/UC60x2H45W6MdGgTRfo/umg4754=";

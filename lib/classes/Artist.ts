@@ -2,12 +2,13 @@ import { Tracer } from "../helpers/trace";
 const trace = Tracer("[lib.Artist]");
 
 import { actions } from "@neptune";
+
 import { interceptPromise } from "../intercept/interceptPromise";
 import { ContentBase, type TImageSize } from "./ContentBase";
 
 import type { ItemId, Artist as TArtist } from "neptune-types/tidal";
 
-class Artist extends ContentBase {
+export class Artist extends ContentBase {
 	constructor(public readonly id: ItemId, public readonly tidalArtist: TArtist) {
 		super();
 	}
@@ -30,9 +31,3 @@ class Artist extends ContentBase {
 		return this.tidalArtist.name;
 	}
 }
-
-// @ts-expect-error Ensure window.Estr is prepped
-window.Estr ??= {};
-// @ts-expect-error Always use the shared class
-Artist = window.Estr.Artist ??= Artist;
-export default Artist;

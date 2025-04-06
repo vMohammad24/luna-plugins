@@ -3,9 +3,15 @@ const trace = Tracer("[lib.ContextMenu]");
 
 import { runFor } from "@inrixia/helpers";
 import { intercept } from "@neptune";
-import { Album, MediaItem, Playlist } from "..";
 
-import "./contentButton.styles";
+import { Album } from "./Album";
+import { MediaItem } from "./MediaItem";
+import { Playlist } from "./Playlist";
+
+import styles from "file://contentButton.css?minify";
+import { StyleTag } from "../helpers/StyleTag";
+
+new StyleTag(styles, "content-button");
 
 type Item = MediaItem | Album | Playlist;
 type ContextListener = (item: Item[], contextMenu: Element) => Promise<void>;

@@ -1,4 +1,4 @@
-import MediaItem from "./MediaItem";
+import { MediaItem } from "./MediaItem";
 
 export type FlacTags = {
 	title?: string;

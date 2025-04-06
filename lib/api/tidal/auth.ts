@@ -1,5 +1,5 @@
 import { Semaphore } from "@inrixia/helpers";
-import { requestJson } from "../../native/request/requestJson.native";
+import { requestJson } from "../../../lib.native/request/requestJson.native";
 
 const CLIENT_ID = "tzecdDS3Bbx00rMP";
 const CLIENT_SECRET = "zhRnKETi4FeXNGB72yAPJDssJ1U3BBGqmvYKcaw3kk8=";

@@ -5,7 +5,7 @@ import { asyncDebounce } from "@inrixia/helpers";
 import { actions } from "@neptune";
 import { interceptPromise } from "../intercept/interceptPromise";
 import { ContentBase } from "./ContentBase";
-import MediaItem from "./MediaItem";
+import { MediaItem } from "./MediaItem";
 
 import type { ItemId, MediaItem as TMediaItem, Playlist as TPlaylist } from "neptune-types/tidal";
 
@@ -36,9 +36,3 @@ export class Playlist extends ContentBase {
 		return MediaItem.fromTMediaItems(Array.from(tMediaItems));
 	});
 }
-
-// @ts-expect-error Ensure window.Estr is prepped
-window.Estr ??= {};
-// @ts-expect-error Always use the shared class
-Playlist = window.Estr.Playlist ??= Playlist;
-export default Playlist;

@@ -2,11 +2,11 @@ import { Tracer } from "../helpers/trace";
 const trace = Tracer("[lib.getPlaybackInfo]");
 
 import { memoize } from "@inrixia/helpers";
+import { parseDasha } from "@inrixia/lib.native";
 import { findModuleFunction } from "../helpers/findModuleFunction";
-import { parseDasha } from "../native/dasha.native";
 
-import type MediaItem from "./MediaItem";
-import { ManifestMimeType, PlaybackInfo, PlaybackInfoResponse, TidalManifest } from "./MediaItem.playbackInfo.types";
+import type { MediaItem } from "./MediaItem";
+import { PlaybackInfo, PlaybackInfoResponse, TidalManifest } from "./MediaItem.playbackInfo.types";
 
 const getCredentials = memoize(() => {
 	const getCredentials = findModuleFunction<() => Promise<{ token: string; clientId: string }>>("getCredentials", "function");
@@ -36,11 +36,11 @@ export const getPlaybackInfo = async (mediaItem: MediaItem): Promise<PlaybackInf
 		});
 
 		switch (playbackInfo.manifestMimeType) {
-			case ManifestMimeType.Tidal: {
+			case "application/vnd.tidal.bts": {
 				const manifest: TidalManifest = JSON.parse(atob(playbackInfo.manifest));
 				return { ...playbackInfo, manifestMimeType: playbackInfo.manifestMimeType, manifest, mimeType: manifest.mimeType };
 			}
-			case ManifestMimeType.Dash: {
+			case "application/dash+xml": {
 				const manifest = await parseDasha(atob(playbackInfo.manifest), "https://sp-ad-cf.audio.tidal.com");
 				return { ...playbackInfo, manifestMimeType: playbackInfo.manifestMimeType, manifest, mimeType: "audio/mp4" };
 			}

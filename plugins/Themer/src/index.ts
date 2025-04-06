@@ -1,5 +1,5 @@
 export { Settings } from "./Settings";
-import { StyleTag, getStorage } from "@inrixia/lib/";
+import { StyleTag, getStorage } from "@inrixia/lib";
 
 import "./editor.native";
 

@@ -26,7 +26,8 @@
 		"watch": [
 			"./plugins/**",
 			"./build.ts",
-			"./lib"
+			"./lib",
+			"./lib.native"
 		],
 		"ignore": "**/dist/**",
 		"ext": "*",
@@ -34,6 +35,7 @@
 	},
 	"dependencies": {
 		"@inrixia/helpers": "^3.3.0",
-		"@inrixia/lib": "link:lib"
+		"@inrixia/lib": "link:lib",
+		"@inrixia/lib.native": "link:lib.native"
 	}
 }

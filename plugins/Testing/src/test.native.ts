@@ -1,8 +1,14 @@
-import { _default, importNative } from "@inrixia/lib/native/helpers/imports.native";
-import { ClientMessageChannelEnum } from "@inrixia/lib/native/player.native";
+const _default = (module: any) => module.default.default;
+const importNative = (path: string) => Function(`return import("${path}")`)();
+
+// const RepeatModeEnum: Promise<Record<string, string>> = importNative("../original.asar/app/shared/playback/RepeatModeEnum.js").then(_default);
+// const clientDispatcher: Promise<Record<string, string>> = importNative("../original.asar/app/main/client/clientDispatcher.js").then(_default);
+
+const ClientMessageChannelEnum: Promise<Record<string, string>> = importNative("../original.asar/app/shared/client/ClientMessageChannelEnum.js").then(_default);
+
 import { ipcMain, IpcMainEvent } from "electron";
 
-import { Tracer } from "@inrixia/lib/native/helpers/trace.native";
+import { Tracer } from "@inrixia/lib.native";
 const trace = Tracer("[test.native]");
 
 export const AppEventEnum: Promise<Record<string, string>> = importNative("../original.asar/app/shared/AppEventEnum.js").then(_default);

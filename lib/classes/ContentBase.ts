@@ -1,7 +1,7 @@
 import { store } from "@neptune";
 import type { IArtistCredit } from "musicbrainz-api";
 import type { ContentStateFields, ItemId } from "neptune-types/tidal";
-import type Artist from "./Artist";
+import type { Artist } from "./Artist";
 
 type ContentType = keyof ContentStateFields;
 type ContentItem<K extends ContentType> = Exclude<ReturnType<ContentStateFields[K]["get"]>, undefined>;
