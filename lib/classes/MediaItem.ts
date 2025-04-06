@@ -154,7 +154,9 @@ class MediaItem extends ContentBase {
 			// Lookup the recording from MusicBrainz by ISRC
 			const recording = await requestJson<{ recordings: IRecording[] }>(`https://musicbrainz.org/ws/2/isrc/${this.tidalItem.isrc}?inc=isrcs&fmt=json`)
 				.then(({ recordings }) => recordings[0])
-				.catch(trace.warn.withContext("brainzItem.getISRCRecordings"));
+				.catch((err) => {
+					if (err.message !== "Status code is 404") trace.warn.withContext("brainzItem.getISRCRecordings");
+				});
 
 			if (recording !== undefined) return releaseTrackFromRecording(recording);
 		}

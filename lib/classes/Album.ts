@@ -32,7 +32,8 @@ export class Album extends ContentBase {
 	public brainzAlbum: () => Promise<IReleaseMatch | undefined> = memoize(async () => {
 		if (this.tidalAlbum.upc === undefined) return;
 
-		const brainzAlbum = await requestJson<{ releases: IReleaseMatch[] }>(`https://musicbrainz.org/ws/2/release/?query=barcode:${this.tidalAlbum.upc}&fmt=json`)
+		const brainzUrl = `https://musicbrainz.org/ws/2/release/?query=barcode:${this.tidalAlbum.upc}&fmt=json`;
+		const brainzAlbum = await requestJson<{ releases: IReleaseMatch[] }>(brainzUrl)
 			.then(({ releases }) => releases[0])
 			.catch(trace.warn.withContext("getUPCReleases"));
 
@@ -46,7 +47,7 @@ export class Album extends ContentBase {
 			return brainzAlbum;
 		}
 
-		trace.warn("Invalid Tidal UPC for album!", { releaseAlbum: brainzAlbum, tidalAlbum: this });
+		if (brainzAlbum !== undefined) trace.warn("Invalid Tidal UPC for album!", brainzAlbum, this, brainzUrl);
 	});
 
 	public artist: () => Promise<Artist | undefined> = memoize(async () => {

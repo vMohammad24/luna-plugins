@@ -26,7 +26,7 @@ export const requestStream = async (url: string, options: ExtendedRequestOptions
 		}
 		const req = request(url, options, (res) => {
 			res.url = url;
-			const debugStatus = `[${req.method} ${res.statusCode} ${res.statusMessage !== "" ? ` - ${res.statusMessage}` : ""} in ${Date.now() - start}ms]`;
+			const debugStatus = `[${req.method} ${res.statusCode} ${res.statusMessage !== "" ? `- ${res.statusMessage}` : ""} in ${Date.now() - start}ms]`;
 			if (res.statusCode === 429 || res.statusCode === 503) {
 				const retryAfter = parseInt(res.headers["retry-after"] ?? "1", 10);
 				options.rateLimit!++;
