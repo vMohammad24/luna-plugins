@@ -1,5 +1,4 @@
-import { getSettings } from "@inrixia/lib/storage";
-import { TextInput } from "@inrixia/lib/components/TextInput";
+import { getSettings, TextInput } from "@inrixia/lib";
 import { html } from "@neptune/voby";
 
 export const settings = getSettings({

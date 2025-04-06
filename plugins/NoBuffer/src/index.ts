@@ -1,11 +1,10 @@
-import { intercept } from "@neptune";
+import { MediaItem, Tracer } from "@inrixia/lib";
+const trace = Tracer("[NoBuffer]");
 
 import { asyncDebounce } from "@inrixia/helpers";
-import { Tracer } from "@inrixia/lib/helpers/trace";
-import { voidTrack } from "./voidTrack.native";
+import { intercept } from "@neptune";
 
-import { MediaItem } from "@inrixia/lib";
-const trace = Tracer("[NoBuffer]");
+import { voidTrack } from "./voidTrack.native";
 
 const onStalled = asyncDebounce(async () => {
 	const mediaItem = await MediaItem.fromPlaybackContext();

@@ -1,12 +1,10 @@
-import { Tracer } from "@inrixia/lib/helpers/trace";
+import { MediaItem, PlayState, Tracer, delUndefined } from "@inrixia/lib";
 const trace = Tracer("[ListenBrainz]");
 
 import { ListenBrainz } from "./ListenBrainz";
+import { MusicServiceDomain, type Payload } from "./ListenBrainzTypes";
 
 export { Settings } from "./Settings";
-
-import { MediaItem, PlayState } from "@inrixia/lib";
-import { MusicServiceDomain, type Payload } from "./ListenBrainzTypes";
 
 const makeTrackPayload = async (mediaItem: MediaItem): Promise<Payload> => {
 	const album = await mediaItem.album();
@@ -30,12 +28,8 @@ const makeTrackPayload = async (mediaItem: MediaItem): Promise<Payload> => {
 		media_player: "Tidal Desktop",
 		submission_client: "Neptune Scrobbler",
 	};
-	removeUndefinedValues(trackPayload.track_metadata.additional_info);
+	delUndefined(trackPayload.track_metadata.additional_info);
 	return trackPayload;
-};
-
-const removeUndefinedValues = (obj: Record<any, any>) => {
-	for (const key in obj) if (obj[key] === undefined) delete obj[key];
 };
 
 const unloads = [

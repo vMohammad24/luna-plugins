@@ -1,6 +1,7 @@
-import { requestJson } from "@inrixia/lib/native/request/requestJson.native.js";
 import type { Payload } from "./ListenBrainzTypes.js";
 import { settings } from "./Settings";
+
+import { requestJson } from "@inrixia/lib/native/request/requestJson.native.js";
 
 type NowPlayingPayload = Omit<Payload, "listened_at">;
 

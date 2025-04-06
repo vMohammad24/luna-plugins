@@ -1,7 +1,8 @@
 export { Settings } from "./Settings";
-import { StyleTag } from "@inrixia/lib/";
-import { getStorage } from "@inrixia/lib/storage";
+import { StyleTag, getStorage } from "@inrixia/lib/";
+
 import "./editor.native";
+
 import { closeEditor, openEditor as openEditorNative } from "./editor.native";
 
 const setCSS = (_: unknown, css: string) => {

@@ -1,5 +1,5 @@
-import { SwitchSetting } from "@inrixia/lib/components/SwitchSetting";
-import { getSettings } from "@inrixia/lib/storage";
+import { SwitchSetting, getSettings } from "@inrixia/lib";
+
 import { html } from "@neptune/voby";
 import { updateActivity } from ".";
 

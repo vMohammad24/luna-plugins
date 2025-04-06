@@ -1,7 +1,6 @@
-import { StyleTag, Tracer } from "@inrixia/lib";
+import { MediaItem, StyleTag, Tracer } from "@inrixia/lib";
 const trace = Tracer("[CoverTheme]");
 
-import { MediaItem } from "@inrixia/lib";
 import { storage } from "@plugin";
 import type { ItemId } from "neptune-types/tidal";
 

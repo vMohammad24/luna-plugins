@@ -1,7 +1,6 @@
-import { Tracer } from "@inrixia/lib/helpers/trace";
+import { MediaItem, PlayState, Tracer } from "@inrixia/lib";
 const trace = Tracer("[DiscordRPC]");
 
-import { MediaItem, PlayState } from "@inrixia/lib";
 import { intercept } from "@neptune";
 import type { SetActivity } from "@xhayper/discord-rpc";
 import { cleanupRPC, setActivity } from "./discord.native";
