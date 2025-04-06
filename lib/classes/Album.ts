@@ -7,7 +7,7 @@ import { requestJson } from "@inrixia/lib.native";
 import { actions } from "@neptune";
 import type { ItemId, Album as TAlbum, MediaItem as TMediaItem } from "neptune-types/tidal";
 
-import type { IReleaseMatch } from "musicbrainz-api";
+import type { IRelease, IReleaseMatch } from "musicbrainz-api";
 
 import { interceptPromise } from "../intercept/interceptPromise";
 
@@ -48,6 +48,12 @@ export class Album extends ContentBase {
 		}
 
 		if (brainzAlbum !== undefined) trace.warn("Invalid Tidal UPC for album!", brainzAlbum, this, brainzUrl);
+	});
+
+	public brainzRelease: () => Promise<IRelease | undefined> = memoize(async () => {
+		const brainzAlbum = await this.brainzAlbum();
+		if (brainzAlbum === undefined) return;
+		return requestJson<IRelease>(`https://musicbrainz.org/ws/2/release/${brainzAlbum.id}?inc=recordings+isrcs+artist-credits&fmt=json`).catch(trace.warn.withContext("getReleaseAlbum"));
 	});
 
 	public artist: () => Promise<Artist | undefined> = memoize(async () => {

@@ -1,17 +1,19 @@
 import { Tracer } from "../helpers/trace";
 const trace = Tracer("[lib.tidalApi]");
 
+import { memoize } from "@inrixia/helpers";
 import { requestJson } from "@inrixia/lib.native";
 import { getToken } from "./auth";
 import { TApiTrack, TApiTracks } from "./types";
 
-const fetchTidal = async <T>(url: string) =>
+const fetchTidal = memoize(async <T>(url: string) =>
 	requestJson<T>(url, {
 		headers: {
 			Authorization: `Bearer ${await getToken()}`,
 			"Content-Type": "application/vnd.tidal.v1+json",
 		},
-	});
+	})
+);
 
 const baseURL = "https://openapi.tidal.com/v2";
 

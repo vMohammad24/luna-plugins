@@ -16,7 +16,7 @@ import { Quality, type MediaItemAudioQuality, type MediaMetadataTag } from "./Qu
 import { interceptPromise } from "../intercept/interceptPromise";
 import { fetchIsrcIterable } from "../tidalApi";
 
-import type { IRecording, IRelease, ITrack } from "musicbrainz-api";
+import type { IRecording, ITrack } from "musicbrainz-api";
 import type { ItemId, MediaItem as TMediaItem } from "neptune-types/tidal";
 
 import { EstrCache } from "../EstrCache";
@@ -162,12 +162,8 @@ class MediaItem extends ContentBase {
 		}
 
 		const album = await this.album();
-		const brainzAlbum = await album?.brainzAlbum();
-		if (brainzAlbum === undefined) return undefined;
-
-		const albumRelease = await requestJson<IRelease>(`https://musicbrainz.org/ws/2/release/${brainzAlbum.id}?inc=recordings+isrcs+artist-credits&fmt=json`).catch(
-			trace.warn.withContext("brainzItem.getReleaseAlbum")
-		);
+		const albumRelease = await album?.brainzRelease();
+		if (albumRelease === undefined) return;
 
 		const volumeNumber = (this.tidalItem.volumeNumber ?? 1) - 1;
 		const trackNumber = (this.tidalItem.trackNumber ?? 1) - 1;
@@ -175,7 +171,7 @@ class MediaItem extends ContentBase {
 		let brainzItem = albumRelease?.media?.[volumeNumber]?.tracks?.[trackNumber];
 		// If this is not the english version of the release try to find the english version of the release track
 		if (albumRelease?.["text-representation"].language !== "eng" && brainzItem?.recording !== undefined) {
-			return (brainzItem = await releaseTrackFromRecording(brainzItem.recording));
+			return (await releaseTrackFromRecording(brainzItem.recording)) ?? brainzItem;
 		}
 		return brainzItem;
 	});
