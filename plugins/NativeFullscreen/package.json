@@ -2,8 +2,5 @@
 	"displayName": "Native Fullscreen",
 	"description": "Allows entering fullscreen normally using F11",
 	"author": "Inrixia",
-	"main": "./src/index.js",
-	"dependencies": {
-		"@inrixia/lib": "workspace:*"
-	}
+	"main": "./src/index.js"
 }

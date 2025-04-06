@@ -21,7 +21,7 @@ import { ManifestMimeType, type PlaybackInfo } from "./MediaItem.playbackInfo.ty
 
 import Album from "./Album";
 import Artist from "./Artist";
-import PlayState, { type PlaybackContext } from "./PlayState";
+import { type PlaybackContext } from "./PlayState";
 
 export type MediaItemListener = (mediaItem: MediaItem) => unknown;
 export const runListeners = (item: MediaItem, listeners: Set<MediaItemListener>, errorHandler: typeof console.error) => {
@@ -91,7 +91,8 @@ class MediaItem extends ContentBase {
 		return mediaItems;
 	}
 	public static async fromPlaybackContext(playbackContext?: PlaybackContext) {
-		playbackContext ??= PlayState.playbackContext;
+		// This has to be here to avoid ciclic requirements breaking
+		playbackContext ??= neptune.store.getState().playbackControls.playbackContext as PlaybackContext;
 		if (playbackContext?.actualProductId === undefined) return undefined;
 		const mediaItem = await this.fromId(playbackContext.actualProductId, playbackContext.actualVideoQuality === null ? "track" : "video");
 		mediaItem?.setFormatAttrs({

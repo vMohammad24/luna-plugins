@@ -4,7 +4,6 @@
 	"author": "Nick Oates",
 	"main": "./src/index.js",
 	"dependencies": {
-		"@inrixia/lib": "workspace:*",
 		"node-vibrant": "4.0.3"
 	}
 }

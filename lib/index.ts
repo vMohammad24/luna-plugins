@@ -1,4 +1,3 @@
-// Define on global for shared caching
 declare global {
 	interface Window {
 		Estr: {

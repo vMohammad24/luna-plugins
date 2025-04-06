@@ -2,8 +2,5 @@
 	"displayName": "Testing",
 	"description": "~0_0~",
 	"author": "Inrixia",
-	"main": "./src/index.js",
-	"dependencies": {
-		"@inrixia/lib": "workspace:*"
-	}
+	"main": "./src/index.js"
 }

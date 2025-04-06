@@ -23,12 +23,17 @@
 		"typescript": "^5.8.3"
 	},
 	"nodemonConfig": {
-		"watch": "./plugins/**",
+		"watch": [
+			"./plugins/**",
+			"./build.ts",
+			"./lib"
+		],
 		"ignore": "**/dist/**",
 		"ext": "*",
 		"exec": "npm run build"
 	},
 	"dependencies": {
-		"@inrixia/helpers": "^3.3.0"
+		"@inrixia/helpers": "^3.3.0",
+		"@inrixia/lib": "link:lib"
 	}
 }

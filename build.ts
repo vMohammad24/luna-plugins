@@ -139,7 +139,6 @@ const neptuneNativeImports: esbuild.Plugin = {
 
 const plugins = fs.readdirSync("./plugins");
 for (const plugin of plugins) {
-	if (plugin.startsWith("_")) continue;
 	const pluginPath = path.join("./plugins/", plugin);
 	const pluginPackage = JSON.parse(fs.readFileSync(path.join(pluginPath, "package.json"), "utf8"));
 	const outfile = path.join("./dist", plugin, "index.js");
@@ -154,9 +153,6 @@ for (const plugin of plugins) {
 			external: ["@neptune", "@plugin"],
 			platform: "browser",
 			outfile,
-			logOverride: {
-				"import-is-undefined": "silent",
-			},
 		})
 		.then(() => {
 			fs

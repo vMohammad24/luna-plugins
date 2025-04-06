@@ -2,8 +2,5 @@
 	"displayName": "ListenBrainz",
 	"description": "Custom ListenBrainz scrobbler",
 	"author": "Inrixia",
-	"main": "./src/index.js",
-	"dependencies": {
-		"@inrixia/lib": "workspace:*"
-	}
+	"main": "./src/index.js"
 }

@@ -11,6 +11,9 @@ importers:
       '@inrixia/helpers':
         specifier: ^3.3.0
         version: 3.3.0
+      '@inrixia/lib':
+        specifier: link:lib
+        version: link:lib
     devDependencies:
       '@types/clean-css':
         specifier: ^4.2.11
@@ -52,65 +55,7 @@ importers:
         specifier: ^5.8.3
         version: 5.8.3
 
-  plugins/AlwaysExclusive: {}
-
-  plugins/CoverTheme:
-    dependencies:
-      '@inrixia/lib':
-        specifier: workspace:*
-        version: link:../_lib
-      node-vibrant:
-        specifier: 4.0.3
-        version: 4.0.3
-
-  plugins/DiscordRPC:
-    dependencies:
-      '@inrixia/lib':
-        specifier: workspace:*
-        version: link:../_lib
-      '@xhayper/discord-rpc':
-        specifier: ^1.2.1
-        version: 1.2.1
-
-  plugins/ListenBrainz:
-    dependencies:
-      '@inrixia/lib':
-        specifier: workspace:*
-        version: link:../_lib
-
-  plugins/NativeFullscreen:
-    dependencies:
-      '@inrixia/lib':
-        specifier: workspace:*
-        version: link:../_lib
-
-  plugins/NoBuffer:
-    dependencies:
-      '@inrixia/lib':
-        specifier: workspace:*
-        version: link:../_lib
-
-  plugins/SmallWindow: {}
-
-  plugins/Testing:
-    dependencies:
-      '@inrixia/lib':
-        specifier: workspace:*
-        version: link:../_lib
-
-  plugins/Themer:
-    dependencies:
-      '@inrixia/lib':
-        specifier: workspace:*
-        version: link:../_lib
-
-  plugins/VolumeScroll:
-    dependencies:
-      '@inrixia/lib':
-        specifier: workspace:*
-        version: link:../_lib
-
-  plugins/_lib:
+  lib:
     dependencies:
       dasha:
         specifier: ^3.1.5
@@ -128,6 +73,36 @@ importers:
       musicbrainz-api:
         specifier: ^0.22.0
         version: 0.22.0
+
+  plugins/AlwaysExclusive: {}
+
+  plugins/CoverTheme:
+    dependencies:
+      node-vibrant:
+        specifier: 4.0.3
+        version: 4.0.3
+
+  plugins/DiscordRPC:
+    dependencies:
+      '@xhayper/discord-rpc':
+        specifier: ^1.2.1
+        version: 1.2.1
+
+  plugins/LastFM: {}
+
+  plugins/ListenBrainz: {}
+
+  plugins/NativeFullscreen: {}
+
+  plugins/NoBuffer: {}
+
+  plugins/SmallWindow: {}
+
+  plugins/Testing: {}
+
+  plugins/Themer: {}
+
+  plugins/VolumeScroll: {}
 
 packages:
 
