@@ -1,6 +1,8 @@
 import { MediaItem, PlayState, Tracer } from "@inrixia/lib";
 const trace = Tracer("[DiscordRPC]");
 
+import { asyncDebounce } from "@inrixia/helpers";
+
 import { intercept } from "@neptune";
 import type { SetActivity } from "@xhayper/discord-rpc";
 import { cleanupRPC, setActivity } from "./discord.native";
@@ -12,7 +14,7 @@ const fmtStr = (s?: string) => {
 	return s.length >= STR_MAX_LEN ? s.slice(0, STR_MAX_LEN - 3) + "..." : s;
 };
 
-export const updateActivity = async (mediaItem?: MediaItem) => {
+export const updateActivity = asyncDebounce(async (mediaItem?: MediaItem) => {
 	mediaItem ??= await MediaItem.fromPlaybackContext();
 	if (mediaItem === undefined) return;
 
@@ -40,7 +42,6 @@ export const updateActivity = async (mediaItem?: MediaItem) => {
 		// Small Artist image
 		const artist = await mediaItem.artist();
 		activity.smallImageKey = artist?.coverUrl("320");
-		console.log(activity.smallImageKey);
 		activity.smallImageText = fmtStr(artist?.name);
 
 		// Playback/Time
@@ -58,7 +59,7 @@ export const updateActivity = async (mediaItem?: MediaItem) => {
 	}
 
 	return setActivity(activity).catch(trace.err.withContext("Failed to set activity"));
-};
+}, true);
 
 const unloadIntercept = intercept(["playbackControls/TIME_UPDATE", "playbackControls/SEEK", "playbackControls/SET_PLAYBACK_STATE"], () => {
 	setTimeout(updateActivity);

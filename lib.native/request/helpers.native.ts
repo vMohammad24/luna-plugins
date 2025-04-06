@@ -1,5 +1,5 @@
 import { Tracer } from "../helpers/trace.native";
-const trace = Tracer("[lib.native.request]");
+const trace = Tracer("[lib.native.requestHelpers]");
 
 import type { TidalManifest } from "@inrixia/lib";
 import type { IncomingHttpHeaders, IncomingMessage } from "http";
@@ -18,12 +18,7 @@ export interface FetchyOptions {
 
 export const rejectNotOk = (res: IncomingMessage) => {
 	const OK = res.statusCode !== undefined && res.statusCode >= 200 && res.statusCode < 300;
-	if (!OK) {
-		toJson(res)
-			.then(trace.err.withContext(`(${res.statusCode})`, res.url))
-			.catch(() => {});
-		throw new Error(`Status code is ${res.statusCode}`);
-	}
+	if (!OK) throw new Error(`Status code is ${res.statusCode}`);
 	return res;
 };
 export const toJson = <T>(res: IncomingMessage): Promise<T> => toBuffer(res).then((buffer) => JSON.parse(buffer.toString()));

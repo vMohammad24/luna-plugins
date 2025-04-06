@@ -1,9 +1,17 @@
 import { Semaphore } from "@inrixia/helpers";
 import { IDBPDatabase, openDB } from "idb";
+import { EstrCache } from "../EstrCache";
 
 const dbName = "@inrixia/sharedStorage";
+
 export class SharedObjectStore<K extends IDBValidKey, V extends Record<any, any>> {
-	public static db: Promise<IDBPDatabase>;
+	public static get db(): Promise<IDBPDatabase> {
+		return EstrCache.store.db;
+	}
+	public static set db(value: Promise<IDBPDatabase>) {
+		EstrCache.store.db = value;
+	}
+
 	private static openSema: Semaphore = new Semaphore(1);
 	private static async openDB(storeName: string, storeSchema?: IDBObjectStoreParameters) {
 		const release = await this.openSema.obtain();

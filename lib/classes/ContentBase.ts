@@ -1,6 +1,7 @@
 import { store } from "@neptune";
 import type { IArtistCredit } from "musicbrainz-api";
 import type { ContentStateFields, ItemId } from "neptune-types/tidal";
+import { EstrCache } from "../EstrCache";
 import type { Artist } from "./Artist";
 
 type ContentType = keyof ContentStateFields;
@@ -11,7 +12,7 @@ type ContentClass<K extends ContentType> = {
 export type TImageSize = "1280" | "640" | "320" | "160" | "80";
 
 export class ContentBase {
-	private static readonly _instances: Record<string, Record<ItemId, ContentClass<ContentType>>> = {};
+	private static readonly _instances: Record<string, Record<ItemId, ContentClass<ContentType>>> = EstrCache.subCache("instances");
 
 	protected static fromStore<K extends ContentType, C extends ContentClass<K>, I extends InstanceType<C>>(itemId: ItemId, contentType: K, clss: C): I | undefined {
 		if (this._instances[contentType]?.[itemId] !== undefined) return this._instances[contentType][itemId] as I;

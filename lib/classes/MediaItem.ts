@@ -5,7 +5,7 @@ import { actions, intercept } from "@neptune";
 import { PayloadActionTypeTuple } from "neptune-types/api/intercept";
 
 import { asyncDebounce, memoize } from "@inrixia/helpers";
-import { getStreamBytes, parseStreamMeta } from "@inrixia/lib.native";
+import { requestJson } from "@inrixia/lib.native";
 
 import { ContentBase, type TImageSize } from "./ContentBase";
 import { getPlaybackInfo } from "./MediaItem.playbackInfo";
@@ -13,14 +13,13 @@ import { type PlaybackInfo } from "./MediaItem.playbackInfo.types";
 import { makeTags, MetaTags } from "./MediaItem.tags";
 import { Quality, type MediaItemAudioQuality, type MediaMetadataTag } from "./Quality";
 
-import { requestJsonCached } from "../helpers/requestJsonCached";
 import { interceptPromise } from "../intercept/interceptPromise";
-import { SharedObjectStoreExpirable } from "../storage/SharedObjectStoreExpirable";
 import { fetchIsrcIterable } from "../tidalApi";
 
 import type { IRecording, IRelease, ITrack } from "musicbrainz-api";
 import type { ItemId, MediaItem as TMediaItem } from "neptune-types/tidal";
 
+import { EstrCache } from "../EstrCache";
 import { Album } from "./Album";
 import { Artist } from "./Artist";
 import { type PlaybackContext } from "./PlayState";
@@ -55,7 +54,7 @@ type MediaFormat = {
 
 type MediaItemType = TMediaItem["type"];
 
-export class MediaItem extends ContentBase {
+class MediaItem extends ContentBase {
 	public readonly tidalItem: Readonly<TMediaItem["item"]>;
 	public readonly duration?: number;
 	constructor(public readonly id: ItemId, tidalMediaItem: TMediaItem) {
@@ -97,12 +96,12 @@ export class MediaItem extends ContentBase {
 		playbackContext ??= neptune.store.getState().playbackControls.playbackContext as PlaybackContext;
 		if (playbackContext?.actualProductId === undefined) return undefined;
 		const mediaItem = await this.fromId(playbackContext.actualProductId, playbackContext.actualVideoQuality === null ? "track" : "video");
-		mediaItem?.setFormatAttrs({
-			bitDepth: playbackContext.bitDepth ?? undefined,
-			sampleRate: playbackContext.sampleRate ?? undefined,
-			duration: playbackContext.actualDuration ?? undefined,
-			codec: playbackContext.codec ?? undefined,
-		});
+		// mediaItem?.setFormatAttrs({
+		// 	bitDepth: playbackContext.bitDepth ?? undefined,
+		// 	sampleRate: playbackContext.sampleRate ?? undefined,
+		// 	duration: playbackContext.actualDuration ?? undefined,
+		// 	codec: playbackContext.codec ?? undefined,
+		// });
 		return mediaItem;
 	}
 
@@ -141,7 +140,7 @@ export class MediaItem extends ContentBase {
 	public brainzItem: () => Promise<ITrack | undefined> = memoize(async () => {
 		const releaseTrackFromRecording = async (recording: IRecording) => {
 			// If a recording exists then fetch the full recording details including media for title resolution
-			const release = await requestJsonCached<IRecording>(`https://musicbrainz.org/ws/2/recording/${recording.id}?inc=releases+media+artist-credits+isrcs&fmt=json`)
+			const release = await requestJson<IRecording>(`https://musicbrainz.org/ws/2/recording/${recording.id}?inc=releases+media+artist-credits+isrcs&fmt=json`)
 				.then(({ releases }) => releases?.filter((release) => release["text-representation"].language === "eng")[0] ?? releases?.[0])
 				.catch(trace.warn.withContext("brainzItem.getISRCRecordings"));
 			if (release === undefined) return undefined;
@@ -153,7 +152,7 @@ export class MediaItem extends ContentBase {
 
 		if (this.tidalItem.isrc !== undefined) {
 			// Lookup the recording from MusicBrainz by ISRC
-			const recording = await requestJsonCached<{ recordings: IRecording[] }>(`https://musicbrainz.org/ws/2/isrc/${this.tidalItem.isrc}?inc=isrcs&fmt=json`)
+			const recording = await requestJson<{ recordings: IRecording[] }>(`https://musicbrainz.org/ws/2/isrc/${this.tidalItem.isrc}?inc=isrcs&fmt=json`)
 				.then(({ recordings }) => recordings[0])
 				.catch(trace.warn.withContext("brainzItem.getISRCRecordings"));
 
@@ -164,7 +163,7 @@ export class MediaItem extends ContentBase {
 		const brainzAlbum = await album?.brainzAlbum();
 		if (brainzAlbum === undefined) return undefined;
 
-		const albumRelease = await requestJsonCached<IRelease>(`https://musicbrainz.org/ws/2/release/${brainzAlbum.id}?inc=recordings+isrcs+artist-credits&fmt=json`).catch(
+		const albumRelease = await requestJson<IRelease>(`https://musicbrainz.org/ws/2/release/${brainzAlbum.id}?inc=recordings+isrcs+artist-credits&fmt=json`).catch(
 			trace.warn.withContext("brainzItem.getReleaseAlbum")
 		);
 
@@ -208,12 +207,12 @@ export class MediaItem extends ContentBase {
 		if (this.tidalItem.contentType !== "track") return [];
 		return Quality.fromMetaTags(this.tidalItem.mediaMetadata?.tags);
 	}
-	public get quality(): Quality {
-		if (this.tidalItem.contentType !== "track" || this.tidalItem.audioQuality === undefined) {
-			trace.warn("MediaItem quality called on non-track or item missing audioQuality!", this);
+	public get bestQuality(): Quality {
+		if (this.tidalItem.contentType !== "track") {
+			trace.warn("MediaItem quality called on non-track!", this);
 			return Quality.High;
 		}
-		return Quality.fromAudioQuality(this.tidalItem.audioQuality);
+		return Quality.max(...Quality.fromMetaTags(this.tidalItem.mediaMetadata?.tags), Quality.fromAudioQuality(this.tidalItem.audioQuality) ?? Quality.High);
 	}
 
 	public title: () => Promise<string | undefined> = memoize(async () => {
@@ -251,7 +250,7 @@ export class MediaItem extends ContentBase {
 
 	public flacTags: () => Promise<MetaTags> = memoize(() => makeTags(this));
 	public max: () => Promise<MediaItem | undefined> = memoize(async () => {
-		if (this.quality >= Quality.Max) return;
+		if (this.bestQuality >= Quality.Max) return;
 
 		const isrcs = await this.isrcs();
 		if (isrcs.size === 0) return;
@@ -261,9 +260,9 @@ export class MediaItem extends ContentBase {
 			for await (const track of fetchIsrcIterable(isrc)) {
 				// If quality is higher than current best, set as best
 				const maxTrackQuality = Quality.max(...Quality.fromMetaTags(track.attributes.mediaTags as MediaMetadataTag[]));
-				if (maxTrackQuality > bestQuality.quality) {
+				if (maxTrackQuality > bestQuality.bestQuality) {
 					bestQuality = (await MediaItem.fromId(track.id)) ?? bestQuality;
-					if (bestQuality.quality >= Quality.Max) return bestQuality;
+					if (bestQuality.bestQuality >= Quality.Max) return bestQuality;
 				}
 			}
 		}
@@ -272,65 +271,70 @@ export class MediaItem extends ContentBase {
 		return bestQuality;
 	});
 
-	public playbackInfo: () => Promise<PlaybackInfo> = memoize(async () => {
-		const playbackInfo = await getPlaybackInfo(this);
-		this.setFormatAttrs(playbackInfo);
+	public playbackInfo: (audioQuality: MediaItemAudioQuality) => Promise<PlaybackInfo> = memoize(async (audioQuality) => {
+		const playbackInfo = await getPlaybackInfo(this, audioQuality);
+		// this.setFormatAttrs(playbackInfo);
 		return playbackInfo;
 	});
 
-	private static readonly formatStore: SharedObjectStoreExpirable<[trackId: number, audioQuality: MediaItemAudioQuality], MediaFormat>;
-	private setFormatAttrs(mediaFormat: MediaFormat): void {
-		type N = number | undefined;
+	// private static readonly formatStore: SharedObjectStoreExpirable<[trackId: number, audioQuality: MediaItemAudioQuality], MediaFormat> = new SharedObjectStoreExpirable("TrackInfoCache", {
+	// 	storeSchema: {
+	// 		keyPath: ["trackId", "audioQuality"],
+	// 	},
+	// 	maxAge: 24 * 6 * 60 * 1000,
+	// });
+	// private setFormatAttrs(mediaFormat: MediaFormat): void {
+	// 	type N = number | undefined;
 
-		(this.bytes as N) = mediaFormat.bytes ?? this.bytes;
-		(this.bitDepth as N) = mediaFormat.bitDepth ?? this.bitDepth;
-		(this.sampleRate as N) = mediaFormat.sampleRate ?? this.sampleRate;
-		(this.duration as N) = mediaFormat.duration ?? this.duration;
+	// 	(this.bytes as N) = mediaFormat.bytes ?? this.bytes;
+	// 	(this.bitDepth as N) = mediaFormat.bitDepth ?? this.bitDepth;
+	// 	(this.sampleRate as N) = mediaFormat.sampleRate ?? this.sampleRate;
+	// 	(this.duration as N) = mediaFormat.duration ?? this.duration;
 
-		(this.codec as string | undefined) = mediaFormat.codec ?? this.codec;
+	// 	(this.codec as string | undefined) = mediaFormat.codec ?? this.codec;
 
-		if (this.bytes && this.duration) (this.bitrate as number) ??= (this.bytes / this.duration) * 8;
+	// 	if (this.bytes && this.duration) (this.bitrate as number) ??= (this.bytes / this.duration) * 8;
 
-		runListeners(this, MediaItem.onFormatUpdateListeners, trace.err.withContext("setFormatAttrs.runListeners"));
-	}
-	private updateFormat: () => Promise<void> = asyncDebounce(async () => {
-		const playbackInfo = await this.playbackInfo();
+	// 	runListeners(this, MediaItem.onFormatUpdateListeners, trace.err.withContext("setFormatAttrs.runListeners"));
+	// }
+	// private updateFormat: () => Promise<void> = asyncDebounce(async () => {
+	// 	const playbackInfo = await this.playbackInfo();
 
-		const mediaFormat: MediaFormat = {};
+	// 	const mediaFormat: MediaFormat = {};
 
-		if (this.bitDepth === undefined || this.sampleRate === undefined || this.duration === undefined) {
-			const { format, bytes } = await parseStreamMeta(playbackInfo);
+	// 	if (this.bitDepth === undefined || this.sampleRate === undefined || this.duration === undefined) {
+	// 		const { format, bytes } = await parseStreamMeta(playbackInfo);
 
-			mediaFormat.bytes = bytes;
+	// 		mediaFormat.bytes = bytes;
 
-			mediaFormat.bitDepth = format.bitsPerSample ?? this.bitDepth;
-			mediaFormat.sampleRate = format.sampleRate ?? this.sampleRate;
-			mediaFormat.duration = format.duration ?? this.duration;
+	// 		mediaFormat.bitDepth = format.bitsPerSample ?? this.bitDepth;
+	// 		mediaFormat.sampleRate = format.sampleRate ?? this.sampleRate;
+	// 		mediaFormat.duration = format.duration ?? this.duration;
 
-			mediaFormat.codec = format.codec?.toLowerCase() ?? this.codec;
+	// 		mediaFormat.codec = format.codec?.toLowerCase() ?? this.codec;
 
-			if (playbackInfo.manifestMimeType === "application/dash+xml") {
-				mediaFormat.bitrate = playbackInfo.manifest.tracks.audios[0].bitrate.bps ?? this.bitrate;
-				mediaFormat.bytes = playbackInfo.manifest.tracks.audios[0].size?.b ?? this.bytes;
-			}
-		} else {
-			mediaFormat.bytes = (await getStreamBytes(playbackInfo)) ?? this.bytes;
-		}
+	// 		if (playbackInfo.manifestMimeType === "application/dash+xml") {
+	// 			mediaFormat.bitrate = playbackInfo.manifest.tracks.audios[0].bitrate.bps ?? this.bitrate;
+	// 			mediaFormat.bytes = playbackInfo.manifest.tracks.audios[0].size?.b ?? this.bytes;
+	// 		}
+	// 	} else {
+	// 		mediaFormat.bytes = (await getStreamBytes(playbackInfo)) ?? this.bytes;
+	// 	}
 
-		MediaItem.formatStore.put(mediaFormat).catch(trace.err.withContext("formatStore.put"));
-		this.setFormatAttrs(mediaFormat);
-	});
-	private loadFormat: () => Promise<void> = asyncDebounce(async () => {
-		const { value: mediaFormat } = await MediaItem.formatStore.getWithExpiry([+this.id, this.quality.audioQuality]);
-		if (mediaFormat) return this.setFormatAttrs(mediaFormat);
-		this.updateFormat();
-	});
+	// 	MediaItem.formatStore.put(mediaFormat).catch(trace.err.withContext("formatStore.put"));
+	// 	this.setFormatAttrs(mediaFormat);
+	// });
+	// private loadFormat: () => Promise<void> = asyncDebounce(async () => {
+	// 	const { value: mediaFormat } = await MediaItem.formatStore.getWithExpiry([+this.id, this.quality.audioQuality]);
+	// 	if (mediaFormat) return this.setFormatAttrs(mediaFormat);
+	// 	this.updateFormat();
+	// });
 
-	public readonly bytes?: number;
-	public readonly sampleRate?: number;
-	public readonly bitDepth?: number;
-	public readonly codec?: string;
-	public readonly bitrate?: number;
+	// public readonly bytes?: number;
+	// public readonly sampleRate?: number;
+	// public readonly bitDepth?: number;
+	// public readonly codec?: string;
+	// public readonly bitrate?: number;
 
 	// Listeners
 	private static readonly preloadListeners: Set<MediaItemListener> = new Set();
@@ -357,58 +361,56 @@ export class MediaItem extends ContentBase {
 
 	public static useTags: boolean = false;
 	public static useMax: boolean = false;
-	public static useFormat: boolean = false;
+	// public static useFormat: boolean = false;
 
 	private preload() {
 		if (MediaItem.useTags) this.flacTags();
 		if (MediaItem.useMax) this.max();
-		if (MediaItem.useFormat) this.loadFormat();
+		// if (MediaItem.useFormat) this.loadFormat();
 	}
 
 	static {
-		// Override readonly
-		(this.formatStore as any) = new SharedObjectStoreExpirable("TrackInfoCache", {
-			storeSchema: {
-				keyPath: ["trackId", "audioQuality"],
-			},
-			maxAge: 24 * 6 * 60 * 1000,
-		});
+		if (!EstrCache.store.MediaItem) {
+			// NOTE: Intercept calls will never be unloaded here as this is a global shared object.
+			// To reload this class you must restart the client
+			intercept(
+				// @ts-expect-error Neptune doesn't type this action
+				"player/PRELOAD_ITEM",
+				([item]: [{ productId?: string; productType?: "track" | "video" }]) => {
+					if (item.productId === undefined) return trace.warn("player/PRELOAD_ITEM intercepted without productId!", item);
+					this.fromId(item.productId, item.productType).then((mediaItem) => {
+						if (mediaItem === undefined) return;
+						mediaItem.preload();
+						runListeners(mediaItem, this.preloadListeners, trace.err.withContext("preloadItem.runListeners"));
+					});
+				}
+			);
 
-		// NOTE: Intercept calls will never be unloaded here as this is a global shared object.
-		// To reload this class you must restart the client
-		intercept(
-			// @ts-expect-error Neptune doesn't type this action
-			"player/PRELOAD_ITEM",
-			([item]: [{ productId?: string; productType?: "track" | "video" }]) => {
-				if (item.productId === undefined) return trace.warn("player/PRELOAD_ITEM intercepted without productId!", item);
-				this.fromId(item.productId, item.productType).then((mediaItem) => {
-					if (mediaItem === undefined) return;
-					mediaItem.preload();
-					runListeners(mediaItem, this.preloadListeners, trace.err.withContext("preloadItem.runListeners"));
-				});
-			}
-		);
+			const _onMediaTransition = asyncDebounce(async (playbackContext: PlaybackContext) => {
+				const mediaItem = await this.fromPlaybackContext(playbackContext);
+				if (mediaItem === undefined) return;
+				// Always update format info on playback
+				// if (this.useFormat) mediaItem.updateFormat();
+				await runListeners(mediaItem, this.mediaTransitionListeners, trace.err.withContext("mediaProductTransition.runListeners"));
+			});
+			intercept("playbackControls/MEDIA_PRODUCT_TRANSITION", ([{ playbackContext }]) => {
+				_onMediaTransition(playbackContext as PlaybackContext);
+			});
 
-		const _onMediaTransition = asyncDebounce(async (playbackContext: PlaybackContext) => {
-			const mediaItem = await this.fromPlaybackContext(playbackContext);
-			if (mediaItem === undefined) return;
-			// Always update format info on playback
-			if (this.useFormat) mediaItem.updateFormat();
-			await runListeners(mediaItem, this.mediaTransitionListeners, trace.err.withContext("mediaProductTransition.runListeners"));
-		});
-		intercept("playbackControls/MEDIA_PRODUCT_TRANSITION", ([{ playbackContext }]) => {
-			_onMediaTransition(playbackContext as PlaybackContext);
-		});
-
-		const _onPreMediaTransition = asyncDebounce(async (productId: ItemId, productType: MediaItemType) => {
-			const mediaItem = await this.fromId(productId, productType);
-			if (mediaItem === undefined) return;
-			mediaItem.preload();
-			await runListeners(mediaItem, this.preMediaTransitionListeners, trace.err.withContext("prefillMPT.runListeners"));
-		});
-		intercept("playbackControls/PREFILL_MEDIA_PRODUCT_TRANSITION", ([{ mediaProduct }]) => {
-			const { productId, productType } = mediaProduct as { productId: ItemId; productType: MediaItemType };
-			_onPreMediaTransition(productId, productType);
-		});
+			const _onPreMediaTransition = asyncDebounce(async (productId: ItemId, productType: MediaItemType) => {
+				const mediaItem = await this.fromId(productId, productType);
+				if (mediaItem === undefined) return;
+				mediaItem.preload();
+				await runListeners(mediaItem, this.preMediaTransitionListeners, trace.err.withContext("prefillMPT.runListeners"));
+			});
+			intercept("playbackControls/PREFILL_MEDIA_PRODUCT_TRANSITION", ([{ mediaProduct }]) => {
+				const { productId, productType } = mediaProduct as { productId: ItemId; productType: MediaItemType };
+				_onPreMediaTransition(productId, productType);
+			});
+		}
 	}
 }
+
+// @ts-expect-error
+MediaItem = EstrCache.store.MediaItem ??= MediaItem;
+export { MediaItem };

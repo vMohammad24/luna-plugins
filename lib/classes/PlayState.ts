@@ -8,6 +8,7 @@ import { MediaItem, runListeners } from "./MediaItem";
 
 import type { CoreState, TrackItem } from "neptune-types/tidal";
 import type { MediaItemAudioQuality } from "../classes/Quality";
+import { EstrCache } from "../EstrCache";
 
 export type PlaybackContext = {
 	actualAssetPresentation: string;
@@ -26,7 +27,7 @@ export type PlaybackContext = {
 
 type PlaybackControl = CoreState["playbackControls"] & { playbackContext: PlaybackContext };
 
-export class PlayState {
+class PlayState {
 	public static readonly MIN_SCROBBLE_DURATION = 240000; // 4 minutes in milliseconds
 	public static readonly MIN_SCROBBLE_PERCENTAGE = 0.5; // Minimum percentage of song duration required to scrobble
 	public static trackPlayTime: number = 0;
@@ -56,29 +57,31 @@ export class PlayState {
 	}
 
 	static {
-		intercept("playbackControls/SET_PLAYBACK_STATE", ([state]) => {
-			switch (state) {
-				case "PLAYING": {
-					this.lastPlayStart = Date.now();
-					break;
+		if (!EstrCache.store.PlayState) {
+			intercept("playbackControls/SET_PLAYBACK_STATE", ([state]) => {
+				switch (state) {
+					case "PLAYING": {
+						this.lastPlayStart = Date.now();
+						break;
+					}
+					default: {
+						if (this.lastPlayStart !== undefined) this.trackPlayTime += Date.now() - this.lastPlayStart;
+						delete this.lastPlayStart;
+					}
 				}
-				default: {
-					if (this.lastPlayStart !== undefined) this.trackPlayTime += Date.now() - this.lastPlayStart;
-					delete this.lastPlayStart;
-				}
-			}
-		});
-		MediaItem.onMediaTransition((mediaItem) => {
-			if (mediaItem.duration === undefined) return;
-			if (this.lastPlayStart !== undefined) this.trackPlayTime += Date.now() - this.lastPlayStart;
-			const longerThan4min = this.trackPlayTime >= this.MIN_SCROBBLE_DURATION;
-			const minPlayTime = mediaItem.duration * this.MIN_SCROBBLE_PERCENTAGE * 1000;
-			const moreThan50Percent = this.trackPlayTime >= minPlayTime;
-			if (longerThan4min || moreThan50Percent) runListeners(mediaItem, this.onScrobbleListeners, trace.err.withContext("onScrobble"));
+			});
+			MediaItem.onMediaTransition((mediaItem) => {
+				if (mediaItem.duration === undefined) return;
+				if (this.lastPlayStart !== undefined) this.trackPlayTime += Date.now() - this.lastPlayStart;
+				const longerThan4min = this.trackPlayTime >= this.MIN_SCROBBLE_DURATION;
+				const minPlayTime = mediaItem.duration * this.MIN_SCROBBLE_PERCENTAGE * 1000;
+				const moreThan50Percent = this.trackPlayTime >= minPlayTime;
+				if (longerThan4min || moreThan50Percent) runListeners(mediaItem, this.onScrobbleListeners, trace.err.withContext("onScrobble"));
 
-			// reset as we started playing a new one
-			this.trackPlayTime = 0;
-		});
+				// reset as we started playing a new one
+				this.trackPlayTime = 0;
+			});
+		}
 	}
 
 	private static readonly onScrobbleListeners: Set<MediaItemListener> = new Set();
@@ -87,3 +90,7 @@ export class PlayState {
 		return () => this.onScrobbleListeners.delete(cb);
 	}
 }
+
+// @ts-expect-error
+PlayState = EstrCache.store.PlayState ??= PlayState;
+export { PlayState };

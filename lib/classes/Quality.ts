@@ -54,7 +54,8 @@ export class Quality {
 		if (!qualityTags) return [];
 		return qualityTags.map((tag) => this.lookups.metadataTags[tag]);
 	}
-	public static fromAudioQuality(audioQuality: MediaItemAudioQuality) {
+	public static fromAudioQuality(audioQuality?: MediaItemAudioQuality) {
+		if (audioQuality === undefined) return undefined;
 		return this.lookups.audioQuality[audioQuality];
 	}
 

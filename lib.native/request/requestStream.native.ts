@@ -26,18 +26,18 @@ export const requestStream = async (url: string, options: ExtendedRequestOptions
 		}
 		const req = request(url, options, (res) => {
 			res.url = url;
-			const statusMsg = res.statusMessage !== "" ? ` - ${res.statusMessage}` : "";
+			const debugStatus = `[${req.method} ${res.statusCode} ${res.statusMessage !== "" ? ` - ${res.statusMessage}` : ""} in ${Date.now() - start}ms]`;
 			if (res.statusCode === 429 || res.statusCode === 503) {
 				const retryAfter = parseInt(res.headers["retry-after"] ?? "1", 10);
 				options.rateLimit!++;
-				trace.debug(`[${res.statusCode}${statusMsg}] (${req.method} - ${Date.now() - start}ms)`, `[Attempt ${options.rateLimit}, Retry in ${retryAfter}s]`, url);
+				trace.debug(debugStatus, `[Attempt ${options.rateLimit}, Retry in ${retryAfter}s]`, url, options);
 				return setTimeout(() => {
 					release?.();
 					requestStream(url, options).then(resolve, reject);
 				}, retryAfter * 1000);
 			}
-			if (options.rateLimit! > 0) trace.debug(`[${res.statusCode}${statusMsg}] (${req.method} - ${Date.now() - start}ms)`, `[After ${options.rateLimit} attempts]`, url);
-			else trace.debug(`[${res.statusCode}${statusMsg}] (${req.method} - ${Date.now() - start}ms)`, url);
+			if (options.rateLimit! > 0) trace.debug(debugStatus, `[After ${options.rateLimit} attempts]`, url, options);
+			else trace.debug(debugStatus, url, options);
 			resolve(res);
 		});
 		req.on("error", reject);

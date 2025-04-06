@@ -2,13 +2,13 @@ import { Tracer } from "../helpers/trace";
 const trace = Tracer("[lib.Album]");
 
 import { memoize } from "@inrixia/helpers";
+import { requestJson } from "@inrixia/lib.native";
 
 import { actions } from "@neptune";
 import type { ItemId, Album as TAlbum, MediaItem as TMediaItem } from "neptune-types/tidal";
 
 import type { IReleaseMatch } from "musicbrainz-api";
 
-import { requestJsonCached } from "../helpers/requestJsonCached";
 import { interceptPromise } from "../intercept/interceptPromise";
 
 import { Artist } from "./Artist";
@@ -32,7 +32,7 @@ export class Album extends ContentBase {
 	public brainzAlbum: () => Promise<IReleaseMatch | undefined> = memoize(async () => {
 		if (this.tidalAlbum.upc === undefined) return;
 
-		const brainzAlbum = await requestJsonCached<{ releases: IReleaseMatch[] }>(`https://musicbrainz.org/ws/2/release/?query=barcode:${this.tidalAlbum.upc}&fmt=json`)
+		const brainzAlbum = await requestJson<{ releases: IReleaseMatch[] }>(`https://musicbrainz.org/ws/2/release/?query=barcode:${this.tidalAlbum.upc}&fmt=json`)
 			.then(({ releases }) => releases[0])
 			.catch(trace.warn.withContext("getUPCReleases"));
 

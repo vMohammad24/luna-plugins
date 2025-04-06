@@ -1,12 +1,12 @@
 import { Tracer } from "../helpers/trace";
 const trace = Tracer("[lib.tidalApi]");
 
-import { requestJsonCached } from "../helpers/requestJsonCached";
+import { requestJson } from "@inrixia/lib.native";
 import { getToken } from "./auth";
 import { TApiTrack, TApiTracks } from "./types";
 
 const fetchTidal = async <T>(url: string) =>
-	requestJsonCached<T>(url, {
+	requestJson<T>(url, {
 		headers: {
 			Authorization: `Bearer ${await getToken()}`,
 			"Content-Type": "application/vnd.tidal.v1+json",

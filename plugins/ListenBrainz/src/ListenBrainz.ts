@@ -22,14 +22,14 @@ export class ListenBrainz {
 	public static updateNowPlaying(payload: NowPlayingPayload) {
 		// @ts-expect-error Ensure this doesnt exist
 		delete payload.listened_at;
-		return this.sendRequest({
+		return ListenBrainz.sendRequest({
 			listen_type: "playing_now",
 			payload: [payload],
 		});
 	}
 
 	public static scrobble(payload: Payload) {
-		return this.sendRequest({
+		return ListenBrainz.sendRequest({
 			listen_type: "single",
 			payload: [payload],
 		});

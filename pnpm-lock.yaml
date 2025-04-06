@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@inrixia/helpers':
-        specifier: ^3.3.0
-        version: 3.3.0
+        specifier: ^3.4.0
+        version: 3.4.0
       '@inrixia/lib':
         specifier: link:lib
         version: link:lib
@@ -70,9 +70,6 @@ importers:
 
   lib.native:
     dependencies:
-      '@inrixia/lib':
-        specifier: link:..\lib
-        version: link:../lib
       dasha:
         specifier: ^3.1.5
         version: 3.1.5
@@ -341,8 +338,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@inrixia/helpers@3.3.0':
-    resolution: {integrity: sha512-asBRMaWvva+VlW7hGiKH05q1bM2gkbbr01mI1bkq0BZBUNh41I/WEaTSNAxOKqGFBZgNRUsaSSfhwadNQo2wZA==}
+  '@inrixia/helpers@3.4.0':
+    resolution: {integrity: sha512-5kxakd+bcMwC2z70rNKpoUXY1w40yKXJEX0uet2gHkNywJ3QAnijD0M3VNJFOPxJElp+9DxJdQ5xeW5U3mkYbg==}
 
   '@jimp/bmp@0.22.12':
     resolution: {integrity: sha512-aeI64HD0npropd+AR76MCcvvRaa+Qck6loCOS03CkkxGHN5/r336qTM5HPUdHKMDOGzqknuVPA8+kK1t03z12g==}
@@ -1746,7 +1743,7 @@ snapshots:
   '@esbuild/win32-x64@0.25.2':
     optional: true
 
-  '@inrixia/helpers@3.3.0': {}
+  '@inrixia/helpers@3.4.0': {}
 
   '@jimp/bmp@0.22.12(@jimp/custom@0.22.12)':
     dependencies:

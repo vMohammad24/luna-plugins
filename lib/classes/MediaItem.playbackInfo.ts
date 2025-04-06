@@ -7,6 +7,7 @@ import { findModuleFunction } from "../helpers/findModuleFunction";
 
 import type { MediaItem } from "./MediaItem";
 import { PlaybackInfo, PlaybackInfoResponse, TidalManifest } from "./MediaItem.playbackInfo.types";
+import type { MediaItemAudioQuality } from "./Quality";
 
 const getCredentials = memoize(() => {
 	const getCredentials = findModuleFunction<() => Promise<{ token: string; clientId: string }>>("getCredentials", "function");
@@ -17,9 +18,9 @@ const getCredentials = memoize(() => {
 	return getCredentials;
 });
 
-export const getPlaybackInfo = async (mediaItem: MediaItem): Promise<PlaybackInfo> => {
+export const getPlaybackInfo = async (mediaItem: MediaItem, audioQuality: MediaItemAudioQuality): Promise<PlaybackInfo> => {
 	try {
-		const url = `https://desktop.tidal.com/v1/tracks/${mediaItem.id}/playbackinfo?audioquality=${mediaItem.quality.audioQuality}&playbackmode=STREAM&assetpresentation=FULL`;
+		const url = `https://desktop.tidal.com/v1/tracks/${mediaItem.id}/playbackinfo?audioquality=${audioQuality}&playbackmode=STREAM&assetpresentation=FULL`;
 
 		const { clientId, token } = await getCredentials()();
 		const playbackInfo: PlaybackInfoResponse = await fetch(url, {

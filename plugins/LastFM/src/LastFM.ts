@@ -58,7 +58,7 @@ export class LastFM {
 		params.method = method;
 		params.api_key = lastFmApiKey!;
 		params.format = "json";
-		params.api_sig = await this.generateApiSignature(params);
+		params.api_sig = await LastFM.generateApiSignature(params);
 
 		const data = await requestJson<ResponseType<T>>(`https://ws.audioscrobbler.com/2.0/`, {
 			headers: {
@@ -75,25 +75,25 @@ export class LastFM {
 
 	private static getSession = async (): Promise<LastFmSession> => {
 		if (storage.lastFmSession !== undefined) return storage.lastFmSession;
-		const { token } = await this.sendRequest<{ token: string }>("auth.getToken");
+		const { token } = await LastFM.sendRequest<{ token: string }>("auth.getToken");
 		window.open(`https://www.last.fm/api/auth/?api_key=${lastFmApiKey}&token=${token}`, "_blank");
 		const result = window.confirm("Continue with last.fm authentication? Ensure you have given TIDAL permission on the opened page.");
 		if (!result) throw new Error("Authentication cancelled");
-		const { session } = await this.sendRequest<{ session: LastFmSession }>("auth.getSession", { token });
+		const { session } = await LastFM.sendRequest<{ session: LastFmSession }>("auth.getSession", { token });
 		return (storage.lastFmSession = session);
 	};
 
 	public static async updateNowPlaying(opts: NowPlayingOpts) {
-		const session = await this.getSession();
-		return this.sendRequest<NowPlaying>("track.updateNowPlaying", {
+		const session = await LastFM.getSession();
+		return LastFM.sendRequest<NowPlaying>("track.updateNowPlaying", {
 			...opts,
 			sk: session.key,
 		});
 	}
 
 	public static async scrobble(opts?: ScrobbleOpts) {
-		const session = await this.getSession();
-		return this.sendRequest<Scrobble>("track.scrobble", {
+		const session = await LastFM.getSession();
+		return LastFM.sendRequest<Scrobble>("track.scrobble", {
 			...opts,
 			sk: session.key,
 		});
