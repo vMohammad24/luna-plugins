@@ -11,3 +11,4 @@ export * from "./components";
 export * from "./helpers";
 export * from "./intercept";
 export * from "./storage";
+export { fetchIsrcIterable } from "./tidalApi";

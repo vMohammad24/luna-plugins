@@ -210,7 +210,7 @@ class MediaItem extends ContentBase {
 			trace.warn("MediaItem quality called on non-track!", this);
 			return Quality.High;
 		}
-		return Quality.max(...Quality.fromMetaTags(this.tidalItem.mediaMetadata?.tags), Quality.fromAudioQuality(this.tidalItem.audioQuality) ?? Quality.High);
+		return Quality.max(...Quality.fromMetaTags(this.tidalItem.mediaMetadata?.tags), Quality.fromAudioQuality(this.tidalItem.audioQuality) ?? Quality.Lowest);
 	}
 
 	public title: () => Promise<string | undefined> = memoize(async () => {
@@ -247,26 +247,37 @@ class MediaItem extends ContentBase {
 	});
 
 	public flacTags: () => Promise<MetaTags> = memoize(() => makeTags(this));
+
+	public static fromIsrc: (isrc: string) => Promise<MediaItem | undefined> = memoize(async (isrc) => {
+		let bestMediaItem: MediaItem | undefined = undefined;
+		for await (const track of fetchIsrcIterable(isrc)) {
+			// If quality is higher than current best, set as best
+			const maxTrackQuality = Quality.max(...Quality.fromMetaTags(track.attributes.mediaTags as MediaMetadataTag[]));
+			if (maxTrackQuality > (bestMediaItem?.bestQuality ?? Quality.Lowest)) {
+				bestMediaItem = (await MediaItem.fromId(track.id)) ?? bestMediaItem;
+				if ((bestMediaItem?.bestQuality ?? Quality.Lowest) >= Quality.Max) return bestMediaItem;
+			}
+		}
+		return bestMediaItem;
+	});
 	public max: () => Promise<MediaItem | undefined> = memoize(async () => {
 		if (this.bestQuality >= Quality.Max) return;
 
 		const isrcs = await this.isrcs();
 		if (isrcs.size === 0) return;
 
-		let bestQuality: MediaItem = this;
+		let bestMediaItem: MediaItem = this;
 		for (const isrc of isrcs) {
-			for await (const track of fetchIsrcIterable(isrc)) {
-				// If quality is higher than current best, set as best
-				const maxTrackQuality = Quality.max(...Quality.fromMetaTags(track.attributes.mediaTags as MediaMetadataTag[]));
-				if (maxTrackQuality > bestQuality.bestQuality) {
-					bestQuality = (await MediaItem.fromId(track.id)) ?? bestQuality;
-					if (bestQuality.bestQuality >= Quality.Max) return bestQuality;
-				}
+			const mediaItem = await MediaItem.fromIsrc(isrc);
+			if (mediaItem && mediaItem?.bestQuality > bestMediaItem.bestQuality) {
+				bestMediaItem = mediaItem;
+				if (bestMediaItem.bestQuality >= Quality.Max) break;
 			}
 		}
+
 		// Dont return self
-		if (bestQuality.id === this.id) return undefined;
-		return bestQuality;
+		if (bestMediaItem.id === this.id) return undefined;
+		return bestMediaItem;
 	});
 
 	public playbackInfo: (audioQuality: MediaItemAudioQuality) => Promise<PlaybackInfo> = memoize(async (audioQuality) => {

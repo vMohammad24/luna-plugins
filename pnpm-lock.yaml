@@ -105,6 +105,22 @@ importers:
 
   plugins/NoBuffer: {}
 
+  plugins/Shazam:
+    dependencies:
+      '@inrixia/lib':
+        specifier: workspace:*
+        version: link:../../lib
+      shazamio-core:
+        specifier: ^1.3.1
+        version: 1.3.1
+      uuid:
+        specifier: ^11.1.0
+        version: 11.1.0
+    devDependencies:
+      '@types/uuid':
+        specifier: ^10.0.0
+        version: 10.0.0
+
   plugins/SmallWindow: {}
 
   plugins/Testing: {}
@@ -454,6 +470,9 @@ packages:
 
   '@types/responselike@1.0.3':
     resolution: {integrity: sha512-H/+L+UkTV33uf49PH5pCAUBVPNj2nDBXTN+qS1dOwyyg24l3CcicicCA7ca+HMvJBZcFgl5r8e+RR6elsb4Lyw==}
+
+  '@types/uuid@10.0.0':
+    resolution: {integrity: sha512-7gqG38EyHgyP1S+7+xomFtL+ZNHcKv6DwNaCZmJmo1vgMugyF3TCnXVg4t1uk89mLNwnLtnY3TpOpCOyp1/xHQ==}
 
   '@types/yauzl@2.10.3':
     resolution: {integrity: sha512-oJoftv0LSuaDZE3Le4DbKX+KS9G36NzOeSap90UIK0yMA/NhKJhqlSGtNDORNRaIbQfzjXDrQa0ytJ6mNRGz/Q==}
@@ -1337,6 +1356,9 @@ packages:
     engines: {node: '>= 14'}
     hasBin: true
 
+  shazamio-core@1.3.1:
+    resolution: {integrity: sha512-wzYxaL+Tzj4hv5UO1kCbJSjnL02rfcPqxtklf2vg1ykwE1U/FXpB83SRTS4/0OU2uTcVcvQN+xTqzwZQl4CIMg==}
+
   shebang-command@2.0.0:
     resolution: {integrity: sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==}
     engines: {node: '>=8'}
@@ -1882,6 +1904,8 @@ snapshots:
   '@types/responselike@1.0.3':
     dependencies:
       '@types/node': 22.14.0
+
+  '@types/uuid@10.0.0': {}
 
   '@types/yauzl@2.10.3':
     dependencies:
@@ -2835,6 +2859,8 @@ snapshots:
       update-check: 1.5.4
     transitivePeerDependencies:
       - supports-color
+
+  shazamio-core@1.3.1: {}
 
   shebang-command@2.0.0:
     dependencies:

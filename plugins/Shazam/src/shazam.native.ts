@@ -1,10 +1,11 @@
-import init from "shazamio-core/web";
-import { recognizeBytes, type DecodedSignature } from "shazamio-core/web";
+import init, { recognizeBytes, type DecodedSignature } from "shazamio-core/web";
 init();
 
 import { v4 } from "uuid";
 
-import { requestJsonCached } from "@inrixia/lib/native/request/requestJsonCached.native";
+import { memoize } from "@inrixia/helpers";
+import { requestJson } from "@inrixia/lib.native";
+
 import type { ShazamData } from "./api.types";
 
 export const using = async <T>(signatures: DecodedSignature[], fun: (signatures: ReadonlyArray<DecodedSignature>) => T) => {
@@ -13,15 +14,16 @@ export const using = async <T>(signatures: DecodedSignature[], fun: (signatures:
 	return ret;
 };
 
-export const fetchShazamData = async (signature: { samplems: number; uri: string }) =>
-	requestJsonCached<ShazamData>(
+export const fetchShazamData = memoize(async (signature: { samplems: number; uri: string }) =>
+	requestJson<ShazamData>(
 		`https://amp.shazam.com/discovery/v5/en-US/US/iphone/-/tag/${v4()}/${v4()}?sync=true&webv3=true&sampling=true&connected=&shazamapiversion=v3&sharehub=true&hubv5minorversion=v5.1&hidelb=true&video=v3`,
 		{
 			headers: { "Content-Type": "application/json" },
 			method: "POST",
 			body: JSON.stringify({ signature }),
 		}
-	);
+	)
+);
 
 type Opts = {
 	bytes: ArrayBuffer;
