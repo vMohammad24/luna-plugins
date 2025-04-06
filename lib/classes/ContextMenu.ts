@@ -4,58 +4,70 @@ const trace = Tracer("[lib.ContextMenu]");
 import { runFor } from "@inrixia/helpers";
 import { intercept } from "@neptune";
 
-import { Album } from "./Album";
-import { MediaItem } from "./MediaItem";
-import { Playlist } from "./Playlist";
-
-import styles from "file://contentButton.css?minify";
+import styles from "file://ContextMenu.css?minify";
+import { EstrCache } from "../EstrCache";
 import { StyleTag } from "../helpers/StyleTag";
+
+import { Album } from "./Album";
+import { MediaItems } from "./MediaCollection";
+import { Playlist } from "./Playlist";
 
 new StyleTag(styles, "content-button");
 
-type Item = MediaItem | Album | Playlist;
-type ContextListener = (item: Item[], contextMenu: Element) => Promise<void>;
-export class ContextMenu {
-	private static readonly _intercepts = [
-		intercept(`contextMenu/OPEN_MEDIA_ITEM`, ([mediaItem]) => this._onOpen([MediaItem.fromId(mediaItem.id)])),
-		intercept(`contextMenu/OPEN_MULTI_MEDIA_ITEM`, ([mediaItems]) => this._onOpen(mediaItems.ids.map((itemId) => MediaItem.fromId(itemId)))),
-		intercept("contextMenu/OPEN", ([info]) => {
-			switch (info.type) {
-				case "ALBUM": {
-					return this._onOpen([Album.fromId(info.id)]);
-				}
-				case "PLAYLIST": {
-					return this._onOpen([Playlist.fromId(info.id)]);
-				}
-			}
-		}),
-	];
-	private static _onOpen(estrItems: Promise<Item | undefined>[]): void {
-		// Queue to eventloop to ensure element exists on document
-		setTimeout(async () => {
-			let contextMenu: Element | null;
-			// Try get menu from dom for 1s
-			await runFor(() => {
-				contextMenu = document.querySelector(`[data-type="list-container__context-menu"]`);
-				if (contextMenu !== null) return true;
-			}, 1000);
-			if (contextMenu! === null) return;
+type ContextHandler<T> = (item: T, contextMenu: Element) => Promise<void>;
+class ContextMenu {
+	// Must be async to Queue to eventloop to ensure element exists on document
+	private static async getContextMenu() {
+		let contextMenu: Element | null = null;
+		// Try get menu from dom for 1s
+		await runFor(() => {
+			contextMenu = document.querySelector(`[data-type="list-container__context-menu"]`);
+			if (contextMenu !== null) return true;
+		}, 1000);
+		return contextMenu;
+	}
 
-			const fEstrItems = [];
-			for (const estrItem of estrItems) {
-				const item = await estrItem.catch(trace.err.withContext("onOpen"));
-				if (item) fEstrItems.push(item);
+	private static runListners<T>(listeners: Set<ContextHandler<T>>) {
+		return async (items?: T) => {
+			if (items === undefined) return;
+			const contextMenu = await ContextMenu.getContextMenu();
+			if (contextMenu === null) return;
+			for (const listener of listeners) {
+				listener(items, contextMenu).catch(trace.err.withContext("Executing listener", items, contextMenu));
 			}
-			for (const listener of this._listeners) {
-				listener(fEstrItems, contextMenu!).catch(trace.err.withContext("Executing listener", fEstrItems, contextMenu!));
-			}
-		});
+		};
 	}
-	private static _listeners: ContextListener[] = [];
-	public static onOpen(listener: ContextListener): void {
-		ContextMenu._listeners.push(listener);
+
+	private static _onOpen: Set<ContextHandler<MediaItems | Album | Playlist>> = new Set();
+	public static onOpen(cb: ContextHandler<MediaItems | Album | Playlist>): () => void {
+		ContextMenu._onOpen.add(cb);
+		return () => ContextMenu._onOpen.delete(cb);
 	}
-	public static onUnload(): void {
-		this._intercepts.forEach((unload) => unload());
+
+	static {
+		if (!EstrCache.store.ContextMenu) {
+			intercept(`contextMenu/OPEN_MEDIA_ITEM`, ([item]) => {
+				ContextMenu.runListners(ContextMenu._onOpen)(MediaItems.fromIds([item.id]));
+			});
+			intercept(`contextMenu/OPEN_MULTI_MEDIA_ITEM`, ([items]) => {
+				ContextMenu.runListners(ContextMenu._onOpen)(MediaItems.fromIds(items.ids));
+			});
+			intercept("contextMenu/OPEN", ([info]) => {
+				switch (info.type) {
+					case "ALBUM": {
+						Album.fromId(info.id).then(ContextMenu.runListners(ContextMenu._onOpen)).catch(trace.err.withContext("contextMenu/OPEN", "Album", info));
+						break;
+					}
+					case "PLAYLIST": {
+						Playlist.fromId(info.id).then(ContextMenu.runListners(ContextMenu._onOpen)).catch(trace.err.withContext("contextMenu/OPEN", "Playlist", info));
+						break;
+					}
+				}
+			});
+		}
 	}
 }
+
+// @ts-expect-error
+ContextMenu = EstrCache.store.ContextMenu ??= ContextMenu;
+export { ContextMenu };

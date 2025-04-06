@@ -24,8 +24,8 @@ import { Album } from "./Album";
 import { Artist } from "./Artist";
 import { type PlaybackContext } from "./PlayState";
 
-export type MediaItemListener = (mediaItem: MediaItem) => unknown;
-export const runListeners = (item: MediaItem, listeners: Set<MediaItemListener>, errorHandler: typeof console.error) => {
+export type MediaItemHandler = (mediaItem: MediaItem) => unknown;
+export const runListeners = (item: MediaItem, listeners: Set<MediaItemHandler>, errorHandler: typeof console.error) => {
 	const listenerPromises = [];
 	for (const listener of listeners) {
 		try {
@@ -52,7 +52,7 @@ type MediaFormat = {
 	bitrate?: number;
 };
 
-type MediaItemType = TMediaItem["type"];
+export type TMediaItemBase = { item: { id?: ItemId }; type?: TMediaItem["type"] };
 
 class MediaItem extends ContentBase {
 	public readonly tidalItem: Readonly<TMediaItem["item"]>;
@@ -62,7 +62,7 @@ class MediaItem extends ContentBase {
 		this.tidalItem = tidalMediaItem.item;
 		this.duration = this.tidalItem.duration;
 	}
-	private static async tryLoad(itemId: ItemId, contentType: MediaItemType) {
+	private static async tryLoad(itemId: ItemId, contentType: TMediaItem["type"]) {
 		const currentPage = window.location.pathname;
 		const loadedTrack = await interceptPromise(() => neptune.actions.router.replace(<any>`/track/${itemId}`), ["page/IS_DONE_LOADING"], [])
 			.then(() => true)
@@ -74,7 +74,7 @@ class MediaItem extends ContentBase {
 		setTimeout(() => neptune.actions.router.replace(<any>currentPage));
 	}
 
-	public static async fromId(itemId?: ItemId, contentType: MediaItemType = "track"): Promise<MediaItem | undefined> {
+	public static async fromId(itemId?: ItemId, contentType: TMediaItem["type"] = "track"): Promise<MediaItem | undefined> {
 		if (itemId === undefined) return;
 		const mediaItem = super.fromStore(itemId, "mediaItems", this);
 		if (mediaItem !== undefined) return mediaItem;
@@ -82,14 +82,6 @@ class MediaItem extends ContentBase {
 		// Try force Tidal client to load mediaItem into store
 		await this.tryLoad(itemId, contentType);
 		return super.fromStore(itemId, "mediaItems", this);
-	}
-	public static async fromTMediaItems(tMediaItems: TMediaItem[]): Promise<MediaItem[]> {
-		const mediaItems = [];
-		for (const tMediaItem of tMediaItems) {
-			const mediaItem = await this.fromId(tMediaItem.item.id, tMediaItem.type);
-			if (mediaItem !== undefined) mediaItems.push(mediaItem);
-		}
-		return mediaItems;
 	}
 	public static async fromPlaybackContext(playbackContext?: PlaybackContext) {
 		// This has to be here to avoid ciclic requirements breaking
@@ -103,6 +95,20 @@ class MediaItem extends ContentBase {
 		// 	codec: playbackContext.codec ?? undefined,
 		// });
 		return mediaItem;
+	}
+	public static async *fromIds(ids?: (ItemId | undefined)[]) {
+		if (ids === undefined) return;
+		for (const itemId of ids.filter((id) => id !== undefined)) {
+			const mediaItem = await MediaItem.fromId(itemId);
+			if (mediaItem !== undefined) yield mediaItem;
+		}
+	}
+	public static async *fromTMediaItems(tMediaItems?: (TMediaItemBase | undefined)[]) {
+		if (tMediaItems === undefined) return;
+		for (const tMediaItem of tMediaItems.filter((tMediaItem) => tMediaItem !== undefined)) {
+			const mediaItem = await MediaItem.fromId(tMediaItem.item.id, tMediaItem.type);
+			if (mediaItem !== undefined) yield mediaItem;
+		}
 	}
 
 	public album: () => Promise<Album | undefined> = memoize(async () => {
@@ -346,24 +352,24 @@ class MediaItem extends ContentBase {
 	// public readonly bitrate?: number;
 
 	// Listeners
-	private static readonly preloadListeners: Set<MediaItemListener> = new Set();
-	public static onPreload(cb: MediaItemListener) {
+	private static readonly preloadListeners: Set<MediaItemHandler> = new Set();
+	public static onPreload(cb: MediaItemHandler) {
 		this.preloadListeners.add(cb);
 		return () => this.preloadListeners.delete(cb);
 	}
-	private static readonly mediaTransitionListeners: Set<MediaItemListener> = new Set();
-	public static onMediaTransition(cb: MediaItemListener) {
+	private static readonly mediaTransitionListeners: Set<MediaItemHandler> = new Set();
+	public static onMediaTransition(cb: MediaItemHandler) {
 		this.mediaTransitionListeners.add(cb);
 		return () => this.mediaTransitionListeners.delete(cb);
 	}
-	private static readonly preMediaTransitionListeners: Set<MediaItemListener> = new Set();
+	private static readonly preMediaTransitionListeners: Set<MediaItemHandler> = new Set();
 	/** Warning! Not always called, dont rely on this over onMediaTransition */
-	public static onPreMediaTransition(cb: MediaItemListener) {
+	public static onPreMediaTransition(cb: MediaItemHandler) {
 		this.preMediaTransitionListeners.add(cb);
 		return () => this.preMediaTransitionListeners.delete(cb);
 	}
-	private static readonly onFormatUpdateListeners: Set<MediaItemListener> = new Set();
-	public static onFormatUpdate(cb: MediaItemListener) {
+	private static readonly onFormatUpdateListeners: Set<MediaItemHandler> = new Set();
+	public static onFormatUpdate(cb: MediaItemHandler) {
 		this.onFormatUpdateListeners.add(cb);
 		return () => this.onFormatUpdateListeners.delete(cb);
 	}
@@ -406,14 +412,14 @@ class MediaItem extends ContentBase {
 				_onMediaTransition(playbackContext as PlaybackContext);
 			});
 
-			const _onPreMediaTransition = asyncDebounce(async (productId: ItemId, productType: MediaItemType) => {
+			const _onPreMediaTransition = asyncDebounce(async (productId: ItemId, productType: TMediaItem["type"]) => {
 				const mediaItem = await this.fromId(productId, productType);
 				if (mediaItem === undefined) return;
 				mediaItem.preload();
 				await runListeners(mediaItem, this.preMediaTransitionListeners, trace.err.withContext("prefillMPT.runListeners"));
 			});
 			intercept("playbackControls/PREFILL_MEDIA_PRODUCT_TRANSITION", ([{ mediaProduct }]) => {
-				const { productId, productType } = mediaProduct as { productId: ItemId; productType: MediaItemType };
+				const { productId, productType } = mediaProduct as { productId: ItemId; productType: TMediaItem["type"] };
 				_onPreMediaTransition(productId, productType);
 			});
 		}

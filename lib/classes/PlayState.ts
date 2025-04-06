@@ -3,7 +3,7 @@ const trace = Tracer("[lib.PlayState]");
 
 import { intercept } from "@neptune";
 
-import type { MediaItemListener } from "./MediaItem";
+import type { MediaItemHandler } from "./MediaItem";
 import { MediaItem, runListeners } from "./MediaItem";
 
 import type { CoreState, TrackItem } from "neptune-types/tidal";
@@ -84,8 +84,8 @@ class PlayState {
 		}
 	}
 
-	private static readonly onScrobbleListeners: Set<MediaItemListener> = new Set();
-	public static onScrobble(cb: MediaItemListener) {
+	private static readonly onScrobbleListeners: Set<MediaItemHandler> = new Set();
+	public static onScrobble(cb: MediaItemHandler) {
 		this.onScrobbleListeners.add(cb);
 		return () => this.onScrobbleListeners.delete(cb);
 	}

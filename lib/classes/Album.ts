@@ -15,7 +15,9 @@ import { Artist } from "./Artist";
 import { ContentBase, type TImageSize } from "./ContentBase";
 import { MediaItem } from "./MediaItem";
 
-export class Album extends ContentBase {
+import type { MediaCollection } from "./MediaCollection";
+
+export class Album extends ContentBase implements MediaCollection {
 	constructor(public readonly id: ItemId, public readonly tidalAlbum: TAlbum) {
 		super();
 	}
@@ -64,7 +66,13 @@ export class Album extends ContentBase {
 		return this.tidalAlbum.artists?.map((artist) => Artist.fromId(artist.id)) ?? [];
 	});
 
-	public mediaItems: () => Promise<MediaItem[]> = memoize(async () => {
+	public async mediaItemsCount() {
+		return (await this.tMediaItems()).length;
+	}
+	public async mediaItems() {
+		return MediaItem.fromTMediaItems(await this.tMediaItems());
+	}
+	public tMediaItems: () => Promise<TMediaItem[]> = memoize(async () => {
 		const result = await interceptPromise(
 			() => actions.content.loadAllAlbumMediaItems({ albumId: this.tidalAlbum.id! }),
 			["content/LOAD_ALL_ALBUM_MEDIA_ITEMS_SUCCESS"],
@@ -72,7 +80,7 @@ export class Album extends ContentBase {
 		).catch(trace.warn.withContext("getMediaItems.interceptPromise", this));
 		const tMediaItems = <Immutable.List<TMediaItem>>result?.[0]?.mediaItems;
 		if (tMediaItems === undefined) return [];
-		return MediaItem.fromTMediaItems(Array.from(tMediaItems));
+		return Array.from(tMediaItems);
 	});
 
 	public coverUrl(res?: TImageSize) {

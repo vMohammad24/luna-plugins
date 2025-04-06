@@ -1,5 +1,6 @@
 export { Album } from "./classes/Album";
 export { Artist } from "./classes/Artist";
+export { ContextMenu } from "./classes/ContextMenu";
 export { MediaItem } from "./classes/MediaItem";
 export { Playlist } from "./classes/Playlist";
 export { PlayState } from "./classes/PlayState";
