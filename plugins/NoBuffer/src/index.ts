@@ -14,6 +14,5 @@ const onStalled = asyncDebounce(async () => {
 	await voidTrack(await mediaItem?.playbackInfo(Quality.Max.audioQuality)).catch(trace.err.withContext("voidTrack"));
 });
 export const onUnload = intercept("playbackControls/SET_PLAYBACK_STATE", ([state]) => {
-	// if (state === "STALLED") onStalled();
-	onStalled();
+	if (state === "STALLED") onStalled();
 });
