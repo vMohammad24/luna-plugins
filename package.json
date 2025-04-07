@@ -5,7 +5,7 @@
 	"scripts": {
 		"watch": "concurrently npm:build npm:serve",
 		"build": "tsx build/build.ts",
-		"serve": "serve -L -C ./dist"
+		"serve": "http-server ./dist -p 3000 -s --cors -c-1"
 	},
 	"devDependencies": {
 		"@types/clean-css": "^4.2.11",
@@ -17,7 +17,6 @@
 		"esbuild": "^0.25.2",
 		"html-minifier-terser": "^7.2.0",
 		"neptune-types": "^1.0.1",
-		"serve": "^14.2.4",
 		"tsx": "^4.19.3",
 		"typescript": "^5.8.3"
 	},
@@ -35,6 +34,7 @@
 	"dependencies": {
 		"@inrixia/helpers": "^3.4.0",
 		"@inrixia/lib": "link:lib",
-		"@inrixia/lib.native": "link:lib.native"
+		"@inrixia/lib.native": "link:lib.native",
+		"http-server": "^14.1.1"
 	}
 }
