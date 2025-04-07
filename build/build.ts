@@ -39,7 +39,13 @@ const neptuneOutput = (pluginPackage: PluginPackage): Plugin => ({
 					})
 				),
 			]);
-			console.log(`[Plugin] ${pluginPackage.displayName} built!`);
+
+			const fileSizeInBytes = outputFile.contents.byteLength;
+			const kB = 1024;
+			const showInkB = fileSizeInBytes < kB * kB; // 1 MB in bytes
+			const fileSizeDisp = showInkB ? `${(fileSizeInBytes / kB).toFixed(2)}kB` : `${(fileSizeInBytes / (kB * kB)).toFixed(2)}mB`;
+
+			console.log(`Built [${outputFile.hash}] ${fileSizeDisp} ${pluginPackage.displayName}!`);
 		});
 	},
 });

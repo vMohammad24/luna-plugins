@@ -15,6 +15,6 @@ export const buildThemes = async () => {
 		const comment = `/*${JSON.stringify(manifest)}*/`;
 
 		await writeFile(path.join("./dist/themes", themePath), comment + css);
-		console.log(`[Theme] ${manifest.name} built!`);
+		console.log(`Built theme ${manifest.name} built!`);
 	});
 };
