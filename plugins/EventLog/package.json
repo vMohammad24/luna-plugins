@@ -1,0 +1,6 @@
+{
+	"displayName": "EventLog",
+	"description": "Dumps render/native events into console for debugging",
+	"author": "Inrixia",
+	"main": "./src/index.js"
+}
