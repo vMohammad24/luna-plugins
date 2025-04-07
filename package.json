@@ -3,8 +3,8 @@
 	"description": "Plugins for Neptune writtern by @inrixia",
 	"type": "module",
 	"scripts": {
-		"watch": "concurrently nodemon npm:serve",
-		"build": "tsx build.ts",
+		"watch": "concurrently npm:build npm:serve",
+		"build": "tsx build/build.ts",
 		"serve": "serve -L -C ./dist"
 	},
 	"devDependencies": {
@@ -17,7 +17,6 @@
 		"esbuild": "^0.25.2",
 		"html-minifier-terser": "^7.2.0",
 		"neptune-types": "^1.0.1",
-		"nodemon": "^3.1.9",
 		"serve": "^14.2.4",
 		"tsx": "^4.19.3",
 		"typescript": "^5.8.3"
