@@ -1,0 +1,5 @@
+{
+	"dependencies": {
+		"@xhayper/discord-rpc": "^1.2.1"
+	}
+}

@@ -1,9 +1,0 @@
-{
-	"displayName": "Discord RPC",
-	"description": "Shows what song you're currently listening to on Discord.",
-	"author": "Inrixia",
-	"main": "./src/index.js",
-	"dependencies": {
-		"@xhayper/discord-rpc": "^1.2.1"
-	}
-}

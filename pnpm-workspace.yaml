@@ -1,4 +1,5 @@
 packages:
  - "plugins/*"
- - "lib"
- - "lib.native"
+ - "plugins/Triton/lib"
+ - "plugins/Triton/lib.native"
+ - "plugins/Triton/plugins/*"

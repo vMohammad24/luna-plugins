@@ -3,38 +3,23 @@
 	"description": "Plugins for Neptune writtern by @inrixia",
 	"type": "module",
 	"scripts": {
-		"watch": "concurrently npm:build npm:serve",
-		"build": "tsx build/build.ts",
+		"watch": "set NODE_ENV=development && concurrently npm:build npm:serve",
+		"build": "rimraf ./dist && tsx build/build.ts",
 		"serve": "http-server ./dist -p 3000 -s --cors -c-1"
 	},
 	"devDependencies": {
+		"@inrixia/helpers": "^3.4.0",
 		"@types/clean-css": "^4.2.11",
 		"@types/html-minifier-terser": "^7.0.2",
 		"@types/node": "^22.14.0",
 		"clean-css": "^5.3.3",
 		"concurrently": "^9.1.2",
-		"electron": "^35.1.4",
 		"esbuild": "^0.25.2",
 		"html-minifier-terser": "^7.2.0",
+		"http-server": "^14.1.1",
 		"neptune-types": "^1.0.1",
+		"rimraf": "^6.0.1",
 		"tsx": "^4.19.3",
 		"typescript": "^5.8.3"
-	},
-	"nodemonConfig": {
-		"watch": [
-			"./plugins/**",
-			"./build.ts",
-			"./lib",
-			"./lib.native"
-		],
-		"ignore": "**/dist/**",
-		"ext": "*",
-		"exec": "npm run build"
-	},
-	"dependencies": {
-		"@inrixia/helpers": "^3.4.0",
-		"@inrixia/lib": "link:lib",
-		"@inrixia/lib.native": "link:lib.native",
-		"http-server": "^14.1.1"
 	}
 }

@@ -1,6 +1,0 @@
-{
-	"displayName": "NoBuffer",
-	"description": "If a track stalls prompt the tidal CDN to load the entire track",
-	"author": "Inrixia",
-	"main": "./src/index.js"
-}

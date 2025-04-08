@@ -1,6 +1,0 @@
-{
-	"displayName": "ListenBrainz",
-	"description": "Custom ListenBrainz scrobbler",
-	"author": "Inrixia",
-	"main": "./src/index.js"
-}

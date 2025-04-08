@@ -1,6 +1,0 @@
-{
-	"displayName": "Always Exclusive",
-	"description": "While enabled will ensure that audio output is set to exclusive mode",
-	"author": "Inrixia",
-	"main": "./src/index.js"
-}

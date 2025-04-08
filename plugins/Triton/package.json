@@ -1,14 +1,18 @@
 {
 	"displayName": "Triton",
-	"description": "One Plugin to rule them all",
+	"description": "One plugin to rule them all",
 	"author": "Inrixia",
 	"main": "./src/index.js",
-	"dependencies": {
+	"devDependencies": {
 		"@emotion/react": "^11.14.0",
 		"@emotion/styled": "^11.14.0",
+		"@inrixia/helpers": "^3.4.0",
 		"@mui/material": "^7.0.1",
+		"@triton/lib.native": "link:lib.native",
+		"@triton/lib": "link:lib",
 		"@types/react": "^19.1.0",
 		"@types/react-dom": "^19.1.1",
+		"@uwu/quartz": "^1.5.0",
 		"react": "^19.1.0",
 		"react-dom": "^19.1.0"
 	}

@@ -1,6 +1,3 @@
-import { Tracer } from "@inrixia/lib";
-const trace = Tracer("[LiveReload]");
-
 import { pluginStore, reloadPlugin } from "@neptune/plugins";
 import type { PluginManifest } from "neptune-types/api/plugins";
 
@@ -12,7 +9,7 @@ const checkPlugins = async () => {
 			const { hash, name }: PluginManifest = await fetch(`${new URL(plugin.id).href}/manifest.json`).then((res) => res.json());
 			if (hash !== plugin.manifest.hash) {
 				await reloadPlugin(plugin);
-				trace.msg.log(`Reloaded ${name}!`);
+				console.log(`Reloaded ${name}!`);
 			}
 		}
 	} catch {}

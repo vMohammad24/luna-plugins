@@ -1,6 +1,0 @@
-{
-	"displayName": "Small Window",
-	"description": "Removes the minimum width and height limits on the window.",
-	"author": "Nick Oates",
-	"main": "./src/index.js"
-}

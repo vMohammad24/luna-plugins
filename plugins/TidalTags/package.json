@@ -1,9 +1,0 @@
-{
-	"displayName": "Tidal Tags",
-	"description": "Adds tags showing track qualities and current song quality.",
-	"author": "Inrixia",
-	"main": "./src/index.js",
-	"dependencies": {
-		"@inrixia/lib": "workspace:*"
-	}
-}

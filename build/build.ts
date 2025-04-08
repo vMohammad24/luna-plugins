@@ -1,70 +1,67 @@
-import { context, Plugin } from "esbuild";
+import { context } from "esbuild";
 
-import { mkdir, readdir, readFile, writeFile } from "fs/promises";
+import { readdir, readFile } from "fs/promises";
 import path from "path";
 
-import { fileUrl } from "./fileUrl";
-import { neptuneNativeImports } from "./native";
+import { fileUrlPlugin } from "./plugins/fileUrl";
+import { type PluginPackage, writeNeptunePlugin } from "./plugins/lib/writeNeptunePlugin";
+import { neptuneNativePlugin } from "./plugins/native";
+import { neptuneOutput } from "./plugins/neptuneOutput";
+import { tritonOutput } from "./plugins/tritonOutput";
 import { buildThemes } from "./themes";
 
-const minify = true;
+export const minify = !process.env.NODE_ENV?.startsWith("development");
+console.log(process.env.NODE_ENV, minify);
 
 buildThemes();
 
-const pluginsRoot = "./plugins/";
+const migrateToTriton = await readFile("./build/migrateToTriton.js");
+// TODO: Put all original plugins here for migration
+for (const depricated of []) {
+	await writeNeptunePlugin(
+		{
+			path: path.join("./dist", depricated, "index.js"),
+			contents: migrateToTriton,
+			hash: Math.random().toString(),
+		},
+		{}
+	);
+}
 
-type PluginPackage = {
-	displayName?: string;
-	description?: string;
-	author?: string;
-	main?: string;
-};
-const neptuneOutput = (pluginPackage: PluginPackage): Plugin => ({
-	name: "neptuneManifest",
-	setup(build) {
-		build.onEnd(async (result) => {
-			if (result.errors.length > 0) throw new Error(JSON.stringify(result.errors));
-			const outputFile = result.outputFiles?.[0]!;
-			const outDir = path.dirname(outputFile.path);
-			await mkdir(outDir, { recursive: true });
-			await Promise.all([
-				writeFile(outputFile.path, outputFile.contents),
-				writeFile(
-					path.join(outDir, "manifest.json"),
-					JSON.stringify({
-						name: pluginPackage.displayName ?? "",
-						description: pluginPackage.description ?? "",
-						author: pluginPackage.author ?? "",
-						hash: outputFile.hash,
-					})
-				),
-			]);
-
-			const fileSizeInBytes = outputFile.contents.byteLength;
-			const kB = 1024;
-			const showInkB = fileSizeInBytes < kB * kB; // 1 MB in bytes
-			const fileSizeDisp = showInkB ? `${(fileSizeInBytes / kB).toFixed(2)}kB` : `${(fileSizeInBytes / (kB * kB)).toFixed(2)}mB`;
-
-			console.log(`Built [${outputFile.hash}] ${fileSizeDisp} ${pluginPackage.displayName}!`);
-		});
-	},
-});
-
-const plugins = await readdir(pluginsRoot);
-plugins.map(async (plugin) => {
-	const pluginPackage = await readFile(path.join(pluginsRoot, plugin, "package.json"), "utf8").then(JSON.parse);
-
+// Build Triton modules
+const tritonModulesDir = "./plugins/Triton/modules";
+const tritonModules = await readdir(tritonModulesDir);
+tritonModules.map(async (moduleName) => {
 	const ctx = await context({
-		entryPoints: ["./" + path.join(pluginsRoot, plugin, pluginPackage.main ?? "index.js")],
-		plugins: [fileUrl, neptuneNativeImports, neptuneOutput(pluginPackage)],
+		entryPoints: ["./" + path.join(tritonModulesDir, moduleName, "src/index.js")],
+		plugins: [fileUrlPlugin, neptuneNativePlugin, tritonOutput(moduleName)],
 		bundle: true,
 		write: false,
 		minify,
 		format: "esm",
-		external: ["@neptune", "@plugin"],
+		// Triton plugins will use @triton/lib off window, which is set by Triton
+		external: ["@neptune", "@plugin", "electron", "@triton/lib"],
 		platform: "browser",
-		outfile: path.join("./dist", plugin, "index.js"),
+		outfile: `./dist/tritonModules/${moduleName}.js`,
 	});
+	ctx.watch();
+});
 
-	await ctx.watch();
+// Build Neptune plugins
+const neptunePluginsDir = "./plugins";
+const neptunePlugins = await readdir(neptunePluginsDir);
+neptunePlugins.map(async (pluginName) => {
+	const pluginPackage: PluginPackage = await readFile(path.join(neptunePluginsDir, pluginName, "package.json"), "utf8").then(JSON.parse);
+	const ctx = await context({
+		entryPoints: ["./" + path.join(neptunePluginsDir, pluginName, pluginPackage.main ?? "index.js")],
+		plugins: [fileUrlPlugin, neptuneNativePlugin, neptuneOutput(pluginPackage)],
+		bundle: true,
+		write: false,
+		minify,
+		format: "esm",
+		external: ["@neptune", "@plugin", "electron"],
+		platform: "browser",
+		outfile: path.join("./dist", pluginName, "index.js"),
+	});
+	ctx.watch();
 });
