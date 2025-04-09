@@ -1,19 +1,19 @@
 import { pluginStore, reloadPlugin } from "@neptune/plugins";
 import type { PluginManifest } from "neptune-types/api/plugins";
 
-const checkPlugins = async () => {
-	try {
-		for (const plugin of pluginStore) {
-			if (!plugin.enabled) continue;
-
+let running = true;
+while (running) {
+	for (const plugin of pluginStore) {
+		if (!plugin.enabled) continue;
+		try {
 			const { hash, name }: PluginManifest = await fetch(`${new URL(plugin.id).href}/manifest.json`).then((res) => res.json());
 			if (hash !== plugin.manifest.hash) {
 				await reloadPlugin(plugin);
 				console.log(`Reloaded ${name}!`);
 			}
-		}
-	} catch {}
-};
+		} catch {}
+	}
+	await new Promise((res) => setTimeout(res, 1000));
+}
 
-const interval = setInterval(checkPlugins, 1000);
-export const onUnload = () => clearInterval(interval);
+export const onUnload = () => (running = false);

@@ -3,7 +3,7 @@ import type { default as Quartz } from "@uwu/quartz";
 import { quartz } from "@neptune";
 import { id } from "@plugin";
 
-import { fetchText, getStorage, registerEmitter, tritonTracer, tritonUnloads, unloadIt, type AddReceiver, type EmitEvent, type Unload } from "@triton/lib";
+import { fetchText, getStorage, registerEmitter, tritonTracer, tritonUnloads, unloadIt, type AddReceiver, type Emit, type Unload } from "@triton/lib";
 
 // Ensure that @triton/lib is loaded onto window for plugins to use shared memory space
 import * as TritonLib from "@triton/lib";
@@ -48,19 +48,23 @@ export class TritonModule implements TritonModuleBase {
 	}
 	public set hash(value) {
 		moduleCache[this.uri] ??= {};
-		moduleCache[this.uri].code = value;
+		moduleCache[this.uri].hash = value;
 	}
 
-	private _disableLiveReload?: Unload;
-	public get liveReload() {
-		return this._disableLiveReload !== undefined;
+	private _liveReload?: Promise<void> = undefined;
+	public get liveReload(): boolean {
+		return !!this._liveReload;
 	}
-	public set liveReload(liveReload) {
-		if (!liveReload) {
-			if (this._disableLiveReload) unloadIt(this._disableLiveReload);
+	public set liveReload(liveReload: boolean) {
+		if (liveReload && !this._liveReload) {
+			this._liveReload = (async () => {
+				do {
+					await this.loadExports.bind(this)();
+					await new Promise((res) => setTimeout(res, 1000));
+				} while (!!this._liveReload);
+			})();
 		} else {
-			const liveReloadInterval = setInterval(this.loadExports.bind(this), 1000);
-			tritonUnloads.add((this._disableLiveReload ??= () => clearInterval(liveReloadInterval)));
+			this._liveReload = undefined;
 		}
 	}
 
@@ -71,18 +75,26 @@ export class TritonModule implements TritonModuleBase {
 	private constructor(public readonly name: string) {
 		this.uri = `${TritonModule.origin}/tritonModules/${this.name}`;
 		[this.onExports, this.loaded] = registerEmitter<ModuleExports>();
+		tritonUnloads.add(() => {
+			this.liveReload = false;
+		});
 	}
 
 	public readonly onExports: AddReceiver<ModuleExports>;
-	private readonly loaded: EmitEvent<ModuleExports>;
+	private readonly loaded: Emit<ModuleExports>;
 
 	public async loadExports(): Promise<ModuleExports | undefined> {
 		try {
 			try {
 				const hash = await fetchText(`${this.uri}.hash`);
-				if (hash !== this.hash) this.code = await fetchText(`${this.uri}.js`);
+				// If code differs update
+				if (hash !== this.hash) {
+					this.code = await fetchText(`${this.uri}.js`);
+					this.hash = hash;
+				} // Otherwise if its the same and we are already loaded just return exports
 				else if (this.exports) return this.exports;
-			} catch (err) {
+			} catch {
+				// If we fail to fetch but have exports then dont reload
 				if (this.exports) return this.exports;
 				// tritonTracer.msg.err(`Fetching ${this.name} code failed. ${this.code ? `Using cache` : `Module unavailable`}`);
 			}
