@@ -6,6 +6,7 @@ import { id } from "@plugin";
 import { fetchText, getStorage, registerEmitter, tritonTracer, tritonUnloads, unloadIt, type AddReceiver, type Emit, type Unload } from "@triton/lib";
 
 // Ensure that @triton/lib is loaded onto window for plugins to use shared memory space
+import { Semaphore } from "@inrixia/helpers";
 import * as TritonLib from "@triton/lib";
 // @ts-expect-error Where were going we dont need types
 window.triton = TritonLib;
@@ -83,20 +84,32 @@ export class TritonModule implements TritonModuleBase {
 	public readonly onExports: AddReceiver<ModuleExports>;
 	private readonly loaded: Emit<ModuleExports>;
 
+	private firstLoad: boolean = true;
+	private readonly loadSemaphore: Semaphore = new Semaphore(1);
 	public async loadExports(): Promise<ModuleExports | undefined> {
+		// Ensure we cant start loading midway through loading
+		const release = await this.loadSemaphore.obtain();
 		try {
-			try {
-				const hash = await fetchText(`${this.uri}.hash`);
-				// If code differs update
-				if (hash !== this.hash) {
-					this.code = await fetchText(`${this.uri}.js`);
-					this.hash = hash;
-				} // Otherwise if its the same and we are already loaded just return exports
-				else if (this.exports) return this.exports;
-			} catch {
-				// If we fail to fetch but have exports then dont reload
-				if (this.exports) return this.exports;
-				// tritonTracer.msg.err(`Fetching ${this.name} code failed. ${this.code ? `Using cache` : `Module unavailable`}`);
+			// To speed up first load if we arent running and we have code
+			// defer fetching code and try load immediately
+			if (this.firstLoad && this.code && !this.exports) {
+				this.firstLoad = false;
+				// Queue a reload
+				setTimeout(this.loadExports.bind(this));
+			} else {
+				try {
+					const hash = await fetchText(`${this.uri}.hash`);
+					// If code differs update
+					if (hash !== this.hash) {
+						this.code = await fetchText(`${this.uri}.js`);
+						this.hash = hash;
+					} // Otherwise if its the same and we are already loaded just return exports
+					else if (this.exports) return this.exports;
+				} catch {
+					// If we fail to fetch but have exports then dont reload
+					if (this.exports) return this.exports;
+					// tritonTracer.msg.err(`Fetching ${this.name} code failed. ${this.code ? `Using cache` : `Module unavailable`}`);
+				}
 			}
 			if (!this.code) return;
 
@@ -136,6 +149,8 @@ export class TritonModule implements TritonModuleBase {
 			return this.exports;
 		} catch (err) {
 			tritonTracer.msg.err.withContext(`Failed to load module ${this.name}`)(err);
+		} finally {
+			release();
 		}
 	}
 }
