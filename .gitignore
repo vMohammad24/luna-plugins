@@ -2,3 +2,5 @@ node_modules/
 dist/
 cert.pem
 key.pem
+tmp/
+.vscode/

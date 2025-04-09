@@ -7,8 +7,9 @@ import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
 import { intercept } from "@neptune";
-import { TritonStack, TritonSwitch, unloads } from "../lib/src";
-import { TritonModule } from "./TritonModule";
+import { TritonStack } from "../lib/src";
+import { TritonModule, tritonUnloads } from "./TritonModule";
+import { TritonModuleSettings } from "./TritonModule.settings";
 
 setTimeout(
 	() =>
@@ -24,16 +25,7 @@ setTimeout(
 const coverTheme = TritonModule.fromName("CoverTheme");
 coverTheme.liveReload = true;
 
-// const module = await coverTheme.loadModule();
-
-// export const ModuleSettings = ({ module }: { module: TritonModule }) => {
-// 	const [ModuleSettings, setInstance] = useState(module.module.Settings);
-// 	return (
-// 		<>
-// 			<ModuleSettings />
-// 		</>
-// 	);
-// };
+await coverTheme.loadExports();
 
 const TritonSettings = async () => {
 	return (
@@ -49,8 +41,7 @@ const TritonSettings = async () => {
 
 			<Stack spacing={4}>
 				<TritonStack title={"CoverTheme"}>
-					<TritonSwitch title={"Enable Theme"} desc={"Applies the theme to the client. If disabled "} />
-					{/* <ModuleSettings module={coverTheme} /> */}
+					<TritonModuleSettings module={coverTheme} />
 				</TritonStack>
 			</Stack>
 		</Container>
@@ -59,12 +50,12 @@ const TritonSettings = async () => {
 
 const rootId = "TritonSettings";
 const root = document.getElementById(rootId) ?? document.createElement("div");
-unloads.add(() => root.remove());
+tritonUnloads.add(root.remove);
 root.id = rootId;
 ReactDom.createRoot(root).render(TritonSettings());
 
 // Intercept when navigating to ?triton and overwrite the pageNotFound with Triton's react settings page
-unloads.add(
+tritonUnloads.add(
 	intercept(
 		// @ts-expect-error Missing type
 		"router/NAVIGATED",

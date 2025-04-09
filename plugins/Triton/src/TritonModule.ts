@@ -3,8 +3,18 @@ import type { default as Quartz } from "@uwu/quartz";
 import { quartz } from "@neptune";
 import { id } from "@plugin";
 
-import { fetchText, Tracer, unloads, type Unload } from "@triton/lib";
-import { unloadIt } from ".";
+import { fetchText, registerEmitter, Tracer, type AddReceiver, type EmitEvent, type Unload } from "@triton/lib";
+
+export const tritonUnloads = new Set<Unload>();
+const unloadIt = async (unload: Unload) => {
+	try {
+		await unload();
+		tritonUnloads.delete(unload);
+	} catch (err) {
+		tritonTracer.err.withContext(`Error unloading ${unload.source ?? ""} ${unload.name}`)(err);
+	}
+};
+export const onUnload = () => tritonUnloads.forEach(unloadIt);
 
 const tritonTracer = Tracer("[Triton]");
 
@@ -21,13 +31,13 @@ const getOrigin = () => {
 };
 
 type ModuleExports = {
-	onUnload?: Unload;
-	Settings?: React.JSX.Element;
+	unloads?: Set<Unload>;
+	Settings?: () => React.JSX.Element;
 };
 export class TritonModule {
 	public static readonly origin: string = getOrigin();
 
-	public module?: ModuleExports;
+	public exports?: ModuleExports;
 	public hash?: string;
 	public readonly uri: string;
 
@@ -39,8 +49,8 @@ export class TritonModule {
 		if (!liveReload) {
 			if (this._disableLiveReload) unloadIt(this._disableLiveReload);
 		} else {
-			const liveReloadInterval = setInterval(this.loadModule.bind(this), 1000);
-			unloads.add((this._disableLiveReload ??= () => clearInterval(liveReloadInterval)));
+			const liveReloadInterval = setInterval(this.loadExports.bind(this), 1000);
+			tritonUnloads.add((this._disableLiveReload ??= () => clearInterval(liveReloadInterval)));
 		}
 	}
 
@@ -50,22 +60,26 @@ export class TritonModule {
 	}
 	private constructor(public readonly name: string) {
 		this.uri = `${TritonModule.origin}/tritonModules/${this.name}`;
+		[this.onExports, this.loaded] = registerEmitter<ModuleExports>();
 	}
 
-	private _onloaddb: any = null;
-	public onLoad(cb: (Settings: React.JSX.Element) => void) {
-		this._onloaddb = cb;
-	}
+	public readonly onExports: AddReceiver<ModuleExports>;
+	private readonly loaded: EmitEvent<ModuleExports>;
 
-	public async loadModule(): Promise<ModuleExports | undefined> {
+	public async loadExports(): Promise<ModuleExports | undefined> {
 		try {
 			const hash = await fetchText(`${this.uri}.hash`);
-			if (hash === this.hash && this.module) return this.module;
-
+			if (hash === this.hash && this.exports) return this.exports;
 			const code = await fetchText(`${this.uri}.js`);
-			if (this.module?.onUnload) unloadIt(this.module?.onUnload);
 
-			this.module = await (quartz as typeof Quartz)(code, {
+			// unload existing module
+			for (const unload of this.exports?.unloads ?? []) {
+				unloadIt(unload);
+				// Make sure its unloads are removed from Tritons after unloading
+				tritonUnloads.delete(unload);
+			}
+
+			this.exports = await (quartz as typeof Quartz)(code, {
 				plugins: [
 					{
 						resolve({ name }) {
@@ -85,14 +99,14 @@ export class TritonModule {
 			});
 			this.hash = hash;
 
-			const onUnload = this.module.onUnload;
-			if (onUnload) {
-				onUnload.source = `${this.name}.${onUnload.source}`;
-				unloads.add(onUnload);
+			for (const unload of this.exports.unloads ?? []) {
+				unload.source ??= this.name;
+				// Add this modules unloads to tritons so they are triggered un plugin reload
+				tritonUnloads.add(unload);
 			}
 			tritonTracer.msg.log(`Loaded module ${this.name}`);
-			this._onloaddb(this.module.Settings);
-			return this.module;
+			this.loaded(this.exports, tritonTracer.err.withContext(`Calling ${this.name}.loaded`));
+			return this.exports;
 		} catch (err) {
 			tritonTracer.msg.err.withContext(`Failed to load module ${this.name}`)(err);
 		}

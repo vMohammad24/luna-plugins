@@ -10,7 +10,7 @@ import { neptuneOutput } from "./plugins/neptuneOutput";
 import { tritonOutput } from "./plugins/tritonOutput";
 import { buildThemes } from "./themes";
 
-export const minify = !process.env.NODE_ENV?.startsWith("development");
+export const minify = true; //!process.env.NODE_ENV?.startsWith("development");
 console.log(process.env.NODE_ENV, minify);
 
 buildThemes();
