@@ -78,7 +78,7 @@ export class Album extends ContentBase implements MediaCollection {
 			["content/LOAD_ALL_ALBUM_MEDIA_ITEMS_SUCCESS"],
 			["content/LOAD_ALL_ALBUM_MEDIA_ITEMS_FAIL"]
 		).catch(trace.warn.withContext("getMediaItems.interceptPromise", this));
-		const tMediaItems = <Immutable.List<TMediaItem>>result?.[0]?.mediaItems;
+		const tMediaItems = <Immutable.List<TMediaItem>>result?.mediaItems;
 		if (tMediaItems === undefined) return [];
 		return Array.from(tMediaItems);
 	});

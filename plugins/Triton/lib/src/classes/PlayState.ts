@@ -1,12 +1,12 @@
 import { Tracer } from "../helpers/trace";
 const trace = Tracer("[lib.PlayState]");
 
-import { intercept } from "@neptune";
-
 import type { MediaItemHandler } from "./MediaItem/MediaItem";
 import { MediaItem, runListeners } from "./MediaItem/MediaItem";
 
 import type { CoreState, TrackItem } from "neptune-types/tidal";
+import { safeIntercept } from "../intercept/safeIntercept";
+import { tritonUnloads } from "../unloads";
 import type { MediaItemAudioQuality } from "./Quality";
 
 export type PlaybackContext = {
@@ -56,18 +56,22 @@ export class PlayState {
 	}
 
 	static {
-		intercept("playbackControls/SET_PLAYBACK_STATE", ([state]) => {
-			switch (state) {
-				case "PLAYING": {
-					this.lastPlayStart = Date.now();
-					break;
+		safeIntercept(
+			"playbackControls/SET_PLAYBACK_STATE",
+			(state) => {
+				switch (state) {
+					case "PLAYING": {
+						this.lastPlayStart = Date.now();
+						break;
+					}
+					default: {
+						if (this.lastPlayStart !== undefined) this.trackPlayTime += Date.now() - this.lastPlayStart;
+						delete this.lastPlayStart;
+					}
 				}
-				default: {
-					if (this.lastPlayStart !== undefined) this.trackPlayTime += Date.now() - this.lastPlayStart;
-					delete this.lastPlayStart;
-				}
-			}
-		});
+			},
+			tritonUnloads
+		);
 		MediaItem.onMediaTransition((mediaItem) => {
 			if (mediaItem.duration === undefined) return;
 			if (this.lastPlayStart !== undefined) this.trackPlayTime += Date.now() - this.lastPlayStart;

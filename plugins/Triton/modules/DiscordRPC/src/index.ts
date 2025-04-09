@@ -1,9 +1,8 @@
-import { MediaItem, PlayState, Tracer } from "@triton/lib";
+import { MediaItem, PlayState, safeIntercept, Tracer, type Unload } from "@triton/lib";
 const trace = Tracer("[DiscordRPC]");
 
 import { asyncDebounce } from "@inrixia/helpers";
 
-import { intercept } from "@neptune";
 import type { SetActivity } from "@xhayper/discord-rpc";
 import { cleanupRPC, setActivity } from "./discord.native";
 
@@ -61,15 +60,10 @@ export const updateActivity = asyncDebounce(async (mediaItem?: MediaItem) => {
 	return setActivity(activity).catch(trace.err.withContext("Failed to set activity"));
 }, true);
 
-const unloadIntercept = intercept(["playbackControls/TIME_UPDATE", "playbackControls/SEEK", "playbackControls/SET_PLAYBACK_STATE"], () => {
-	setTimeout(updateActivity);
-});
-const unloadTransition = MediaItem.onMediaTransition(updateActivity);
+export const unloads = new Set<Unload>();
+
+safeIntercept(["playbackControls/TIME_UPDATE", "playbackControls/SEEK", "playbackControls/SET_PLAYBACK_STATE"], () => setTimeout(updateActivity), unloads);
+unloads.add(MediaItem.onMediaTransition(updateActivity));
+unloads.add(cleanupRPC);
 
 setTimeout(updateActivity);
-
-export const onUnload = () => {
-	unloadIntercept();
-	unloadTransition();
-	cleanupRPC().catch(trace.msg.err.withContext("Failed to cleanup RPC"));
-};

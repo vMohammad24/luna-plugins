@@ -1,9 +1,10 @@
-import { MediaItem, Tracer } from "@triton/lib";
+import { MediaItem, Tracer, type Unload } from "@triton/lib";
 export const trace = Tracer("[RealMAX]");
 
-import { actions, intercept, store } from "@neptune";
+import { actions, store } from "@neptune";
 import type { PlayQueueItem } from "neptune-types/tidal";
 
+import { safeIntercept } from "../../../lib/src/intercept/safeIntercept";
 import { unloadContextMenu } from "./contextMenu";
 
 const playMaxItem = async (elements: readonly PlayQueueItem[], index: number) => {
@@ -21,7 +22,9 @@ const playMaxItem = async (elements: readonly PlayQueueItem[], index: number) =>
 	return false;
 };
 
-const unloads = [
+export const unloads = new Set<Unload>();
+unloads.add(unloadContextMenu);
+unloads.add(
 	MediaItem.onPreMediaTransition(async (mediaItem) => {
 		actions.playbackControls.pause();
 		try {
@@ -35,8 +38,11 @@ const unloads = [
 			trace.msg.err.withContext("addNext")(err);
 			actions.playbackControls.play();
 		}
-	}),
-	intercept("playQueue/ADD_NOW", ([payload]) => {
+	})
+);
+safeIntercept(
+	"playQueue/ADD_NOW",
+	(payload) => {
 		const mediaItemIds = [...payload.mediaItemIds];
 		const currentIndex = payload.fromIndex ?? 0;
 		MediaItem.fromId(mediaItemIds[currentIndex])
@@ -50,8 +56,12 @@ const unloads = [
 				actions.playQueue.addNow({ ...payload, mediaItemIds });
 			});
 		return true;
-	}),
-	intercept(["playQueue/MOVE_TO", "playQueue/MOVE_NEXT", "playQueue/MOVE_PREVIOUS"], ([payload, action]) => {
+	},
+	unloads
+);
+safeIntercept(
+	["playQueue/MOVE_TO", "playQueue/MOVE_NEXT", "playQueue/MOVE_PREVIOUS"],
+	(payload, action) => {
 		(async () => {
 			const { elements, currentIndex } = store.getState().playQueue;
 			switch (action) {
@@ -68,10 +78,6 @@ const unloads = [
 			actions.playbackControls.play();
 		})();
 		return true;
-	}),
-	unloadContextMenu,
-];
-
-export const onUnload = () => {
-	for (const unload of unloads) unload();
-};
+	},
+	unloads
+);

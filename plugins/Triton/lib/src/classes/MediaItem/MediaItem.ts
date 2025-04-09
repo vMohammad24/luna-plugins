@@ -1,7 +1,7 @@
 import { Tracer } from "../../helpers/trace";
 const trace = Tracer("[lib.MediaItem]");
 
-import { actions, intercept } from "@neptune";
+import { actions } from "@neptune";
 import { PayloadActionTypeTuple } from "neptune-types/api/intercept";
 
 import { asyncDebounce, memoize } from "@inrixia/helpers";
@@ -19,6 +19,8 @@ import type { IRecording, ITrack } from "musicbrainz-api";
 import type { ItemId, MediaItem as TMediaItem } from "neptune-types/tidal";
 
 import { fetchJson } from "../../fetch/helpers";
+import { safeIntercept } from "../../intercept/safeIntercept";
+import { tritonUnloads } from "../../unloads";
 import { Album } from "../Album";
 import { Artist } from "../Artist";
 import { type PlaybackContext } from "../PlayState";
@@ -137,9 +139,9 @@ export class MediaItem extends ContentBase {
 	});
 
 	public lyrics: () => Promise<TLyrics | undefined> = memoize(async () =>
-		interceptPromise(() => actions.content.loadItemLyrics({ itemId: this.tidalItem.id!, itemType: "track" }), ["content/LOAD_ITEM_LYRICS_SUCCESS"], ["content/LOAD_ITEM_LYRICS_FAIL"])
-			.catch(trace.warn.withContext("loadItemLyrics"))
-			.then((res) => res?.[0])
+		interceptPromise(() => actions.content.loadItemLyrics({ itemId: this.tidalItem.id!, itemType: "track" }), ["content/LOAD_ITEM_LYRICS_SUCCESS"], ["content/LOAD_ITEM_LYRICS_FAIL"]).catch(
+			trace.warn.withContext("loadItemLyrics")
+		)
 	);
 
 	public brainzItem: () => Promise<ITrack | undefined> = memoize(async () => {
@@ -384,19 +386,17 @@ export class MediaItem extends ContentBase {
 	}
 
 	static {
-		// NOTE: Intercept calls will never be unloaded here as this is a global shared object.
-		// To reload this class you must restart the client
-		intercept(
-			// @ts-expect-error Neptune doesn't type this action
+		safeIntercept<{ productId?: string; productType?: "track" | "video" }>(
 			"player/PRELOAD_ITEM",
-			([item]: [{ productId?: string; productType?: "track" | "video" }]) => {
+			(item) => {
 				if (item.productId === undefined) return trace.warn("player/PRELOAD_ITEM intercepted without productId!", item);
 				this.fromId(item.productId, item.productType).then((mediaItem) => {
 					if (mediaItem === undefined) return;
 					mediaItem.preload();
 					runListeners(mediaItem, this.preloadListeners, trace.err.withContext("preloadItem.runListeners"));
 				});
-			}
+			},
+			tritonUnloads
 		);
 
 		const _onMediaTransition = asyncDebounce(async (playbackContext: PlaybackContext) => {
@@ -406,9 +406,7 @@ export class MediaItem extends ContentBase {
 			// if (this.useFormat) mediaItem.updateFormat();
 			await runListeners(mediaItem, this.mediaTransitionListeners, trace.err.withContext("mediaProductTransition.runListeners"));
 		});
-		intercept("playbackControls/MEDIA_PRODUCT_TRANSITION", ([{ playbackContext }]) => {
-			_onMediaTransition(playbackContext as PlaybackContext);
-		});
+		safeIntercept<{ playbackContext: PlaybackContext }>("playbackControls/MEDIA_PRODUCT_TRANSITION", ({ playbackContext }) => _onMediaTransition(playbackContext), tritonUnloads);
 
 		const _onPreMediaTransition = asyncDebounce(async (productId: ItemId, productType: TMediaItem["type"]) => {
 			const mediaItem = await this.fromId(productId, productType);
@@ -416,9 +414,13 @@ export class MediaItem extends ContentBase {
 			mediaItem.preload();
 			await runListeners(mediaItem, this.preMediaTransitionListeners, trace.err.withContext("prefillMPT.runListeners"));
 		});
-		intercept("playbackControls/PREFILL_MEDIA_PRODUCT_TRANSITION", ([{ mediaProduct }]) => {
-			const { productId, productType } = mediaProduct as { productId: ItemId; productType: TMediaItem["type"] };
-			_onPreMediaTransition(productId, productType);
-		});
+		safeIntercept(
+			"playbackControls/PREFILL_MEDIA_PRODUCT_TRANSITION",
+			({ mediaProduct }) => {
+				const { productId, productType } = mediaProduct as { productId: ItemId; productType: TMediaItem["type"] };
+				_onPreMediaTransition(productId, productType);
+			},
+			tritonUnloads
+		);
 	}
 }

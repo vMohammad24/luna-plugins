@@ -1,2 +1,2 @@
-export { onUnload } from "./TritonModule";
+export { onUnload } from "@triton/lib";
 export { Settings } from "./TritonSettings";

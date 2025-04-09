@@ -2,11 +2,12 @@ import { Tracer } from "../../helpers/trace";
 const trace = Tracer("[lib.ContextMenu]");
 
 import { runFor } from "@inrixia/helpers";
-import { intercept } from "@neptune";
 
 import styles from "file://ContextMenu.css?minify";
 import { StyleTag } from "../../helpers/StyleTag";
 
+import { safeIntercept } from "../../intercept/safeIntercept";
+import { tritonUnloads } from "../../unloads";
 import { Album } from "../Album";
 import { MediaItems } from "../MediaCollection";
 import { Playlist } from "../Playlist";
@@ -44,23 +45,23 @@ export class ContextMenu {
 	}
 
 	static {
-		intercept(`contextMenu/OPEN_MEDIA_ITEM`, ([item]) => {
-			ContextMenu.runListners(ContextMenu._onMediaItem)(MediaItems.fromIds([item.id]));
-		});
-		intercept(`contextMenu/OPEN_MULTI_MEDIA_ITEM`, ([items]) => {
-			ContextMenu.runListners(ContextMenu._onMediaItem)(MediaItems.fromIds(items.ids));
-		});
-		intercept("contextMenu/OPEN", ([info]) => {
-			switch (info.type) {
-				case "ALBUM": {
-					Album.fromId(info.id).then(ContextMenu.runListners(ContextMenu._onMediaItem)).catch(trace.err.withContext("contextMenu/OPEN", "Album", info));
-					break;
+		safeIntercept(`contextMenu/OPEN_MEDIA_ITEM`, (item) => ContextMenu.runListners(ContextMenu._onMediaItem)(MediaItems.fromIds([item.id])), tritonUnloads);
+		safeIntercept(`contextMenu/OPEN_MULTI_MEDIA_ITEM`, (items) => ContextMenu.runListners(ContextMenu._onMediaItem)(MediaItems.fromIds(items.ids)), tritonUnloads);
+		safeIntercept(
+			"contextMenu/OPEN",
+			(info) => {
+				switch (info.type) {
+					case "ALBUM": {
+						Album.fromId(info.id).then(ContextMenu.runListners(ContextMenu._onMediaItem)).catch(trace.err.withContext("contextMenu/OPEN", "Album", info));
+						break;
+					}
+					case "PLAYLIST": {
+						Playlist.fromId(info.id).then(ContextMenu.runListners(ContextMenu._onMediaItem)).catch(trace.err.withContext("contextMenu/OPEN", "Playlist", info));
+						break;
+					}
 				}
-				case "PLAYLIST": {
-					Playlist.fromId(info.id).then(ContextMenu.runListners(ContextMenu._onMediaItem)).catch(trace.err.withContext("contextMenu/OPEN", "Playlist", info));
-					break;
-				}
-			}
-		});
+			},
+			tritonUnloads
+		);
 	}
 }

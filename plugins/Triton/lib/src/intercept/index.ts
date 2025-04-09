@@ -1,2 +1,2 @@
-export * from "./interceptActions";
 export * from "./interceptPromise";
+export * from "./safeIntercept";

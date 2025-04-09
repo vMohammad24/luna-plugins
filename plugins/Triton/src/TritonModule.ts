@@ -3,23 +3,10 @@ import type { default as Quartz } from "@uwu/quartz";
 import { quartz } from "@neptune";
 import { id } from "@plugin";
 
-import { fetchText, registerEmitter, Tracer, type AddReceiver, type EmitEvent, type Unload } from "@triton/lib";
-
-export const tritonUnloads = new Set<Unload>();
-const unloadIt = async (unload: Unload) => {
-	try {
-		await unload();
-		tritonUnloads.delete(unload);
-	} catch (err) {
-		tritonTracer.err.withContext(`Error unloading ${unload.source ?? ""} ${unload.name}`)(err);
-	}
-};
-export const onUnload = () => tritonUnloads.forEach(unloadIt);
-
-const tritonTracer = Tracer("[Triton]");
+import { fetchText, registerEmitter, tritonTracer, tritonUnloads, unloadIt, type AddReceiver, type EmitEvent, type Unload } from "@triton/lib";
 
 // Ensure that @triton/lib is loaded onto window for plugins to use shared memory space
-import * as TritonLib from "../lib/src";
+import * as TritonLib from "@triton/lib";
 // @ts-expect-error Where were going we dont need types
 window.triton = TritonLib;
 

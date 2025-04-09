@@ -6,9 +6,9 @@ import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-import { intercept } from "@neptune";
-import { TritonStack } from "../lib/src";
-import { TritonModule, tritonUnloads } from "./TritonModule";
+import { safeIntercept, TritonStack, tritonUnloads } from "@triton/lib";
+
+import { TritonModule } from "./TritonModule";
 import { TritonModuleSettings } from "./TritonModule.settings";
 
 setTimeout(
@@ -55,23 +55,21 @@ root.id = rootId;
 ReactDom.createRoot(root).render(TritonSettings());
 
 // Intercept when navigating to ?triton and overwrite the pageNotFound with Triton's react settings page
-tritonUnloads.add(
-	intercept(
-		// @ts-expect-error Missing type
-		"router/NAVIGATED",
-		([payload]) => {
-			root.remove();
-			if (payload.search === `?triton`) {
-				setTimeout(() => {
-					const notFound = document.querySelector<HTMLElement>(`[class^="_pageNotFoundError_"]`);
-					if (notFound) {
-						notFound.style.display = "none";
-						notFound.insertAdjacentElement("afterend", root);
-					}
-				});
-			}
+safeIntercept<{ search: string }>(
+	"router/NAVIGATED",
+	(payload) => {
+		root.remove();
+		if (payload.search === `?triton`) {
+			setTimeout(() => {
+				const notFound = document.querySelector<HTMLElement>(`[class^="_pageNotFoundError_"]`);
+				if (notFound) {
+					notFound.style.display = "none";
+					notFound.insertAdjacentElement("afterend", root);
+				}
+			});
 		}
-	)
+	},
+	tritonUnloads
 );
 export const Settings = () => {
 	neptune.actions.modal.close();
