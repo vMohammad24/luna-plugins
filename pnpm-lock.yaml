@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@inrixia/helpers':
-        specifier: ^3.5.0
-        version: 3.5.0
+        specifier: ^3.6.0
+        version: 3.6.0
       '@types/clean-css':
         specifier: ^4.2.11
         version: 4.2.11
@@ -61,8 +61,8 @@ importers:
         specifier: ^11.14.0
         version: 11.14.0(@emotion/react@11.14.0(@types/react@19.1.0)(react@19.1.0))(@types/react@19.1.0)(react@19.1.0)
       '@inrixia/helpers':
-        specifier: ^3.5.0
-        version: 3.5.0
+        specifier: ^3.6.0
+        version: 3.6.0
       '@mui/material':
         specifier: ^7.0.1
         version: 7.0.1(@emotion/react@11.14.0(@types/react@19.1.0)(react@19.1.0))(@emotion/styled@11.14.0(@emotion/react@11.14.0(@types/react@19.1.0)(react@19.1.0))(@types/react@19.1.0)(react@19.1.0))(@types/react@19.1.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -414,8 +414,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@inrixia/helpers@3.5.0':
-    resolution: {integrity: sha512-ehIclmOy6lwlXm3OwgQkw7bwyacZfaalsUQ/SDvgm0vPsgmv5piDLvj+4hIVuvGKTk/Cnyvbu5Itj3Wa4EvTGA==}
+  '@inrixia/helpers@3.6.0':
+    resolution: {integrity: sha512-ZlK68B/1F+h0PF0cAoh2UgzS/gF+iinbvL2CdTlmXK7/trvGP0b457aafN00HvUKWKf7OB2fXlTQtJes9nJIhA==}
 
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
@@ -1805,7 +1805,7 @@ snapshots:
   '@esbuild/win32-x64@0.25.2':
     optional: true
 
-  '@inrixia/helpers@3.5.0': {}
+  '@inrixia/helpers@3.6.0': {}
 
   '@isaacs/cliui@8.0.2':
     dependencies:

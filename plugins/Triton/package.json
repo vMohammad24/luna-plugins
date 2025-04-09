@@ -6,7 +6,7 @@
 	"devDependencies": {
 		"@emotion/react": "^11.14.0",
 		"@emotion/styled": "^11.14.0",
-		"@inrixia/helpers": "^3.5.0",
+		"@inrixia/helpers": "^3.6.0",
 		"@mui/material": "^7.0.1",
 		"@triton/lib": "link:lib",
 		"@triton/lib.native": "link:lib.native",

@@ -4,10 +4,11 @@ const trace = Tracer("[lib.ContextMenu]");
 import { runFor } from "@inrixia/helpers";
 
 import styles from "file://ContextMenu.css?minify";
-import { StyleTag } from "../../helpers/StyleTag";
 
+import { registerEmitter, StyleTag } from "../../helpers";
 import { safeIntercept } from "../../intercept/safeIntercept";
 import { tritonUnloads } from "../../unloads";
+
 import { Album } from "../Album";
 import { MediaItems } from "../MediaCollection";
 import { Playlist } from "../Playlist";
@@ -27,41 +28,46 @@ export class ContextMenu {
 		return contextMenu;
 	}
 
-	private static runListners<T>(listeners: Set<ContextHandler<T>>) {
-		return async (items?: T) => {
-			if (items === undefined) return;
-			const contextMenu = await ContextMenu.getContextMenu();
-			if (contextMenu === null) return;
-			for (const listener of listeners) {
-				listener(items, contextMenu).catch(trace.err.withContext("Executing listener", items, contextMenu));
-			}
-		};
-	}
-
-	private static _onMediaItem: Set<ContextHandler<MediaItems | Album | Playlist>> = new Set();
-	public static onMediaItem(cb: ContextHandler<MediaItems | Album | Playlist>): () => void {
-		ContextMenu._onMediaItem.add(cb);
-		return () => ContextMenu._onMediaItem.delete(cb);
-	}
-
-	static {
-		safeIntercept(`contextMenu/OPEN_MEDIA_ITEM`, (item) => ContextMenu.runListners(ContextMenu._onMediaItem)(MediaItems.fromIds([item.id])), tritonUnloads);
-		safeIntercept(`contextMenu/OPEN_MULTI_MEDIA_ITEM`, (items) => ContextMenu.runListners(ContextMenu._onMediaItem)(MediaItems.fromIds(items.ids)), tritonUnloads);
+	public static onMediaItem = registerEmitter<{ mediaCollection: MediaItems | Album | Playlist; contextMenu: Element }>((onMediaItem) => {
+		safeIntercept(
+			`contextMenu/OPEN_MEDIA_ITEM`,
+			async (item, type) => {
+				const contextMenu = await ContextMenu.getContextMenu();
+				if (contextMenu === null) return;
+				onMediaItem({ mediaCollection: MediaItems.fromIds([item.id]), contextMenu }, trace.err.withContext(type, contextMenu));
+			},
+			tritonUnloads
+		);
+		safeIntercept(
+			`contextMenu/OPEN_MULTI_MEDIA_ITEM`,
+			async (items, type) => {
+				const contextMenu = await ContextMenu.getContextMenu();
+				if (contextMenu === null) return;
+				onMediaItem({ mediaCollection: MediaItems.fromIds(items.ids), contextMenu }, trace.err.withContext(type, contextMenu));
+			},
+			tritonUnloads
+		);
 		safeIntercept(
 			"contextMenu/OPEN",
-			(info) => {
+			async (info, type) => {
+				const contextMenu = await ContextMenu.getContextMenu();
+				if (contextMenu === null) return;
 				switch (info.type) {
 					case "ALBUM": {
-						Album.fromId(info.id).then(ContextMenu.runListners(ContextMenu._onMediaItem)).catch(trace.err.withContext("contextMenu/OPEN", "Album", info));
+						const album = await Album.fromId(info.id);
+						if (album === undefined) return;
+						onMediaItem({ mediaCollection: album, contextMenu }, trace.err.withContext(type, contextMenu));
 						break;
 					}
 					case "PLAYLIST": {
-						Playlist.fromId(info.id).then(ContextMenu.runListners(ContextMenu._onMediaItem)).catch(trace.err.withContext("contextMenu/OPEN", "Playlist", info));
+						const playlist = await Playlist.fromId(info.id);
+						if (playlist === undefined) return;
+						onMediaItem({ mediaCollection: playlist, contextMenu }, trace.err.withContext(type, contextMenu));
 						break;
 					}
 				}
 			},
 			tritonUnloads
 		);
-	}
+	});
 }

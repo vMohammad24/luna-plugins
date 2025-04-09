@@ -19,28 +19,12 @@ import type { IRecording, ITrack } from "musicbrainz-api";
 import type { ItemId, MediaItem as TMediaItem } from "neptune-types/tidal";
 
 import { fetchJson } from "../../fetch/helpers";
+import { registerEmitter, type AddReceiver } from "../../helpers";
 import { safeIntercept } from "../../intercept/safeIntercept";
 import { tritonUnloads } from "../../unloads";
 import { Album } from "../Album";
 import { Artist } from "../Artist";
 import { type PlaybackContext } from "../PlayState";
-
-export type MediaItemHandler = (mediaItem: MediaItem) => unknown;
-export const runListeners = (item: MediaItem, listeners: Set<MediaItemHandler>, errorHandler: typeof console.error) => {
-	const listenerPromises = [];
-	for (const listener of listeners) {
-		try {
-			const res = listener(item);
-			if (res instanceof Promise) {
-				res.catch(errorHandler);
-				listenerPromises.push(res);
-			}
-		} catch (err) {
-			errorHandler(err);
-		}
-	}
-	return Promise.allSettled<void>(listenerPromises);
-};
 
 type TLyrics = PayloadActionTypeTuple<"content/LOAD_ITEM_LYRICS_SUCCESS">[0];
 
@@ -353,27 +337,47 @@ export class MediaItem extends ContentBase {
 	// public readonly bitrate?: number;
 
 	// Listeners
-	private static readonly preloadListeners: Set<MediaItemHandler> = new Set();
-	public static onPreload(cb: MediaItemHandler) {
-		this.preloadListeners.add(cb);
-		return () => this.preloadListeners.delete(cb);
-	}
-	private static readonly mediaTransitionListeners: Set<MediaItemHandler> = new Set();
-	public static onMediaTransition(cb: MediaItemHandler) {
-		this.mediaTransitionListeners.add(cb);
-		return () => this.mediaTransitionListeners.delete(cb);
-	}
-	private static readonly preMediaTransitionListeners: Set<MediaItemHandler> = new Set();
+	public static onPreload: AddReceiver<MediaItem> = registerEmitter((emit) => {
+		safeIntercept<{ productId?: string; productType?: "track" | "video" }>(
+			"player/PRELOAD_ITEM",
+			async (item) => {
+				if (item.productId === undefined) return trace.warn("player/PRELOAD_ITEM intercepted without productId!", item);
+				const mediaItem = await this.fromId(item.productId, item.productType);
+				if (mediaItem === undefined) return;
+				mediaItem.preload();
+				emit(mediaItem, trace.err.withContext("preloadItem.runListeners"));
+			},
+			tritonUnloads
+		);
+	});
+	public static onMediaTransition: AddReceiver<MediaItem> = registerEmitter((emit) => {
+		const _ = asyncDebounce(async (playbackContext: PlaybackContext) => {
+			const mediaItem = await this.fromPlaybackContext(playbackContext);
+			if (mediaItem === undefined) return;
+			// Always update format info on playback
+			// if (this.useFormat) mediaItem.updateFormat();
+			await emit(mediaItem, trace.err.withContext("mediaProductTransition.runListeners"));
+		});
+		safeIntercept<{ playbackContext: PlaybackContext }>("playbackControls/MEDIA_PRODUCT_TRANSITION", ({ playbackContext }) => _(playbackContext), tritonUnloads);
+	});
+
 	/** Warning! Not always called, dont rely on this over onMediaTransition */
-	public static onPreMediaTransition(cb: MediaItemHandler) {
-		this.preMediaTransitionListeners.add(cb);
-		return () => this.preMediaTransitionListeners.delete(cb);
-	}
-	private static readonly onFormatUpdateListeners: Set<MediaItemHandler> = new Set();
-	public static onFormatUpdate(cb: MediaItemHandler) {
-		this.onFormatUpdateListeners.add(cb);
-		return () => this.onFormatUpdateListeners.delete(cb);
-	}
+	public static onPreMediaTransition: AddReceiver<MediaItem> = registerEmitter((emit) => {
+		const _ = asyncDebounce(async (productId: ItemId, productType: TMediaItem["type"]) => {
+			const mediaItem = await this.fromId(productId, productType);
+			if (mediaItem === undefined) return;
+			mediaItem.preload();
+			await emit(mediaItem, trace.err.withContext("prefillMPT.runListeners"));
+		});
+		safeIntercept(
+			"playbackControls/PREFILL_MEDIA_PRODUCT_TRANSITION",
+			({ mediaProduct }) => {
+				const { productId, productType } = mediaProduct as { productId: ItemId; productType: TMediaItem["type"] };
+				_(productId, productType);
+			},
+			tritonUnloads
+		);
+	});
 
 	public static useTags: boolean = false;
 	public static useMax: boolean = false;
@@ -383,44 +387,5 @@ export class MediaItem extends ContentBase {
 		if (MediaItem.useTags) this.flacTags();
 		if (MediaItem.useMax) this.max();
 		// if (MediaItem.useFormat) this.loadFormat();
-	}
-
-	static {
-		safeIntercept<{ productId?: string; productType?: "track" | "video" }>(
-			"player/PRELOAD_ITEM",
-			(item) => {
-				if (item.productId === undefined) return trace.warn("player/PRELOAD_ITEM intercepted without productId!", item);
-				this.fromId(item.productId, item.productType).then((mediaItem) => {
-					if (mediaItem === undefined) return;
-					mediaItem.preload();
-					runListeners(mediaItem, this.preloadListeners, trace.err.withContext("preloadItem.runListeners"));
-				});
-			},
-			tritonUnloads
-		);
-
-		const _onMediaTransition = asyncDebounce(async (playbackContext: PlaybackContext) => {
-			const mediaItem = await this.fromPlaybackContext(playbackContext);
-			if (mediaItem === undefined) return;
-			// Always update format info on playback
-			// if (this.useFormat) mediaItem.updateFormat();
-			await runListeners(mediaItem, this.mediaTransitionListeners, trace.err.withContext("mediaProductTransition.runListeners"));
-		});
-		safeIntercept<{ playbackContext: PlaybackContext }>("playbackControls/MEDIA_PRODUCT_TRANSITION", ({ playbackContext }) => _onMediaTransition(playbackContext), tritonUnloads);
-
-		const _onPreMediaTransition = asyncDebounce(async (productId: ItemId, productType: TMediaItem["type"]) => {
-			const mediaItem = await this.fromId(productId, productType);
-			if (mediaItem === undefined) return;
-			mediaItem.preload();
-			await runListeners(mediaItem, this.preMediaTransitionListeners, trace.err.withContext("prefillMPT.runListeners"));
-		});
-		safeIntercept(
-			"playbackControls/PREFILL_MEDIA_PRODUCT_TRANSITION",
-			({ mediaProduct }) => {
-				const { productId, productType } = mediaProduct as { productId: ItemId; productType: TMediaItem["type"] };
-				_onPreMediaTransition(productId, productType);
-			},
-			tritonUnloads
-		);
 	}
 }

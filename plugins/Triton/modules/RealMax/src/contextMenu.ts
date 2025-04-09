@@ -15,7 +15,7 @@ maxButton.className = "context-button"; // Set class name for styling
 
 const maxNewPlaylistSize = 450;
 
-export const unloadContextMenu = ContextMenu.onMediaItem(async (mediaCollection, contextMenu) => {
+export const unloadContextMenu = ContextMenu.onMediaItem(async ({ mediaCollection, contextMenu }) => {
 	maxButton.remove();
 
 	const itemCount = await mediaCollection.mediaItemsCount();
