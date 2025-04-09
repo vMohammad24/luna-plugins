@@ -3,7 +3,7 @@ import type { default as Quartz } from "@uwu/quartz";
 import { quartz } from "@neptune";
 import { id } from "@plugin";
 
-import { fetchText, registerEmitter, tritonTracer, tritonUnloads, unloadIt, type AddReceiver, type EmitEvent, type Unload } from "@triton/lib";
+import { fetchText, getStorage, registerEmitter, tritonTracer, tritonUnloads, unloadIt, type AddReceiver, type EmitEvent, type Unload } from "@triton/lib";
 
 // Ensure that @triton/lib is loaded onto window for plugins to use shared memory space
 import * as TritonLib from "@triton/lib";
@@ -21,12 +21,35 @@ type ModuleExports = {
 	unloads?: Set<Unload>;
 	Settings?: () => React.JSX.Element;
 };
-export class TritonModule {
+
+interface TritonModuleBase {
+	code?: string;
+	hash?: string;
+}
+
+const moduleCache = getStorage<Record<string, TritonModuleBase>>("TritonModuleCache", {});
+
+export class TritonModule implements TritonModuleBase {
 	public static readonly origin: string = getOrigin();
 
 	public exports?: ModuleExports;
-	public hash?: string;
 	public readonly uri: string;
+
+	public get code() {
+		return moduleCache[this.uri]?.code;
+	}
+	public set code(value) {
+		moduleCache[this.uri] ??= {};
+		moduleCache[this.uri].code = value;
+	}
+
+	public get hash() {
+		return moduleCache[this.uri]?.hash;
+	}
+	public set hash(value) {
+		moduleCache[this.uri] ??= {};
+		moduleCache[this.uri].code = value;
+	}
 
 	private _disableLiveReload?: Unload;
 	public get liveReload() {
@@ -55,9 +78,15 @@ export class TritonModule {
 
 	public async loadExports(): Promise<ModuleExports | undefined> {
 		try {
-			const hash = await fetchText(`${this.uri}.hash`);
-			if (hash === this.hash && this.exports) return this.exports;
-			const code = await fetchText(`${this.uri}.js`);
+			try {
+				const hash = await fetchText(`${this.uri}.hash`);
+				if (hash !== this.hash) this.code = await fetchText(`${this.uri}.js`);
+				else if (this.exports) return this.exports;
+			} catch (err) {
+				if (this.exports) return this.exports;
+				// tritonTracer.msg.err(`Fetching ${this.name} code failed. ${this.code ? `Using cache` : `Module unavailable`}`);
+			}
+			if (!this.code) return;
 
 			// unload existing module
 			for (const unload of this.exports?.unloads ?? []) {
@@ -66,7 +95,7 @@ export class TritonModule {
 				tritonUnloads.delete(unload);
 			}
 
-			this.exports = await (quartz as typeof Quartz)(code, {
+			this.exports = await (quartz as typeof Quartz)(this.code, {
 				plugins: [
 					{
 						resolve({ name }) {
@@ -84,7 +113,6 @@ export class TritonModule {
 					},
 				],
 			});
-			this.hash = hash;
 
 			for (const unload of this.exports.unloads ?? []) {
 				unload.source ??= this.name;

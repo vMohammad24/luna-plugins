@@ -11,6 +11,11 @@ import { safeIntercept, TritonStack, tritonUnloads } from "@triton/lib";
 import { TritonModule } from "./TritonModule";
 import { TritonModuleSettings } from "./TritonModule.settings";
 
+const coverTheme = TritonModule.fromName("CoverTheme");
+coverTheme.liveReload = true;
+
+await coverTheme.loadExports();
+
 setTimeout(
 	() =>
 		// @ts-expect-error TESTING
@@ -21,11 +26,6 @@ setTimeout(
 		}),
 	250
 );
-
-const coverTheme = TritonModule.fromName("CoverTheme");
-coverTheme.liveReload = true;
-
-await coverTheme.loadExports();
 
 const TritonSettings = async () => {
 	return (
