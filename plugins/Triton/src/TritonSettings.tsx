@@ -3,19 +3,23 @@ import * as ReactDom from "react-dom/client";
 
 import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
-import Stack from "@mui/material/Stack";
 import Typography from "@mui/material/Typography";
 
-import { safeIntercept, TritonStack, tritonUnloads } from "@triton/lib";
+import { ContextMenu, safeIntercept, tritonUnloads } from "@triton/lib";
 
+import Stack from "@mui/material/Stack";
 import { TritonModule } from "./TritonModule";
 import { TritonModuleSettings } from "./TritonModule.settings";
 
 const coverTheme = TritonModule.fromName("CoverTheme");
+const realMax = TritonModule.fromName("RealMAX");
 coverTheme.liveReload = true;
+realMax.liveReload = true;
 
-await coverTheme.loadExports();
+// coverTheme.loadExports();
+// realMax.loadExports();
 
+// TESTING
 setTimeout(
 	() =>
 		// @ts-expect-error TESTING
@@ -38,19 +42,31 @@ const TritonSettings = async () => {
 					Triton: the largest moon of Neptune, notable for its retrograde orbit and icy, cryovolcanically active surface.
 				</Typography>
 			</Box>
-
 			<Stack spacing={4}>
-				<TritonStack title={"CoverTheme"}>
-					<TritonModuleSettings module={coverTheme} />
-				</TritonStack>
+				<TritonModuleSettings module={coverTheme} />
+				<TritonModuleSettings module={realMax} />
 			</Stack>
 		</Container>
 	);
 };
 
+ContextMenu.onOpen(({ event, contextMenu }) => {
+	if (event.type === "USER_PROFILE") {
+		const button = contextMenu.addButton("Triton Settings", () => {
+			// @ts-expect-error Neptune types bad
+			neptune.actions.router.push({
+				pathname: `/not-found`,
+				search: `triton`,
+				replace: true,
+			});
+		});
+		button.style.color = "hsl(32, 100%, 50%)";
+	}
+});
+
 const rootId = "TritonSettings";
 const root = document.getElementById(rootId) ?? document.createElement("div");
-tritonUnloads.add(root.remove);
+tritonUnloads.add(root.remove.bind(root));
 root.id = rootId;
 ReactDom.createRoot(root).render(TritonSettings());
 

@@ -5,7 +5,6 @@ import { actions, store } from "@neptune";
 import type { PlayQueueItem } from "neptune-types/tidal";
 
 import { safeIntercept } from "../../../lib/src/intercept/safeIntercept";
-import { unloadContextMenu } from "./contextMenu";
 
 const playMaxItem = async (elements: readonly PlayQueueItem[], index: number) => {
 	const newElements = [...elements];
@@ -23,7 +22,6 @@ const playMaxItem = async (elements: readonly PlayQueueItem[], index: number) =>
 };
 
 export const unloads = new Set<Unload>();
-unloads.add(unloadContextMenu);
 unloads.add(
 	MediaItem.onPreMediaTransition(async (mediaItem) => {
 		actions.playbackControls.pause();

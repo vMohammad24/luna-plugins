@@ -1,8 +1,11 @@
+import type { Unload } from "../unloads";
+
 export class StyleTag {
 	public readonly styleTag: HTMLElement;
-	constructor(public readonly id: string, private _css?: string) {
+	constructor(public readonly id: string, unloadables: Set<Unload>, private _css?: string) {
 		this.styleTag = (id ? document.getElementById(id) : this.createElement()) ?? this.createElement();
 		this.css = _css;
+		unloadables.add(this.remove.bind(this));
 	}
 
 	private createElement() {

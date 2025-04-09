@@ -1,34 +1,24 @@
 import { actions } from "@neptune";
-import { trace } from ".";
+import { trace, unloads } from ".";
 
 import { chunkArray } from "@inrixia/helpers";
 import { ContextMenu, interceptPromise } from "@triton/lib";
 
 import type { ItemId } from "neptune-types/tidal";
-
-const maxButton = document.createElement("button");
-maxButton.type = "button";
-maxButton.role = "menuitem";
-maxButton.textContent = "";
-maxButton.id = "realMax-button";
-maxButton.className = "context-button"; // Set class name for styling
+// import { hookContextMenu } from "neptune-types/api/hookContextMenu";
 
 const maxNewPlaylistSize = 450;
 
-export const unloadContextMenu = ContextMenu.onMediaItem(async ({ mediaCollection, contextMenu }) => {
-	maxButton.remove();
+unloads.add(
+	ContextMenu.onMediaItem(async ({ mediaCollection, contextMenu }) => {
+		const itemCount = await mediaCollection.mediaItemsCount();
+		console.log(mediaCollection);
+		if (itemCount === 0) return;
 
-	const itemCount = await mediaCollection.mediaItemsCount();
-	if (itemCount === 0) return;
+		const defaultText = itemCount > 1 ? `[RealMAX] Process ${itemCount} tracks` : "[RealMAX] Process track";
 
-	const defaultText = itemCount > 1 ? `[RealMAX] Process ${itemCount} tracks` : "[RealMAX] Process track";
-
-	maxButton.textContent = defaultText;
-	contextMenu.appendChild(maxButton);
-
-	maxButton.onclick = async () => {
-		try {
-			maxButton.disabled = true;
+		const maxButton = contextMenu.addButton(defaultText, async () => {
+			maxButton.onclick = null;
 			let trackIds: ItemId[] = [];
 			const sourceTitle = await mediaCollection.title();
 			maxButton.textContent = `[RealMAX] Loading...`;
@@ -77,9 +67,6 @@ export const unloadContextMenu = ContextMenu.onMediaItem(async ({ mediaCollectio
 				return trace.msg.err(`Failed to create playlist "${sourceTitle}"`);
 			}
 			trace.msg.err(`Successfully created playlist "${sourceTitle}" - Found ${trackIds.length} replacements!`);
-		} finally {
-			maxButton.textContent = defaultText;
-			maxButton.disabled = false;
-		}
-	};
-});
+		});
+	})
+);

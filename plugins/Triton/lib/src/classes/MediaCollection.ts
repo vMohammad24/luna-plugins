@@ -19,8 +19,7 @@ export class MediaItems implements MediaCollection {
 
 	public async title() {
 		for await (const mediaItem of await this.mediaItems()) {
-			const title = await mediaItem.title();
-			if (title) return title;
+			return mediaItem.tidalItem.title;
 		}
 	}
 

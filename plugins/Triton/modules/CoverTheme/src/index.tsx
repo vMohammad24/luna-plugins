@@ -13,9 +13,6 @@ const storage = getStorage("CoverTheme", {
 	applyTheme: true,
 });
 
-export const style = new StyleTag("CoverTheme", storage.applyTheme ? transparent : "");
-setTimeout(() => MediaItem.fromPlaybackContext().then(updateBackground));
-
 const cachePalette = async (mediaItem: MediaItem): Promise<Palette | undefined> => {
 	const album = await mediaItem.album();
 	const coverUrl = album?.coverUrl("640");
@@ -55,9 +52,10 @@ export const Settings = () => {
 };
 
 export const unloads = new Set<Unload>();
+export const style = new StyleTag("CoverTheme", unloads, storage.applyTheme ? transparent : "");
+setTimeout(() => MediaItem.fromPlaybackContext().then(updateBackground));
 
 unloads.add(MediaItem.onMediaTransition(updateBackground));
 unloads.add(MediaItem.onPreload(cachePalette));
 unloads.add(MediaItem.onPreMediaTransition(updateBackground));
-unloads.add(style.remove);
 unloads.add(() => vars.forEach((variable) => document.documentElement.style.removeProperty(variable)));

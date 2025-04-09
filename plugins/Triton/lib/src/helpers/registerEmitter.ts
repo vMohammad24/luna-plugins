@@ -1,12 +1,13 @@
-export type EventReceiver<V> = (value: V) => unknown;
-export type EmitEvent<V> = (eventValue: V, onError: (err: Error) => unknown) => Promise<unknown>;
-export type AddReceiver<V> = (cb: EventReceiver<V>) => () => void;
+export type Receiver<V> = (value: V) => unknown;
+export type Emit<V> = (eventValue: V, onError: (err: Error) => unknown) => Promise<unknown>;
+export type AddReceiver<V> = (cb: Receiver<V>) => () => void;
+export type AddEmitter<V> = (emitEvent: Emit<V>) => unknown;
 
-export function registerEmitter<V>(): [onEvent: AddReceiver<V>, emitEvent: EmitEvent<V>];
-export function registerEmitter<V>(registerEmitter: (emitEvent: EmitEvent<V>) => unknown): AddReceiver<V>;
-export function registerEmitter<V>(registerEmitter?: (emitEvent: EmitEvent<V>) => unknown): [onEvent: AddReceiver<V>, emitEvent: EmitEvent<V>] | AddReceiver<V> {
-	const listeners = new Set<EventReceiver<V>>();
-	const onEventValue: EmitEvent<V> = async (eventValue, onError) => {
+export function registerEmitter<V>(): [onEvent: AddReceiver<V>, emitEvent: Emit<V>];
+export function registerEmitter<V>(registerEmitter: AddEmitter<V>): AddReceiver<V>;
+export function registerEmitter<V>(registerEmitter?: AddEmitter<V>): [onEvent: AddReceiver<V>, emitEvent: Emit<V>] | AddReceiver<V> {
+	const listeners = new Set<Receiver<V>>();
+	const onEventValue: Emit<V> = async (eventValue, onError) => {
 		const promises = [];
 		for (const listener of listeners) {
 			try {
@@ -19,7 +20,7 @@ export function registerEmitter<V>(registerEmitter?: (emitEvent: EmitEvent<V>) =
 		}
 		await Promise.all(promises);
 	};
-	const addReceiver: AddReceiver<V> = (cb: EventReceiver<V>) => {
+	const addReceiver: AddReceiver<V> = (cb: Receiver<V>) => {
 		listeners.add(cb);
 		return () => {
 			listeners.delete(cb);

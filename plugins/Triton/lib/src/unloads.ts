@@ -11,7 +11,7 @@ export const unloadIt = async (unload: Unload) => {
 		await unload();
 		tritonUnloads.delete(unload);
 	} catch (err) {
-		tritonTracer.err.withContext(`Error unloading ${unload.source ?? ""} ${unload.name}`)(err);
+		tritonTracer.msg.err.withContext(`Error unloading ${unload.source ?? ""} ${unload.name}`)(err);
 	}
 };
 export const onUnload = () => tritonUnloads.forEach(unloadIt);
