@@ -13,7 +13,7 @@ export const ReloadButton = ({ spin, ...props }: ReloadButtonProps) => {
 		if (spin && !isSpinning) {
 			setIsSpinning(true);
 		} else if (!spin && isSpinning) {
-			setTimeout(() => setIsSpinning(false), 250);
+			setTimeout(() => setIsSpinning(false), 500);
 		}
 	}, [spin]);
 
@@ -21,7 +21,7 @@ export const ReloadButton = ({ spin, ...props }: ReloadButtonProps) => {
 		<IconButton {...props} color="warning">
 			<CachedIcon
 				sx={{
-					animation: isSpinning ? "spin 0.25s linear infinite" : "none",
+					animation: isSpinning ? "spin 0.5s linear infinite" : "none",
 					"@keyframes spin": {
 						"0%": { transform: "rotate(0deg)" },
 						"100%": { transform: "rotate(360deg)" },

@@ -137,10 +137,12 @@ export class TritonModule {
 		if (this.liveReload._) this.startReloadLoop();
 	}
 	public async disable() {
+		this.loading._ = true;
 		// Disable the reload loop
 		this.stopReloadLoop();
 		await this.unload();
 		this._enabled._ = false;
+		this.loading._ = false;
 	}
 	public async reload() {
 		await this.disable();
