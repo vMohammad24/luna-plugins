@@ -1,4 +1,4 @@
-import { getStorage, MediaItem, React, StyleTag, Tracer, TritonSwitch, type Unload } from "@triton/lib";
+import { getStorage, MediaItem, React, StyleTag, Tracer, TritonSettings, TritonSwitch, type Unload } from "@triton/lib";
 
 const trace = Tracer("[CoverTheme]");
 
@@ -7,11 +7,6 @@ import type { ItemId } from "neptune-types/tidal";
 import transparent from "file://transparent.css?minify";
 
 import { getPalette, type Palette } from "./vibrant.native";
-
-const storage = getStorage("CoverTheme", {
-	paletteCache: {},
-	applyTheme: true,
-});
 
 const cachePalette = async (mediaItem: MediaItem): Promise<Palette | undefined> => {
 	const album = await mediaItem.album();
@@ -35,24 +30,29 @@ const updateBackground = async (mediaItem?: MediaItem) => {
 	}
 };
 
+const storage = getStorage("CoverTheme", {
+	paletteCache: {},
+	applyTheme: true,
+});
 export const Settings = () => {
-	const [applyTheme, settApplyTheme] = React.useState(storage.applyTheme);
-	React.useEffect(() => settApplyTheme(storage.applyTheme), [storage.applyTheme]);
+	const [applyTheme, setApplyTheme] = React.useState(storage.applyTheme);
 	return (
-		<TritonSwitch
-			title={"Enable Theme"}
-			desc={"Applies the theme to the client. If disabled css variables are still available for use"}
-			checked={applyTheme}
-			onChange={(_, checked) => {
-				settApplyTheme((storage.applyTheme = checked));
-				style.css = checked ? transparent : "";
-			}}
-		/>
+		<TritonSettings>
+			<TritonSwitch
+				title={"Enable Theme"}
+				desc={"Applies the theme to the client. If disabled css variables are still available for use"}
+				checked={applyTheme}
+				onChange={(_, checked) => {
+					setApplyTheme((storage.applyTheme = checked));
+					style.css = checked ? transparent : "";
+				}}
+			/>
+		</TritonSettings>
 	);
 };
 
 export const unloads = new Set<Unload>();
-export const style = new StyleTag("CoverTheme", unloads, storage.applyTheme ? transparent : "");
+const style = new StyleTag("CoverTheme", unloads, storage.applyTheme ? transparent : "");
 setTimeout(() => MediaItem.fromPlaybackContext().then(updateBackground));
 
 unloads.add(MediaItem.onMediaTransition(updateBackground));

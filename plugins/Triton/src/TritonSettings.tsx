@@ -13,11 +13,6 @@ import { TritonModuleSettings } from "./TritonModule.settings";
 
 const coverTheme = TritonModule.fromName("CoverTheme");
 const realMax = TritonModule.fromName("RealMAX");
-coverTheme.liveReload = true;
-realMax.liveReload = true;
-
-// coverTheme.loadExports();
-// realMax.loadExports();
 
 // TESTING
 setTimeout(
@@ -39,10 +34,10 @@ const TritonSettings = async () => {
 					Triton Settings
 				</Typography>
 				<Typography marginLeft={1} variant="subtitle1">
-					Triton: the largest moon of Neptune, notable for its retrograde orbit and icy, cryovolcanically active surface.
+					Triton is the largest moon of Neptune, notable for its retrograde orbit and icy, cryovolcanically active surface.
 				</Typography>
 			</Box>
-			<Stack spacing={4}>
+			<Stack spacing={2}>
 				<TritonModuleSettings module={coverTheme} />
 				<TritonModuleSettings module={realMax} />
 			</Stack>
@@ -60,7 +55,8 @@ ContextMenu.onOpen(({ event, contextMenu }) => {
 				replace: true,
 			});
 		});
-		button.style.color = "hsl(32, 100%, 50%)";
+		button.style.fontSize = "14px";
+		button.classList.add("glow-on-hover");
 	}
 });
 
@@ -74,12 +70,14 @@ ReactDom.createRoot(root).render(TritonSettings());
 safeIntercept<{ search: string }>(
 	"router/NAVIGATED",
 	(payload) => {
+		if (root.parentElement) root.parentElement.style.background = "";
 		root.remove();
 		if (payload.search === `?triton`) {
 			setTimeout(() => {
 				const notFound = document.querySelector<HTMLElement>(`[class^="_pageNotFoundError_"]`);
 				if (notFound) {
 					notFound.style.display = "none";
+					notFound.parentElement!.style.background = "linear-gradient(to right, rgba(134, 71, 115, 0.6), rgba(255, 25, 121, 0.6)";
 					notFound.insertAdjacentElement("afterend", root);
 				}
 			});

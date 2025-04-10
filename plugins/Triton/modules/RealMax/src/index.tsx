@@ -21,6 +21,7 @@ const playMaxItem = async (elements: readonly PlayQueueItem[], index: number) =>
 	return false;
 };
 
+export { Settings } from "./Settings";
 export const unloads = new Set<Unload>();
 unloads.add(
 	MediaItem.onPreMediaTransition(async (mediaItem) => {

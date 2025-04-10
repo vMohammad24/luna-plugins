@@ -2,6 +2,6 @@
 	"name": "@triton/lib.native",
 	"exports": "./src/index.ts",
 	"dependencies": {
-		"electron": "^35.1.4"
+		"electron": "^35.1.5"
 	}
 }

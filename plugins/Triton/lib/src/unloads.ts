@@ -1,3 +1,4 @@
+import { Semaphore } from "@inrixia/helpers";
 import { tritonTracer } from ".";
 
 export type Unload = {
@@ -5,13 +6,33 @@ export type Unload = {
 	source?: string;
 };
 
-export const tritonUnloads = new Set<Unload>();
-export const unloadIt = async (unload: Unload) => {
+const unloadSema = new Semaphore(1);
+export const unloadSet = async (unloads?: Set<Unload>): Promise<void> => {
+	if (unloads === undefined) return;
+	// Ensure that we cant unload more than one thing at a time to
+	// avoid race conditions or calling a unload twice
+	const release = await unloadSema.obtain();
 	try {
-		await unload();
-		tritonUnloads.delete(unload);
-	} catch (err) {
-		tritonTracer.msg.err.withContext(`Error unloading ${unload.source ?? ""} ${unload.name}`)(err);
+		const unloading = [];
+		for (const unload of unloads) {
+			// Unload async to not block
+			unloading.push(
+				(async () => {
+					try {
+						await unload();
+					} catch (err) {
+						tritonTracer.msg.err.withContext(`Error unloading ${unload.source ?? ""} ${unload.name}`)(err);
+					}
+				})()
+			);
+		}
+		// Clear unloads after called to ensure their never called again
+		unloads.clear();
+		await Promise.all(unloading);
+	} finally {
+		release();
 	}
 };
-export const onUnload = () => tritonUnloads.forEach(unloadIt);
+
+export const tritonUnloads = new Set<Unload>();
+export const onUnload = () => unloadSet(tritonUnloads);

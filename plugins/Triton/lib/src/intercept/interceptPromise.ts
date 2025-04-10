@@ -1,7 +1,7 @@
 import { Semaphore } from "@inrixia/helpers";
 import { ActionType } from "neptune-types/api/intercept";
 import type { ActionTypes } from "neptune-types/tidal";
-import { unloadIt, type Unload } from "../unloads";
+import { unloadSet, type Unload } from "../unloads";
 import { safeIntercept } from "./safeIntercept";
 
 const intercepts: Record<ActionType, Semaphore> = {} as Record<ActionType, Semaphore>;
@@ -32,5 +32,5 @@ export const interceptPromise = async <RESAT extends ActionType, REJAT extends A
 		unloads.add(() => clearTimeout(timeout));
 		// Queue our action to the eventLoop
 		setTimeout(trigger);
-	}).finally(() => unloads.forEach(unloadIt));
+	}).finally(() => unloadSet(unloads));
 };

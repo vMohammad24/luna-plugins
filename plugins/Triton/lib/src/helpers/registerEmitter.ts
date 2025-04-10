@@ -1,5 +1,5 @@
 export type Receiver<V> = (value: V) => unknown;
-export type Emit<V> = (eventValue: V, onError: (err: Error) => unknown) => Promise<unknown>;
+export type Emit<V> = (eventValue: V, onError: (err: unknown) => unknown) => Promise<unknown>;
 export type AddReceiver<V> = (cb: Receiver<V>) => () => void;
 export type AddEmitter<V> = (emitEvent: Emit<V>) => unknown;
 
@@ -12,10 +12,9 @@ export function registerEmitter<V>(registerEmitter?: AddEmitter<V>): [onEvent: A
 		for (const listener of listeners) {
 			try {
 				const res = listener(eventValue);
-				if (res instanceof Promise) promises.push(res);
+				if (res instanceof Promise) promises.push(res.catch(onError));
 			} catch (err) {
-				if (err instanceof Error) onError(err);
-				else onError(new Error(err?.toString()));
+				onError(err);
 			}
 		}
 		await Promise.all(promises);
