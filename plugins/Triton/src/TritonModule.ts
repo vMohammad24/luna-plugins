@@ -31,6 +31,12 @@ interface TritonModuleStore {
 	liveReload: boolean;
 }
 
+export type Author = {
+	name: string;
+	url: string;
+	avatarUrl?: string;
+};
+
 const moduleCache = getStorage<Record<string, TritonModuleStore>>("TritonModuleStore", {});
 
 export class TritonModule {
@@ -38,10 +44,10 @@ export class TritonModule {
 	public readonly uri: string;
 
 	public static readonly modules: Record<string, TritonModule> = {};
-	public static fromName(name: string) {
-		return (this.modules[name] ??= new this(name));
+	public static fromName(name: string, author: Author) {
+		return (this.modules[name] ??= new this(name, author));
 	}
-	private constructor(public readonly name: string) {
+	private constructor(public readonly name: string, public readonly author: Author) {
 		this.uri = `${TritonModule.origin}/tritonModules/${this.name}`;
 		tritonUnloads.add(() => {
 			// Ensure reloadLoop is not running on unload

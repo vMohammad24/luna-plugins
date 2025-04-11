@@ -8,11 +8,22 @@ import Typography from "@mui/material/Typography";
 import { ContextMenu, safeIntercept, tritonUnloads } from "@triton/lib";
 
 import Stack from "@mui/material/Stack";
-import { TritonModule } from "./TritonModule";
+import { TritonModule, type Author } from "./TritonModule";
 import { TritonModuleSettings } from "./TritonModule.settings";
 
-const coverTheme = TritonModule.fromName("CoverTheme");
-const realMax = TritonModule.fromName("RealMAX");
+const Inrixia: Author = {
+	name: "Inrixia",
+	url: "https://github.com/Inrixia",
+	avatarUrl: "https://2.gravatar.com/avatar/eeaffef9eb9b436dccc58c6c44c9fe8c3528e83e3bf64e1c736a68dbe8c097d3",
+};
+const Nick: Author = {
+	name: "Nick Oates",
+	url: "https://github.com/n1ckoates",
+	avatarUrl: "https://1.gravatar.com/avatar/665fef45b1c988d52f011b049b99417485b9b558947169bc4b726b8eb69a2226",
+};
+
+const coverTheme = TritonModule.fromName("CoverTheme", Nick);
+const realMax = TritonModule.fromName("RealMAX", Inrixia);
 
 // TESTING
 setTimeout(
