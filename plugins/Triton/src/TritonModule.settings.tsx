@@ -17,6 +17,7 @@ export const TritonModuleSettings = ({ module }: { module: TritonModule }) => {
 	const [enabled, setEnabled] = React.useState(module.enabled);
 	const [loading, setLoading] = React.useState(true);
 	const [liveReload, setLiveReload] = React.useState(module.liveReload._);
+	const [fetching, setFetching] = React.useState(module.fetching._);
 	const [loadError, setLoadError] = React.useState(module.loadError._);
 
 	React.useEffect(() => {
@@ -24,6 +25,7 @@ export const TritonModuleSettings = ({ module }: { module: TritonModule }) => {
 			module.Settings.onValue((next) => setSettings(() => next)),
 			module.loading.onValue((next) => setLoading(next)),
 			module.liveReload.onValue((next) => setLiveReload(next)),
+			module.fetching.onValue((next) => setFetching(next)),
 			module.loadError.onValue((next) => setLoadError(next)),
 			module.onEnabled((next) => setEnabled(next)),
 		]);
@@ -67,7 +69,13 @@ export const TritonModuleSettings = ({ module }: { module: TritonModule }) => {
 					<ReloadButton spin={loading} disabled={disabled} onClick={module.reload.bind(module)} />
 				</Tooltip>
 				<Tooltip title={liveReload ? "Disable live reloading" : "Enable live reloading"}>
-					<LiveReloadToggleButton disabled={disabled} enabled={liveReload} sx={{ marginLeft: 1 }} onClick={() => (module.liveReload._ = !module.liveReload._)} />
+					<LiveReloadToggleButton
+						disabled={disabled}
+						enabled={liveReload}
+						fetching={fetching}
+						sx={{ marginLeft: 1 }}
+						onClick={() => (module.liveReload._ = !module.liveReload._)}
+					/>
 				</Tooltip>
 				{loadError && (
 					<Typography

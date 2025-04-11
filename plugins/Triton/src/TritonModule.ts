@@ -99,6 +99,7 @@ export class TritonModule {
 	}
 
 	public readonly loading: Signal<boolean> = new Signal(false);
+	public readonly fetching: Signal<boolean> = new Signal(false);
 	public readonly loadError = new Signal<string | undefined>(undefined);
 	public Settings = new Signal<React.FC | undefined>(this._exports?.Settings);
 	public readonly liveReload: Signal<boolean>;
@@ -168,6 +169,7 @@ export class TritonModule {
 	 */
 	private async fetchNewCode(): Promise<boolean> {
 		try {
+			this.fetching._ = true;
 			const hash = await fetchText(`${this.uri}.hash`);
 			// TODO switch to checking hash against actual code hash
 			if (this.hash !== hash) {
@@ -175,7 +177,10 @@ export class TritonModule {
 				this.hash = hash;
 				return true;
 			}
-		} catch {}
+		} catch {
+		} finally {
+			this.fetching._ = false;
+		}
 		return false;
 	}
 
@@ -186,13 +191,13 @@ export class TritonModule {
 
 		try {
 			if (!force && !this.enabled) return;
-			this.loading._ = true;
 
 			// If code hasnt changed and we have already loaded exports we are done
 			if (!(await this.fetchNewCode()) && this.exports !== undefined) return;
 
 			// If code failed to fetch then nothing we can do
 			if (this.code === undefined) return;
+			this.loading._ = true;
 
 			// Ensure we unload if previously loaded
 			await this.unload();

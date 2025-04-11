@@ -9,7 +9,11 @@ export const trace = Tracer("[DiscordRPC]", errSignal);
 
 safeIntercept(
 	["playbackControls/TIME_UPDATE", "playbackControls/SEEK", "playbackControls/SET_PLAYBACK_STATE"],
-	() => setTimeout(() => updateActivity().catch(trace.err.withContext("Failed to set activity"))),
+	() => {
+		updateActivity()
+			.then(() => (errSignal._ = undefined))
+			.catch(trace.err.withContext("Failed to set activity"));
+	},
 	unloads
 );
 unloads.add(MediaItem.onMediaTransition(updateActivity));

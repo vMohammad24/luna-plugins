@@ -1,13 +1,11 @@
 import { grey } from "@mui/material/colors";
 import { Button, getStorage, React, TritonSetting, TritonSettings } from "@triton/lib";
-import { trace } from ".";
+import { errSignal, trace } from ".";
 import { LastFM, type LastFmSession } from "./LastFM";
 
 export const storage = getStorage<{
 	session?: LastFmSession;
 }>("LastFM", {});
-
-storage.session = undefined;
 
 export const Settings = () => {
 	const [session, setSession] = React.useState(storage.session);
@@ -16,7 +14,9 @@ export const Settings = () => {
 	const onClick = async () => {
 		setLoading(true);
 		const res = await LastFM.authenticate().catch(trace.err.withContext("Authenticating"));
+
 		setSession((storage.session = res?.session));
+		if (storage.session !== undefined) errSignal._ = undefined;
 		setLoading(false);
 	};
 
