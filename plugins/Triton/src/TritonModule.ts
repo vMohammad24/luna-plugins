@@ -22,6 +22,7 @@ const getOrigin = () => {
 type ModuleExports = {
 	unloads?: Set<Unload>;
 	Settings?: React.FC;
+	errSignal?: Signal<string | undefined>;
 };
 
 interface TritonModuleConfig {
@@ -155,6 +156,7 @@ export class TritonModule {
 		this.stopReloadLoop();
 		await this.unload();
 		this._enabled._ = false;
+		this.loadError._ = undefined;
 	}
 	public async reload() {
 		await this.disable();
@@ -214,15 +216,22 @@ export class TritonModule {
 				],
 			});
 
-			for (const unload of this.exports.unloads ?? []) {
+			// Ensure loadError is cleared
+			this.loadError._ = undefined;
+
+			const { unloads, errSignal } = this.exports;
+			if (errSignal !== undefined) {
+				const unloadErr = errSignal.onValue((next) => (this.loadError._ = next));
+				unloads?.add(unloadErr);
+				tritonUnloads.add(unloadErr);
+			}
+
+			for (const unload of unloads ?? []) {
 				// Set unload source for context if function fails to call
 				unload.source ??= this.name;
 				// Add this modules unloads to tritons so they are triggered if triton is unloaded
 				tritonUnloads.add(unload);
 			}
-
-			// Ensure loadError is cleared
-			this.loadError._ = undefined;
 		} catch (err) {
 			this.loadError._ = (<any>err)?.message ?? err?.toString();
 			tritonTracer.msg.err.withContext(`Failed to load module ${this.name}`)(err);

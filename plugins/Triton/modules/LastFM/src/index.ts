@@ -1,5 +1,7 @@
-import { MediaItem, PlayState, Tracer, delUndefined, type Unload } from "@triton/lib";
-const trace = Tracer("[last.fm]");
+import { MediaItem, PlayState, Signal, Tracer, delUndefined, type Unload } from "@triton/lib";
+
+export const errSignal = new Signal<string | undefined>(undefined);
+export const trace = Tracer("[last.fm]", errSignal);
 
 import { actions } from "@neptune";
 import { LastFM, ScrobbleOpts } from "./LastFM";
@@ -20,6 +22,8 @@ const makeScrobbleOpts = async (mediaItem: MediaItem): Promise<ScrobbleOpts> => 
 	delUndefined(scrobbleOpts);
 	return scrobbleOpts as ScrobbleOpts;
 };
+
+export { Settings } from "./Settings";
 
 export const unloads = new Set<Unload>();
 unloads.add(

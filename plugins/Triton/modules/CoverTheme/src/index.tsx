@@ -1,6 +1,7 @@
-import { MediaItem, StyleTag, Tracer, type Unload } from "@triton/lib";
+import { MediaItem, Signal, StyleTag, Tracer, type Unload } from "@triton/lib";
 
-const trace = Tracer("[CoverTheme]");
+export const errSignal = new Signal<string | undefined>(undefined);
+const trace = Tracer("[CoverTheme]", errSignal);
 
 import type { ItemId } from "neptune-types/tidal";
 

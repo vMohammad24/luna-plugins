@@ -1,12 +1,14 @@
 import { actions, store } from "@neptune";
 
-import { MediaItem, Tracer, interceptPromise } from "@triton/lib";
-const trace = Tracer("[Shazam]");
-
-// TODO: replace this with proper triton storage
-const settings: any = {};
+import { MediaItem, Signal, Tracer, interceptPromise } from "@triton/lib";
 
 import { recognizeTrack } from "./shazam.native";
+
+import { storage } from "./Settings";
+export { Settings } from "./Settings";
+
+export const errSignal = new Signal<string | undefined>(undefined);
+const trace = Tracer("[Shazam]", errSignal);
 
 const addToPlaylist = async (playlistUUID: string, mediaItemIdsToAdd: string[]) => {
 	await interceptPromise(
@@ -38,12 +40,13 @@ const handleDrop = async (event: DragEvent) => {
 			try {
 				const matches = await recognizeTrack({
 					bytes,
-					startInMiddle: settings.startInMiddle,
-					exitOnFirstMatch: settings.exitOnFirstMatch,
+					startInMiddle: storage.startInMiddle,
+					exitOnFirstMatch: storage.exitOnFirstMatch,
 				});
 				if (matches.length === 0) return trace.msg.warn(`No matches for ${file.name}`);
 				for (const shazamData of matches) {
-					const trackName = shazamData.track?.share?.text ?? `${shazamData.track?.title ?? "unknown"} by ${shazamData.track?.artists?.[0] ?? "unknown"}"`;
+					const trackName =
+						shazamData.track?.share?.text ?? `${shazamData.track?.title ?? "unknown"} by ${shazamData.track?.artists?.[0] ?? "unknown"}"`;
 					const prefix = `[File: ${file.name}, Match: ${trackName}]`;
 					const isrc = shazamData.track?.isrc;
 					trace.log(shazamData);

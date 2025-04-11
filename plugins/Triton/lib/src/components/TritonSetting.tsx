@@ -5,12 +5,12 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Tooltip from "@mui/material/Tooltip";
 import { TritonTitle, type TritonTitleValues } from "./TritonTitle";
 
-export type TritonSettingSwitchProps = Omit<FormControlLabelProps, "label"> & TritonTitleValues;
-export const TritonSetting = (props: TritonSettingSwitchProps) => (
+export type TritonSettingProps = Omit<FormControlLabelProps, "label"> & TritonTitleValues & { tooltip?: string };
+export const TritonSetting = (props: TritonSettingProps) => (
 	<FormControlLabel
 		{...props}
 		control={
-			<Tooltip sx={{ marginRight: "auto" }} title={props.title}>
+			<Tooltip sx={{ marginRight: "auto" }} title={props.tooltip ?? props.title}>
 				{props.control}
 			</Tooltip>
 		}

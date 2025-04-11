@@ -8,8 +8,8 @@ export const TritonSettings = ({ children }: PropsWithChildren) => (
 	<Stack
 		spacing={1}
 		divider={
-			<Box padding={1} display="flex" justifyContent="center">
-				<Divider color={grey.A100} variant="middle" sx={{ opacity: 0.25, width: "80%" }} />
+			<Box padding={0} display="flex" justifyContent="center">
+				<Divider color={grey.A400} variant="middle" sx={{ opacity: 0.25, width: "85%" }} />
 			</Box>
 		}
 		sx={{

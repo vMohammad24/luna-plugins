@@ -1,17 +1,14 @@
 import { getStorage, React, TritonLink, TritonSecureTextSetting, TritonSettings } from "@triton/lib";
+import { errSignal } from ".";
 
 export const storage = getStorage<{ userToken?: string }>("ListenBrainz", {});
 
 export const Settings = () => {
-	const [showToken, setShowToken] = React.useState(false);
-	const [token, setToken] = React.useState(storage.userToken || "");
+	const [token, setToken] = React.useState(storage.userToken);
 
-	const handleTokenChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const newToken = event.target.value;
-		setToken(newToken);
-		storage.userToken = newToken;
-	};
-
+	React.useEffect(() => {
+		errSignal._ = (token ?? "") === "" ? "User token not set." : undefined;
+	}, [token]);
 	return (
 		<TritonSettings>
 			<TritonSecureTextSetting
@@ -25,7 +22,7 @@ export const Settings = () => {
 					</>
 				}
 				value={token}
-				onChange={handleTokenChange}
+				onChange={(e) => setToken((storage.userToken = e.target.value))}
 				error={!token}
 			/>
 		</TritonSettings>

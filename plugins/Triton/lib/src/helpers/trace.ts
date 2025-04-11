@@ -1,6 +1,6 @@
-import { memoize } from "@inrixia/helpers";
 import { actions } from "@neptune";
 import { Message, Severity } from "neptune-types/tidal";
+import type { Signal } from "./Signal";
 
 type LoggerFunc = (...data: any[]) => void;
 type MessengerFunc = (messageInfo: Message) => void;
@@ -14,7 +14,7 @@ type Messenger = {
 	withContext(context: string): (message: unknown) => undefined;
 };
 
-export const Tracer = memoize((source: string) => {
+export const Tracer = (source: string, errSignal?: Signal<string | undefined>) => {
 	const createLogger = <T extends LoggerFunc>(logger: T): Logger<T> => {
 		const _logger = (...data: Parameters<T>) => {
 			logger(source, ...data);
@@ -31,7 +31,20 @@ export const Tracer = memoize((source: string) => {
 
 	const log = createLogger(console.log);
 	const warn = createLogger(console.warn);
-	const err = createLogger(console.error);
+	const err = createLogger(
+		errSignal
+			? (source, ...args) => {
+					console.error(source, ...args);
+					errSignal._ = args
+						.map((arg) => {
+							if (arg instanceof Error) return arg.message;
+							if (typeof arg === "object") return "";
+							return String(arg);
+						})
+						.join(" ");
+			  }
+			: console.error
+	);
 	const debug = createLogger(console.debug);
 
 	const createMessager = (logger: Logger, messager: MessengerFunc, severity: Severity): Messenger => {
@@ -63,4 +76,4 @@ export const Tracer = memoize((source: string) => {
 			err: createMessager(err, actions.message.messageError, "ERROR"),
 		},
 	};
-});
+};

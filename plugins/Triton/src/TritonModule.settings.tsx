@@ -41,7 +41,7 @@ export const TritonModuleSettings = ({ module }: { module: TritonModule }) => {
 				// boxShadow: 5,
 				borderRadius: 3,
 				backgroundColor: "rgba(0, 0, 0, 0.10)",
-				border: loadError ? "2px solid rgba(255, 0, 0, 0.45)" : null,
+				boxShadow: loadError ? "0 0 10px rgba(255, 0, 0, 0.70)" : "none",
 				padding: 2,
 			}}
 		>
@@ -75,14 +75,13 @@ export const TritonModuleSettings = ({ module }: { module: TritonModule }) => {
 						sx={{
 							color: "white",
 							fontWeight: 500,
-							backgroundColor: "rgba(255, 0, 0, 0.5)",
+							backgroundColor: "rgba(256, 0, 0, 0.5)",
 							padding: 1,
 							borderRadius: 1,
-							boxShadow: 3,
 							paddingTop: 1.5,
 						}}
 					>
-						Error loading: {loadError}
+						{loadError}
 					</Typography>
 				)}
 				<Box sx={{ flexGrow: 1 }} /> {/* This pushes the author section to the right */}

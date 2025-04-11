@@ -5,7 +5,7 @@ type NowPlayingPayload = Omit<Payload, "listened_at">;
 
 export class ListenBrainz {
 	private static async sendRequest(body?: { listen_type: "single" | "playing_now"; payload: Payload[] | NowPlayingPayload[] }) {
-		if (storage.userToken === "") return;
+		if (storage.userToken === "") throw new Error("User token not set");
 		return fetch(`https://api.listenbrainz.org/1/submit-listens`, {
 			headers: {
 				"Content-type": "application/json",

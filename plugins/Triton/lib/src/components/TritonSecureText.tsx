@@ -13,6 +13,14 @@ export const TritonSecureText = (props: TritonSecureTextProps) => {
 	return (
 		<OutlinedInput
 			{...props}
+			sx={{
+				"&.Mui-error": {
+					"& .MuiOutlinedInput-notchedOutline": {
+						borderColor: "warning.main",
+					},
+				},
+				...props.sx,
+			}}
 			type={showPassword ? "text" : "password"}
 			endAdornment={
 				<InputAdornment position="end">

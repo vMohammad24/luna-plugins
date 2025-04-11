@@ -1,10 +1,10 @@
-import { MediaItem, Tracer, type Unload } from "@triton/lib";
-export const trace = Tracer("[RealMAX]");
+import { MediaItem, Signal, Tracer, type Unload, safeIntercept } from "@triton/lib";
+
+export const errSignal = new Signal<string | undefined>(undefined);
+export const trace = Tracer("[RealMAX]", errSignal);
 
 import { actions, store } from "@neptune";
 import type { PlayQueueItem } from "neptune-types/tidal";
-
-import { safeIntercept } from "../../../lib/src/intercept/safeIntercept";
 
 const playMaxItem = async (elements: readonly PlayQueueItem[], index: number) => {
 	const newElements = [...elements];

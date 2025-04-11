@@ -1,10 +1,8 @@
 import { asyncDebounce } from "@inrixia/helpers";
-import { MediaItem, PlayState, Tracer } from "@triton/lib";
+import { MediaItem, PlayState } from "@triton/lib";
 
 import type { SetActivity } from "@xhayper/discord-rpc";
 import { setActivity } from "./discord.native";
-
-export const trace = Tracer("[DiscordRPC]");
 
 const STR_MAX_LEN = 127;
 const fmtStr = (s?: string) => {
@@ -57,5 +55,5 @@ export const updateActivity = asyncDebounce(async (mediaItem?: MediaItem) => {
 		activity.largeImageText = await album.title().then(fmtStr);
 	}
 
-	return setActivity(activity).catch(trace.err.withContext("Failed to set activity"));
+	await setActivity(activity);
 }, true);

@@ -1,5 +1,7 @@
-import { MediaItem, PlayState, Tracer, type Unload } from "@triton/lib";
-const trace = Tracer("[ListenBrainz]");
+import { MediaItem, PlayState, Signal, Tracer, type Unload } from "@triton/lib";
+
+export const errSignal = new Signal<string | undefined>(undefined);
+const trace = Tracer("[ListenBrainz]", errSignal);
 
 import { ListenBrainz } from "./ListenBrainz";
 import { makeTrackPayload } from "./makeTrackPayload";
