@@ -1,19 +1,16 @@
-import { fetchJson } from "@triton/lib";
 import type { Payload } from "./ListenBrainzTypes.js";
-
-// TODO: replace this with proper triton storage
-const settings: any = {};
+import { storage } from "./Settings.js";
 
 type NowPlayingPayload = Omit<Payload, "listened_at">;
 
 export class ListenBrainz {
 	private static async sendRequest(body?: { listen_type: "single" | "playing_now"; payload: Payload[] | NowPlayingPayload[] }) {
-		if (settings.userToken === "") return;
-		return fetchJson(`https://api.listenbrainz.org/1/submit-listens`, {
+		if (storage.userToken === "") return;
+		return fetch(`https://api.listenbrainz.org/1/submit-listens`, {
 			headers: {
 				"Content-type": "application/json",
 				Accept: "application/json",
-				Authorization: `Token ${settings.userToken}`,
+				Authorization: `Token ${storage.userToken}`,
 			},
 			method: "POST",
 			body: JSON.stringify(body),

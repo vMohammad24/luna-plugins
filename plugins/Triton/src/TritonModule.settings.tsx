@@ -38,9 +38,9 @@ export const TritonModuleSettings = ({ module }: { module: TritonModule }) => {
 		<Stack
 			spacing={1}
 			sx={{
-				boxShadow: 5,
+				// boxShadow: 5,
 				borderRadius: 3,
-				backgroundColor: "rgba(0, 0, 0, 0.35)",
+				backgroundColor: "rgba(0, 0, 0, 0.10)",
 				border: loadError ? "2px solid rgba(255, 0, 0, 0.45)" : null,
 				padding: 2,
 			}}

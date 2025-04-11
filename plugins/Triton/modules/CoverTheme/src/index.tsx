@@ -1,4 +1,4 @@
-import { getStorage, MediaItem, React, StyleTag, Tracer, TritonSettings, TritonSwitch, type Unload } from "@triton/lib";
+import { MediaItem, StyleTag, Tracer, type Unload } from "@triton/lib";
 
 const trace = Tracer("[CoverTheme]");
 
@@ -6,6 +6,7 @@ import type { ItemId } from "neptune-types/tidal";
 
 import transparent from "file://transparent.css?minify";
 
+import { storage } from "./Settings";
 import { getPalette, type Palette } from "./vibrant.native";
 
 const cachePalette = async (mediaItem: MediaItem): Promise<Palette | undefined> => {
@@ -30,29 +31,10 @@ const updateBackground = async (mediaItem?: MediaItem) => {
 	}
 };
 
-const storage = getStorage("CoverTheme", {
-	paletteCache: {},
-	applyTheme: true,
-});
-export const Settings = () => {
-	const [applyTheme, setApplyTheme] = React.useState(storage.applyTheme);
-	return (
-		<TritonSettings>
-			<TritonSwitch
-				title={"Enable Theme"}
-				desc={"Applies the theme to the client. If disabled css variables are still available for use"}
-				checked={applyTheme}
-				onChange={(_, checked) => {
-					setApplyTheme((storage.applyTheme = checked));
-					style.css = checked ? transparent : "";
-				}}
-			/>
-		</TritonSettings>
-	);
-};
+export { Settings } from "./Settings";
 
 export const unloads = new Set<Unload>();
-const style = new StyleTag("CoverTheme", unloads, storage.applyTheme ? transparent : "");
+export const style = new StyleTag("CoverTheme", unloads, storage.applyTheme ? transparent : "");
 setTimeout(() => MediaItem.fromPlaybackContext().then(updateBackground));
 
 unloads.add(MediaItem.onMediaTransition(updateBackground));

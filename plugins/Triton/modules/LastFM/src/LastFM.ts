@@ -1,13 +1,14 @@
-import { fetchJson, findModuleFunction } from "@triton/lib";
-
-// TODO: replace this with proper triton storage
-const storage: any = {};
+import { fetchJson, findModuleFunction, getStorage } from "@triton/lib";
 
 const lastFmSecret = findModuleFunction<string>("lastFmSecret", "string");
 const lastFmApiKey = findModuleFunction<string>("lastFmApiKey", "string");
 
 if (lastFmSecret === undefined) throw new Error("Last.fm secret not found");
 if (lastFmApiKey === undefined) throw new Error("Last.fm API key not found");
+
+const storage = getStorage<{
+	session?: LastFmSession;
+}>("LastFM", {});
 
 import { NowPlaying } from "./types/NowPlaying";
 import { Scrobble } from "./types/Scrobble";
@@ -75,13 +76,14 @@ export class LastFM {
 	}
 
 	private static getSession = async (): Promise<LastFmSession> => {
-		if (storage.lastFmSession !== undefined) return storage.lastFmSession;
+		if (storage.session !== undefined) return storage.session;
 		const { token } = await LastFM.sendRequest<{ token: string }>("auth.getToken");
-		window.open(`https://www.last.fm/api/auth/?api_key=${lastFmApiKey}&token=${token}`, "_blank");
-		const result = window.confirm("Continue with last.fm authentication? Ensure you have given TIDAL permission on the opened page.");
+		const authUrl = `https://www.last.fm/api/auth/?api_key=${lastFmApiKey}&token=${token}`;
+		window.open(authUrl, "_blank");
+		const result = window.confirm(`Go to "${authUrl}" give TIDAL permission on the opened page and then confirm.`);
 		if (!result) throw new Error("Authentication cancelled");
 		const { session } = await LastFM.sendRequest<{ session: LastFmSession }>("auth.getSession", { token });
-		return (storage.lastFmSession = session);
+		return (storage.session = session);
 	};
 
 	public static async updateNowPlaying(opts: NowPlayingOpts) {

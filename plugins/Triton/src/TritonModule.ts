@@ -24,11 +24,14 @@ type ModuleExports = {
 	Settings?: React.FC;
 };
 
-interface TritonModuleStore {
-	code?: string;
-	hash?: string;
+interface TritonModuleConfig {
 	enabled: boolean;
 	liveReload: boolean;
+}
+
+interface TritonModuleStore extends TritonModuleConfig {
+	code?: string;
+	hash?: string;
 }
 
 export type Author = {
@@ -44,21 +47,19 @@ export class TritonModule {
 	public readonly uri: string;
 
 	public static readonly modules: Record<string, TritonModule> = {};
-	public static fromName(name: string, author: Author) {
-		return (this.modules[name] ??= new this(name, author));
+	public static fromName(name: string, author: Author, defaults: Partial<TritonModuleConfig> = {}) {
+		defaults.enabled ??= true;
+		defaults.liveReload ??= false;
+		return (this.modules[name] ??= new this(name, author, <TritonModuleConfig>defaults));
 	}
-	private constructor(public readonly name: string, public readonly author: Author) {
+	private constructor(public readonly name: string, public readonly author: Author, defaults: TritonModuleConfig) {
 		this.uri = `${TritonModule.origin}/tritonModules/${this.name}`;
 		tritonUnloads.add(() => {
 			// Ensure reloadLoop is not running on unload
 			this.stopReloadLoop();
 		});
 
-		const defaults = {
-			enabled: true,
-			liveReload: false,
-		};
-		this._store = setDefaults<TritonModuleStore>((moduleCache[this.uri] ??= defaults), defaults);
+		this._store = setDefaults<TritonModuleConfig>((moduleCache[this.uri] ??= defaults), defaults);
 
 		// Enabled has to be setup first because liveReload below accesses it
 		this._enabled = new Signal(this._store.enabled);
@@ -219,7 +220,6 @@ export class TritonModule {
 				// Add this modules unloads to tritons so they are triggered if triton is unloaded
 				tritonUnloads.add(unload);
 			}
-			tritonTracer.msg.log(`Loaded module ${this.name}`);
 
 			// Ensure loadError is cleared
 			this.loadError._ = undefined;

@@ -2,15 +2,12 @@ import React from "react";
 
 import Box from "@mui/material/Box";
 import CircularProgress from "@mui/material/CircularProgress";
-import FormControlLabel from "@mui/material/FormControlLabel";
 import { styled } from "@mui/material/styles";
 import Switch from "@mui/material/Switch";
 
 import { grey } from "@mui/material/colors";
 
 import type { SwitchProps } from "@mui/material/Switch";
-import Tooltip from "@mui/material/Tooltip";
-import { TritonTitle } from "./TritonTitle";
 
 const darkGrey = grey[900];
 const lightGrey = grey.A100;
@@ -52,25 +49,15 @@ const LoadingIcon = ({ checked, loading }: { checked?: boolean; loading?: boolea
 	</Box>
 );
 
-export type TritonSwitchProps = { title?: string; desc?: string; loading?: boolean } & SwitchProps;
-export const TritonSwitch = (props: TritonSwitchProps) => {
-	const switchComponent = (
-		<StyledSwitch
-			{...props}
-			disabled={props.loading}
-			sx={{ marginLeft: "auto" }}
-			icon={<LoadingIcon loading={props.loading} />}
-			checkedIcon={<LoadingIcon checked loading={props.loading} />}
-		/>
-	);
-
-	if (!props.title) return switchComponent;
-	return (
-		<FormControlLabel
-			control={<Tooltip title={props.title}>{switchComponent}</Tooltip>}
-			sx={{ width: "100%" }}
-			label={<TritonTitle title={props.title} desc={props.desc} />}
-			labelPlacement="start"
-		/>
-	);
-};
+export interface TritonSwitchProps extends SwitchProps {
+	loading?: boolean;
+}
+export const TritonSwitch = (props: TritonSwitchProps) => (
+	<StyledSwitch
+		{...props}
+		disabled={props.loading}
+		sx={{ marginLeft: "auto" }}
+		icon={<LoadingIcon loading={props.loading} />}
+		checkedIcon={<LoadingIcon checked loading={props.loading} />}
+	/>
+);

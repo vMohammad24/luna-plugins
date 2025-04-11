@@ -23,7 +23,11 @@ const Nick: Author = {
 };
 
 const coverTheme = TritonModule.fromName("CoverTheme", Nick);
+const discordRPC = TritonModule.fromName("DiscordRPC", Inrixia);
 const realMax = TritonModule.fromName("RealMAX", Inrixia);
+const listenBrainz = TritonModule.fromName("ListenBrainz", Inrixia, { enabled: false });
+const lastFM = TritonModule.fromName("LastFM", Inrixia, { enabled: false });
+const shazam = TritonModule.fromName("Shazam", Inrixia, { enabled: false });
 
 // TESTING
 setTimeout(
@@ -39,7 +43,7 @@ setTimeout(
 
 const TritonSettings = async () => {
 	return (
-		<Container maxWidth="md">
+		<Container maxWidth="md" sx={{ marginBottom: 10 }}>
 			<Box marginBottom={4}>
 				<Typography variant="h2" sx={{ fontVariant: "small-caps" }}>
 					Triton Settings
@@ -50,7 +54,11 @@ const TritonSettings = async () => {
 			</Box>
 			<Stack spacing={2}>
 				<TritonModuleSettings module={coverTheme} />
+				<TritonModuleSettings module={discordRPC} />
 				<TritonModuleSettings module={realMax} />
+				<TritonModuleSettings module={listenBrainz} />
+				<TritonModuleSettings module={lastFM} />
+				<TritonModuleSettings module={shazam} />
 			</Stack>
 		</Container>
 	);

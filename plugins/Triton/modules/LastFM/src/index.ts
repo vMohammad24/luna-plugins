@@ -1,4 +1,4 @@
-import { MediaItem, PlayState, Tracer, delUndefined } from "@triton/lib";
+import { MediaItem, PlayState, Tracer, delUndefined, type Unload } from "@triton/lib";
 const trace = Tracer("[last.fm]");
 
 import { actions } from "@neptune";
@@ -21,10 +21,13 @@ const makeScrobbleOpts = async (mediaItem: MediaItem): Promise<ScrobbleOpts> => 
 	return scrobbleOpts as ScrobbleOpts;
 };
 
-const unloads = [
+export const unloads = new Set<Unload>();
+unloads.add(
 	MediaItem.onMediaTransition((mediaItem) => {
 		makeScrobbleOpts(mediaItem).then(LastFM.updateNowPlaying).catch(trace.msg.err.withContext(`Failed to updateNowPlaying!`));
-	}),
+	})
+);
+unloads.add(
 	PlayState.onScrobble(async (mediaItem) => {
 		const scrobbleOpts = await makeScrobbleOpts(mediaItem);
 		LastFM.scrobble(scrobbleOpts)
@@ -32,8 +35,5 @@ const unloads = [
 			.then((res) => {
 				if (res?.scrobbles) trace.log("Scrobbled", scrobbleOpts, res?.scrobbles["@attr"], res.scrobbles.scrobble);
 			});
-	}),
-];
-export const onUnload = () => {
-	for (const unload of unloads) unload();
-};
+	})
+);
