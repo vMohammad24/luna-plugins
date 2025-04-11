@@ -57,7 +57,9 @@ export class TritonModule {
 		// Enabled has to be setup first because liveReload below accesses it
 		this._enabled = new Signal(this._store.enabled);
 		this._enabled.onValue((next) => {
-			this._store.enabled = next;
+			// Protect against disabling permanantly in the background if loading causes a error
+			// Restarting the client will attempt to load again
+			if (this.loadError._ === undefined) this._store.enabled = next;
 		});
 		this.onEnabled = this._enabled.onValue.bind(this._enabled);
 
@@ -77,7 +79,8 @@ export class TritonModule {
 		if (this._reloadTimeout) return;
 		const reloadLoop = async () => {
 			if (!this.enabled) return;
-			await this.loadExports();
+			// Fail quietly
+			await this.loadExports().catch(() => {});
 			this._reloadTimeout = setTimeout(reloadLoop.bind(this), 1000);
 		};
 		reloadLoop();
@@ -88,6 +91,7 @@ export class TritonModule {
 	}
 
 	public readonly loading: Signal<boolean> = new Signal(false);
+	public readonly loadError = new Signal<string | undefined>(undefined);
 	public Settings = new Signal<React.FC | undefined>(this._exports?.Settings);
 	public readonly liveReload: Signal<boolean>;
 
@@ -124,10 +128,13 @@ export class TritonModule {
 	// #endregion
 
 	private async unload(): Promise<void> {
-		this.loading._ = true;
-		await unloadSet(this.exports?.unloads);
-		this.exports = undefined;
-		this.loading._ = false;
+		try {
+			this.loading._ = true;
+			await unloadSet(this.exports?.unloads);
+		} finally {
+			this.exports = undefined;
+			this.loading._ = false;
+		}
 	}
 
 	public async enable() {
@@ -137,12 +144,10 @@ export class TritonModule {
 		if (this.liveReload._) this.startReloadLoop();
 	}
 	public async disable() {
-		this.loading._ = true;
 		// Disable the reload loop
 		this.stopReloadLoop();
 		await this.unload();
 		this._enabled._ = false;
-		this.loading._ = false;
 	}
 	public async reload() {
 		await this.disable();
@@ -167,11 +172,13 @@ export class TritonModule {
 
 	private readonly loadSemaphore: Semaphore = new Semaphore(1);
 	private async loadExports(force: boolean = false): Promise<void> {
-		this.loading._ = true;
 		// Ensure we cant start loading midway through loading
 		const release = await this.loadSemaphore.obtain();
+
 		try {
 			if (!force && !this.enabled) return;
+			this.loading._ = true;
+
 			// If code hasnt changed and we have already loaded exports we are done
 			if (!(await this.fetchNewCode()) && this.exports !== undefined) return;
 
@@ -207,8 +214,15 @@ export class TritonModule {
 				tritonUnloads.add(unload);
 			}
 			tritonTracer.msg.log(`Loaded module ${this.name}`);
+
+			// Ensure loadError is cleared
+			this.loadError._ = undefined;
 		} catch (err) {
+			this.loadError._ = (<any>err)?.message ?? err?.toString();
 			tritonTracer.msg.err.withContext(`Failed to load module ${this.name}`)(err);
+			await this.unload();
+			// For sanity throw the error just to be safe
+			throw err;
 		} finally {
 			release();
 			this.loading._ = false;
