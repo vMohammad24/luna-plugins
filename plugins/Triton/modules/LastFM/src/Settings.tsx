@@ -26,7 +26,7 @@ export const Settings = () => {
 		<TritonSettings>
 			<TritonSetting
 				title="Session"
-				desc="Click connect to authenticate with LastFM"
+				desc={`Click ${connected ? "reconnect" : "connect"} to ${connected ? "re-" : ""}authenticate with LastFM`}
 				tooltip={connected ? "Reconnect LastFM" : "Connect LastFM"}
 				control={
 					<Button
