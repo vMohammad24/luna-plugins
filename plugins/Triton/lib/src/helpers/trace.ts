@@ -7,11 +7,19 @@ type MessengerFunc = (messageInfo: Message) => void;
 
 type Logger<T extends LoggerFunc = LoggerFunc> = {
 	(...data: Parameters<T>): undefined;
-	withContext(...context: Parameters<T>): (...data: Parameters<T>) => undefined;
+	withContext(...context: Parameters<T>): {
+		(...data: Parameters<T>): undefined;
+		/** Throw data after logging */
+		throw: (...data: Parameters<T>) => undefined;
+	};
 };
 type Messenger = {
 	(message: unknown): undefined;
-	withContext(context: string): (message: unknown) => undefined;
+	withContext(context: string): {
+		(message: unknown): undefined;
+		/** Throw message after logging */
+		throw: (message: unknown) => undefined;
+	};
 };
 
 export const Tracer = (source: string, errSignal?: Signal<string | undefined>) => {
@@ -20,12 +28,18 @@ export const Tracer = (source: string, errSignal?: Signal<string | undefined>) =
 			logger(source, ...data);
 			return undefined;
 		};
-		_logger.withContext =
-			(...context: Parameters<T>) =>
-			(...data: Parameters<T>) => {
+		_logger.withContext = (...context: Parameters<T>) => {
+			const logWithContext = (...data: Parameters<T>) => {
 				logger(source, ...context, ...data);
 				return undefined;
 			};
+			logWithContext.throw = (...data: Parameters<T>) => {
+				logWithContext(...data);
+				throw data?.[0];
+			};
+			return logWithContext;
+		};
+
 		return _logger;
 	};
 
@@ -55,12 +69,17 @@ export const Tracer = (source: string, errSignal?: Signal<string | undefined>) =
 		};
 		_messager.withContext = (context: string) => {
 			const loggerWithContext = logger.withContext(context);
-			return (message: unknown) => {
+			const msgWithContext = (message: unknown) => {
 				loggerWithContext(message);
 				if (message instanceof Error) message = message.message;
 				messager({ message: `${source} (${context}) - ${message}`, category: "OTHER", severity });
 				return undefined;
 			};
+			msgWithContext.throw = (message: unknown) => {
+				msgWithContext(message);
+				throw message;
+			};
+			return msgWithContext;
 		};
 		return _messager;
 	};

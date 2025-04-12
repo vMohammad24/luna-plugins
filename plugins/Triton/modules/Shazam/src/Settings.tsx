@@ -1,4 +1,4 @@
-import { getStorage, React, TritonSetting, TritonSettings, TritonSwitch } from "@triton/lib";
+import { getStorage, React, TritonSettings, TritonSwitchSetting } from "@triton/lib";
 
 export type ShzamStorage = {
 	startInMiddle: boolean;
@@ -16,29 +16,21 @@ export const Settings = () => {
 
 	return (
 		<TritonSettings>
-			<TritonSetting
+			<TritonSwitchSetting
 				title="Start in middle"
 				desc="Start searching in the middle of the song"
-				control={
-					<TritonSwitch
-						checked={startInMiddle}
-						onChange={(_, checked) => {
-							setStartInMiddle((storage.startInMiddle = checked));
-						}}
-					/>
-				}
+				checked={startInMiddle}
+				onChange={(_, checked) => {
+					setStartInMiddle((storage.startInMiddle = checked));
+				}}
 			/>
-			<TritonSetting
+			<TritonSwitchSetting
 				title="Stop on first"
 				desc="Stop searching on the first match"
-				control={
-					<TritonSwitch
-						checked={exitOnFirstMatch}
-						onChange={(_, checked) => {
-							setExitOnFirstMatch((storage.exitOnFirstMatch = checked));
-						}}
-					/>
-				}
+				checked={exitOnFirstMatch}
+				onChange={(_, checked) => {
+					setExitOnFirstMatch((storage.exitOnFirstMatch = checked));
+				}}
 			/>
 		</TritonSettings>
 	);

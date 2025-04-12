@@ -40,7 +40,6 @@ export const TritonModuleSettings = ({ module }: { module: TritonModule }) => {
 		<Stack
 			spacing={1}
 			sx={{
-				// boxShadow: 5,
 				borderRadius: 3,
 				backgroundColor: "rgba(0, 0, 0, 0.10)",
 				boxShadow: loadError ? "0 0 10px rgba(255, 0, 0, 0.70)" : "none",

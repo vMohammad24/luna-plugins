@@ -19,6 +19,7 @@ export const TritonSecureText = (props: TritonSecureTextProps) => {
 						borderColor: "warning.main",
 					},
 				},
+				color: "#fefefe",
 				...props.sx,
 			}}
 			type={showPassword ? "text" : "password"}

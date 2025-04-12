@@ -86,12 +86,13 @@ export class TritonModule {
 	private startReloadLoop() {
 		if (this._reloadTimeout) return;
 		const reloadLoop = async () => {
-			if (!this.enabled) return;
 			// Fail quietly
 			await this.loadExports().catch(() => {});
+			if (!this.enabled || !this.liveReload._) return;
 			this._reloadTimeout = setTimeout(reloadLoop.bind(this), 1000);
 		};
-		reloadLoop();
+		// Immediately set reloadTimeout to avoid entering this multiple times
+		this._reloadTimeout = setTimeout(reloadLoop);
 	}
 	private stopReloadLoop() {
 		clearTimeout(this._reloadTimeout);
@@ -160,8 +161,10 @@ export class TritonModule {
 		this.loadError._ = undefined;
 	}
 	public async reload() {
-		await this.disable();
+		this.loadError._ = undefined;
+		this.loading._ = true;
 		await this.enable();
+		this.loading._ = false;
 	}
 
 	/**
@@ -233,7 +236,7 @@ export class TritonModule {
 
 			for (const unload of unloads ?? []) {
 				// Set unload source for context if function fails to call
-				unload.source ??= this.name;
+				unload.source = this.name + (unload.source ? `.${unload.source}` : "");
 				// Add this modules unloads to tritons so they are triggered if triton is unloaded
 				tritonUnloads.add(unload);
 			}

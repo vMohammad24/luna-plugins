@@ -1,4 +1,3 @@
-import { Semaphore } from "@inrixia/helpers";
 import { tritonTracer } from ".";
 
 export type Unload = {
@@ -6,32 +5,25 @@ export type Unload = {
 	source?: string;
 };
 
-const unloadSema = new Semaphore(1);
 export const unloadSet = async (unloads?: Set<Unload>): Promise<void> => {
-	if (unloads === undefined) return;
-	// Ensure that we cant unload more than one thing at a time to
-	// avoid race conditions or calling a unload twice
-	const release = await unloadSema.obtain();
-	try {
-		const unloading = [];
-		for (const unload of unloads) {
-			// Unload async to not block
-			unloading.push(
-				(async () => {
-					try {
-						await unload();
-					} catch (err) {
-						tritonTracer.msg.err.withContext(`Error unloading ${unload.source ?? ""} ${unload.name}`)(err);
-					}
-				})()
-			);
-		}
-		// Clear unloads after called to ensure their never called again
-		unloads.clear();
-		await Promise.all(unloading);
-	} finally {
-		release();
-	}
+	if (unloads === undefined || unloads.size === 0) return;
+	const toUnload: Unload[] = [];
+	for (const unload of unloads) toUnload.push(unload);
+
+	// Clear unloads after called to ensure their never called again
+	unloads.clear();
+
+	await Promise.all(
+		toUnload.map(async (unload) => {
+			try {
+				// Give each unload 5s to run before timing out so we dont deadlock
+				await Promise.race([unload(), new Promise((_, rej) => setTimeout(() => rej(new Error("Timeout")), 5000))]);
+			} catch (err) {
+				tritonTracer.msg.err.withContext(`Error unloading ${unload.source ?? ""}.${unload.name}`)(err);
+				console.error(unload);
+			}
+		})
+	);
 };
 
 export const tritonUnloads = new Set<Unload>();

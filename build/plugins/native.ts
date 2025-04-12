@@ -2,7 +2,7 @@ import { build, Plugin } from "esbuild";
 import { fileUrlPlugin } from "./fileUrl";
 import { buildCache } from "./lib/outputCache";
 
-import { minify } from "../build";
+import { buildOps } from "../build";
 
 const nativeExternals = ["electron"];
 
@@ -15,13 +15,13 @@ const buildOutput = buildCache(async (args) => {
 			write: false,
 			metafile: false,
 			bundle: true,
-			minify,
 			treeShaking: true,
 			platform: "node",
 			format: "iife",
 			globalName,
 			external: nativeExternals,
 			plugins: [fileUrlPlugin],
+			...buildOps,
 		}),
 		// Have to build twice to generate metafile as globalName breaks metafile generation
 		build({
@@ -31,15 +31,15 @@ const buildOutput = buildCache(async (args) => {
 			metafile: true,
 			bundle: true,
 			// This breaks native calls via neptune api but we dont use those
-			minify,
 			treeShaking: true,
 			format: "esm",
 			external: nativeExternals,
 			plugins: [fileUrlPlugin],
+			...buildOps,
 		}),
 	]);
 
-	const output = Object.values(metafile.outputs)[0];
+	const output = Object.values(metafile!.outputs)[0];
 	const entryPoint = output.entryPoint?.replace("plugins/", "");
 
 	const registerExports = `__${entryPoint}_registerExports`;
@@ -60,7 +60,7 @@ const buildOutput = buildCache(async (args) => {
 		NeptuneNative.deleteEvalScope(scopeId);
 
 		// Register the native code
-		await window.electron.ipcRenderer.invoke("${registerExports}", ${JSON.stringify(outputFiles[0].text)}, "${globalName}");
+		await window.electron.ipcRenderer.invoke("${registerExports}", ${JSON.stringify(outputFiles![0].text)}, "${globalName}");
 	
 		// Helper function for invoking exports
 		const invokeNative = (exportName) => (...args) => window.electron.ipcRenderer.invoke("${invokeExport}", exportName, ...args).catch((err) => {

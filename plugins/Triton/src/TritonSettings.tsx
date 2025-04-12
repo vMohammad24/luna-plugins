@@ -29,6 +29,9 @@ const listenBrainz = TritonModule.fromName("ListenBrainz", Inrixia, { enabled: f
 const lastFM = TritonModule.fromName("LastFM", Inrixia, { enabled: false });
 const shazam = TritonModule.fromName("Shazam", Inrixia, { enabled: false });
 
+// Dev Tools
+const devTools = TritonModule.fromName("DevTools", Inrixia, { enabled: false });
+
 // TESTING
 setTimeout(
 	() =>
@@ -59,6 +62,7 @@ const TritonSettings = async () => {
 				<TritonModuleSettings module={listenBrainz} />
 				<TritonModuleSettings module={lastFM} />
 				<TritonModuleSettings module={shazam} />
+				<TritonModuleSettings module={devTools} />
 			</Stack>
 		</Container>
 	);

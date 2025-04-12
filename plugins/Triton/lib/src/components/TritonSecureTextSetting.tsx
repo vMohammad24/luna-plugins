@@ -10,7 +10,7 @@ export const TritonSecureTextSetting = (props: TritonSecureTextSettingProps) => 
 	<Stack direction="row" spacing={8}>
 		<TritonTitle title={props.title} desc={props.desc} />
 		<Box flexGrow={1}>
-			<TritonSecureText sx={{ color: "#fefefe", width: "100%" }} {...props} placeholder={props.title} label={null} />
+			<TritonSecureText sx={{ width: "100%" }} {...props} placeholder={props.title} label={null} />
 		</Box>
 	</Stack>
 );

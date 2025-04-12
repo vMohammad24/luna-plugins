@@ -1,17 +1,16 @@
-import { context } from "esbuild";
+import { context, type BuildOptions } from "esbuild";
 
 import { readdir, readFile } from "fs/promises";
 import path from "path";
 
 import { fileUrlPlugin } from "./plugins/fileUrl";
-import { type PluginPackage, writeNeptunePlugin } from "./plugins/lib/writeNeptunePlugin";
+import { writeNeptunePlugin, type PluginPackage } from "./plugins/lib/writeNeptunePlugin";
 import { neptuneNativePlugin } from "./plugins/native";
 import { neptuneOutput } from "./plugins/neptuneOutput";
 import { tritonOutput } from "./plugins/tritonOutput";
 import { buildThemes } from "./themes";
 
-export const minify = true; //!process.env.NODE_ENV?.startsWith("development");
-console.log(process.env.NODE_ENV, minify);
+export const buildOps: BuildOptions = { minifyIdentifiers: true, minifySyntax: true, minifyWhitespace: true };
 
 buildThemes();
 
@@ -37,12 +36,12 @@ tritonModules.map(async (moduleName) => {
 		plugins: [fileUrlPlugin, neptuneNativePlugin, tritonOutput(moduleName)],
 		bundle: true,
 		write: false,
-		minify,
 		format: "esm",
 		// Triton plugins will use @triton/lib off window, which is set by Triton
 		external: ["@neptune", "@plugin", "electron", "@triton/lib"],
 		platform: "browser",
 		outfile: `./dist/tritonModules/${moduleName}.js`,
+		...buildOps,
 	});
 	ctx.watch();
 });
@@ -57,11 +56,11 @@ neptunePlugins.map(async (pluginName) => {
 		plugins: [fileUrlPlugin, neptuneNativePlugin, neptuneOutput(pluginPackage)],
 		bundle: true,
 		write: false,
-		minify,
 		format: "esm",
 		external: ["@neptune", "@plugin", "electron"],
 		platform: "browser",
 		outfile: path.join("./dist", pluginName, "index.js"),
+		...buildOps,
 	});
 	ctx.watch();
 });

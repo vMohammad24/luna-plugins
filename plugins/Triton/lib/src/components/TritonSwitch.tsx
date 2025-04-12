@@ -8,6 +8,7 @@ import Switch from "@mui/material/Switch";
 import { grey } from "@mui/material/colors";
 
 import type { SwitchProps } from "@mui/material/Switch";
+import Tooltip from "@mui/material/Tooltip";
 
 const darkGrey = grey[900];
 const lightGrey = grey.A100;
@@ -51,13 +52,21 @@ const LoadingIcon = ({ checked, loading }: { checked?: boolean; loading?: boolea
 
 export interface TritonSwitchProps extends SwitchProps {
 	loading?: boolean;
+	tooltip?: string;
 }
 export const TritonSwitch = (props: TritonSwitchProps) => (
-	<StyledSwitch
-		{...props}
-		disabled={props.loading}
-		sx={{ marginLeft: "auto" }}
-		icon={<LoadingIcon loading={props.loading} />}
-		checkedIcon={<LoadingIcon checked loading={props.loading} />}
-	/>
+	<Tooltip
+		sx={{
+			marginRight: "auto",
+		}}
+		title={props.tooltip ?? props.title}
+	>
+		<StyledSwitch
+			disabled={props.loading}
+			icon={<LoadingIcon loading={props.loading} />}
+			checkedIcon={<LoadingIcon checked loading={props.loading} />}
+			{...props}
+			sx={{ marginLeft: "auto", ...props.sx }}
+		/>
+	</Tooltip>
 );

@@ -1,12 +1,14 @@
 export * from "./LiveReloadToggle";
 export * from "./ReloadButton";
+export * from "./TritonButton";
+export * from "./TritonButtonSetting";
 export * from "./TritonLink";
 export * from "./TritonSecureText";
 export * from "./TritonSecureTextSetting";
 export * from "./TritonSetting";
 export * from "./TritonSettings";
 export * from "./TritonSwitch";
+export * from "./TritonSwitchSetting";
+export * from "./TritonText";
+export * from "./TritonTextSetting";
 export * from "./TritonTitle";
-export { Button };
-
-import Button from "@mui/material/Button";
