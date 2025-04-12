@@ -72,7 +72,7 @@ export const TritonModuleSettings = ({ module }: { module: TritonModule }) => {
 					<Tooltip title="Reload module">
 						<ReloadButton spin={loading} disabled={disabled} onClick={module.reload.bind(module)} />
 					</Tooltip>
-					<Tooltip title={liveReload ? "Disable live reloading" : "Enable live reloading"}>
+					<Tooltip title={liveReload ? "Disable live reloading" : "Enable live reloading (for development)"}>
 						<LiveReloadToggleButton
 							disabled={disabled}
 							enabled={liveReload}

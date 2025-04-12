@@ -75,14 +75,19 @@ const shazam = TritonModule.fromName(
 	{ enabled: false }
 );
 
-// Dev Tools
-const devTools = TritonModule.fromName(
-	"DevTools",
-	{ author: Inrixia, desc: "Various tools used for developing these awesome plugins <3" },
-	{ enabled: false }
+const nativeFullscreen = TritonModule.fromName(
+	"NativeFullscreen",
+	{
+		author: Inrixia,
+		desc: "Add F11 hotkey for fullscreen to either make the normal UI fullscreen or tidal native fullscreen in a window",
+	},
+	{ enabled: true }
 );
 
-// TESTING
+// Dev Tools
+const devTools = TritonModule.fromName("DevTools", { author: Inrixia, desc: "Various tools used for development <3" }, { enabled: false });
+
+// TODO: REMOVE this is for testing only
 setTimeout(
 	() =>
 		// @ts-expect-error TESTING
@@ -112,6 +117,8 @@ const TritonSettings = async () => {
 				<TritonModuleSettings module={listenBrainz} />
 				<TritonModuleSettings module={lastFM} />
 				<TritonModuleSettings module={shazam} />
+				<TritonModuleSettings module={nativeFullscreen} />
+
 				<TritonModuleSettings module={devTools} />
 			</Stack>
 		</Container>

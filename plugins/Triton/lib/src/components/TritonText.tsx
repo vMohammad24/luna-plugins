@@ -6,6 +6,7 @@ export type TritonTextProps = TextFieldProps;
 
 export const TritonText = (props: TritonTextProps) => (
 	<TextField
+		variant="outlined"
 		{...props}
 		sx={{
 			"&.Mui-error": {
@@ -19,6 +20,5 @@ export const TritonText = (props: TritonTextProps) => (
 			},
 			...props.sx,
 		}}
-		variant="outlined"
 	/>
 );

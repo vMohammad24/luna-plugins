@@ -35,7 +35,7 @@ export const storage = getStorage("CoverTheme", {
 if (storage.logIPCFromNative) startNativeIPCLog().catch(trace.err.withContext("Failed to start native IPC logging").throw);
 if (storage.logIPCFromRender) startRenderIpcLog().catch(trace.err.withContext("Failed to start render IPC logging").throw);
 if (storage.logReduxEvents)
-	startReduxLog(new RegExp(storage.logInterceptsRegex), trace.log.withContext("(Redux)")).catch(
+	startReduxLog(new RegExp(storage.logInterceptsRegex || ".*"), trace.log.withContext("(Redux)")).catch(
 		trace.err.withContext("Failed to start redux event logging").throw
 	);
 
@@ -51,7 +51,7 @@ export const Settings = () => {
 	const nativeDebugging = debugPort !== undefined;
 	return (
 		<>
-			<TritonTitle title={"Event Log"} desc={"Logs IPC and Intercept events to console"} />
+			<TritonTitle title={"Event Log"} desc={"Logs IPC and Redux events to console"} />
 			<TritonSettings>
 				<TritonSwitchSetting
 					title="Native IPC"
@@ -75,11 +75,13 @@ export const Settings = () => {
 				/>
 				<TritonSetting title="Render redux events" desc="Log Render redux events via intercepts">
 					<TritonText
-						label={"Event regex match"}
-						sx={{ flexGrow: 1, marginLeft: 10, marginRight: 10 }}
+						label="Event regex filter"
+						placeholder=".*"
+						size="small"
+						sx={{ flexGrow: 1, marginLeft: 10, marginRight: 10, marginTop: 0.5 }}
 						value={logInterceptsRegex}
 						onChange={(e) => {
-							setLogInterceptsRegex((storage.logInterceptsRegex = e.target.value || ".*"));
+							setLogInterceptsRegex((storage.logInterceptsRegex = e.target.value));
 						}}
 					/>
 					<TritonSwitch
@@ -87,7 +89,7 @@ export const Settings = () => {
 						checked={logReduxEvents}
 						onChange={async (_, checked) => {
 							if (checked)
-								await startReduxLog(new RegExp(storage.logInterceptsRegex), trace.log.withContext("(Redux)")).catch(
+								await startReduxLog(new RegExp(storage.logInterceptsRegex || ".*"), trace.log.withContext("(Redux)")).catch(
 									trace.err.withContext("Failed to start redux event logging").throw
 								);
 							else await stopReduxLog().catch(trace.err.withContext("Failed to stop redux event logging").throw);

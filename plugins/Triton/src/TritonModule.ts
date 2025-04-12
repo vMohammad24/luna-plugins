@@ -165,10 +165,8 @@ export class TritonModule {
 		this.loadError._ = undefined;
 	}
 	public async reload() {
-		this.loadError._ = undefined;
-		this.loading._ = true;
+		await this.disable();
 		await this.enable();
-		this.loading._ = false;
 	}
 
 	/**
