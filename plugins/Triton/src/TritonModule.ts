@@ -40,6 +40,10 @@ export type Author = {
 	url: string;
 	avatarUrl?: string;
 };
+export type TritonModuleInfo = {
+	author: Author;
+	desc?: React.ReactNode;
+};
 
 const moduleCache = getStorage<Record<string, TritonModuleStore>>("TritonModuleStore", {});
 
@@ -48,12 +52,12 @@ export class TritonModule {
 	public readonly uri: string;
 
 	public static readonly modules: Record<string, TritonModule> = {};
-	public static fromName(name: string, author: Author, defaults: Partial<TritonModuleConfig> = {}) {
+	public static fromName(name: string, info: TritonModuleInfo, defaults: Partial<TritonModuleConfig> = {}) {
 		defaults.enabled ??= true;
 		defaults.liveReload ??= false;
-		return (this.modules[name] ??= new this(name, author, <TritonModuleConfig>defaults));
+		return (this.modules[name] ??= new this(name, info, <TritonModuleConfig>defaults));
 	}
-	private constructor(public readonly name: string, public readonly author: Author, defaults: TritonModuleConfig) {
+	private constructor(public readonly name: string, public readonly info: TritonModuleInfo, defaults: TritonModuleConfig) {
 		this.uri = `${TritonModule.origin}/tritonModules/${this.name}`;
 		tritonUnloads.add(() => {
 			// Ensure reloadLoop is not running on unload

@@ -101,7 +101,7 @@ export const Settings = () => {
 			<TritonSettings>
 				<TritonButtonSetting
 					title="Native debugger"
-					desc={"Enables native side debugger" + (nativeDebugging ? `. Listening on port ${debugPort}` : "")}
+					desc={"Enables native side debugger, disabling requires a client restart"}
 					onClick={() => startNativeDebugging().then(setDebugPort)}
 					disabled={nativeDebugging}
 					sx={{
@@ -110,7 +110,7 @@ export const Settings = () => {
 						color: nativeDebugging ? "green !important" : undefined,
 					}}
 				>
-					{nativeDebugging ? "Debugging" : "Start Debugging"}
+					{nativeDebugging ? `Listening on port ${debugPort}` : "Start Debugging"}
 				</TritonButtonSetting>
 			</TritonSettings>
 		</>

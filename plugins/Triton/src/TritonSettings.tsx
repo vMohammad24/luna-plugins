@@ -5,7 +5,7 @@ import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
-import { ContextMenu, safeIntercept, tritonUnloads } from "@triton/lib";
+import { ContextMenu, safeIntercept, TritonLink, tritonUnloads } from "@triton/lib";
 
 import Stack from "@mui/material/Stack";
 import { TritonModule, type Author } from "./TritonModule";
@@ -22,15 +22,65 @@ const Nick: Author = {
 	avatarUrl: "https://1.gravatar.com/avatar/665fef45b1c988d52f011b049b99417485b9b558947169bc4b726b8eb69a2226",
 };
 
-const coverTheme = TritonModule.fromName("CoverTheme", Nick);
-const discordRPC = TritonModule.fromName("DiscordRPC", Inrixia);
-const realMax = TritonModule.fromName("RealMAX", Inrixia);
-const listenBrainz = TritonModule.fromName("ListenBrainz", Inrixia, { enabled: false });
-const lastFM = TritonModule.fromName("LastFM", Inrixia, { enabled: false });
-const shazam = TritonModule.fromName("Shazam", Inrixia, { enabled: false });
+const coverTheme = TritonModule.fromName("CoverTheme", {
+	author: Nick,
+	desc: "Theme based on the current playing song. Also adds CSS variables to be used in custom themes",
+});
+const discordRPC = TritonModule.fromName("DiscordRPC", { author: Inrixia, desc: "Show off what you are listening to in your Discord status" });
+const realMax = TritonModule.fromName("RealMAX", { author: Inrixia, desc: "When playing songs if there is a HiRes version available use that" });
+const listenBrainz = TritonModule.fromName(
+	"ListenBrainz",
+	{
+		author: Inrixia,
+		desc: (
+			<>
+				Scrobbles and sets currently playing for{" "}
+				<TritonLink fontWeight="bold" href="https://listenbrainz.org">
+					listenbrainz.org
+				</TritonLink>
+			</>
+		),
+	},
+	{ enabled: false }
+);
+const lastFM = TritonModule.fromName(
+	"LastFM",
+	{
+		author: Inrixia,
+		desc: (
+			<>
+				Scrobbles and sets currently playing for{" "}
+				<TritonLink fontWeight="bold" href="https://last.fm">
+					last.fm
+				</TritonLink>
+			</>
+		),
+	},
+	{ enabled: false }
+);
+const shazam = TritonModule.fromName(
+	"Shazam",
+	{
+		author: Inrixia,
+		desc: (
+			<>
+				Any files you drag onto your client will be run through
+				<TritonLink fontWeight="bold" href="https://www.shazam.com">
+					Shazam
+				</TritonLink>{" "}
+				and added to the current playlist!
+			</>
+		),
+	},
+	{ enabled: false }
+);
 
 // Dev Tools
-const devTools = TritonModule.fromName("DevTools", Inrixia, { enabled: false });
+const devTools = TritonModule.fromName(
+	"DevTools",
+	{ author: Inrixia, desc: "Various tools used for developing these awesome plugins <3" },
+	{ enabled: false }
+);
 
 // TESTING
 setTimeout(
