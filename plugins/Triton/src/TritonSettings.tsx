@@ -23,6 +23,7 @@ import {
 	realMax,
 	shazam,
 	smallWindow,
+	themer,
 	volumeScroll,
 } from "./modules";
 
@@ -67,6 +68,7 @@ const TritonSettings = async () => {
 					<TritonModuleSettings module={nativeFullscreen} />
 					<TritonModuleSettings module={smallWindow} />
 					<TritonModuleSettings module={persistSettings} />
+					<TritonModuleSettings module={themer} />
 					<TritonModuleSettings module={shazam} />
 				</TritonStack>
 

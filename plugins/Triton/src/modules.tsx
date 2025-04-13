@@ -107,5 +107,15 @@ export const persistSettings = TritonModule.fromName("PersistSettings", {
 	desc: "Ensures given settings are always applied",
 });
 
+export const themer = TritonModule.fromName("Themer", {
+	author: Nick,
+	desc: (
+		<>
+			Create your own theme with a built-in CSS editor, powered by{" "}
+			<TritonLink href="https://microsoft.github.io/monaco-editor">Monaco Editor</TritonLink>.
+		</>
+	),
+});
+
 // Dev Tools
 export const devTools = TritonModule.fromName("DevTools", { author: Inrixia }, { enabled: false });
