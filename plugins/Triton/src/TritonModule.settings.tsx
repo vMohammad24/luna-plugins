@@ -48,6 +48,8 @@ export const TritonModuleSettings = ({ module }: { module: TritonModule }) => {
 				backgroundColor: "rgba(0, 0, 0, 0.10)",
 				boxShadow: loadError ? "0 0 10px rgba(255, 0, 0, 0.70)" : "none",
 				padding: 2,
+				paddingTop: 1,
+				paddingBottom: Settings ? 2 : 1,
 			}}
 		>
 			<Box>

@@ -11,10 +11,10 @@ unloads.add(stopNativeIPCLog);
 unloads.add(stopRenderIpcLog);
 unloads.add(stopReduxLog);
 
-export const storage = getStorage("CoverTheme", {
+export const storage = getStorage("DevTools", {
 	logIPCFromNative: false,
 	logIPCFromRender: false,
-	logReduxEvents: false,
+	logReduxEvents: true,
 	logInterceptsRegex: ".*",
 });
 

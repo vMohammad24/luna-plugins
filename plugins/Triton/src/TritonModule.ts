@@ -53,7 +53,7 @@ export class TritonModule {
 
 	public static readonly modules: Record<string, TritonModule> = {};
 	public static fromName(name: string, info: TritonModuleInfo, defaults: Partial<TritonModuleConfig> = {}) {
-		defaults.enabled ??= true;
+		defaults.enabled ??= false;
 		defaults.liveReload ??= false;
 		return (this.modules[name] ??= new this(name, info, <TritonModuleConfig>defaults));
 	}

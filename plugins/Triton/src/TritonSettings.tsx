@@ -11,7 +11,19 @@ import Stack from "@mui/material/Stack";
 import { TritonModuleSettings } from "./TritonModule.settings";
 
 import { TritonStack } from "../lib/src/components/TritonStack";
-import { coverTheme, devTools, discordRPC, lastFM, listenBrainz, nativeFullscreen, realMax, shazam, volumeScroll } from "./modules";
+import {
+	coverTheme,
+	devTools,
+	discordRPC,
+	lastFM,
+	listenBrainz,
+	nativeFullscreen,
+	noBuffer,
+	realMax,
+	shazam,
+	smallWindow,
+	volumeScroll,
+} from "./modules";
 
 // TODO: REMOVE this is for testing only
 setTimeout(
@@ -49,8 +61,10 @@ const TritonSettings = async () => {
 				</TritonStack>
 
 				<TritonStack variant="h5" title="Tweaks" desc="A collection of tweaks and improvements to the tidal client">
-					<TritonModuleSettings module={nativeFullscreen} />
+					<TritonModuleSettings module={noBuffer} />
 					<TritonModuleSettings module={volumeScroll} />
+					<TritonModuleSettings module={nativeFullscreen} />
+					<TritonModuleSettings module={smallWindow} />
 					<TritonModuleSettings module={shazam} />
 				</TritonStack>
 
