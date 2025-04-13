@@ -5,87 +5,13 @@ import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
-import { ContextMenu, safeIntercept, TritonLink, tritonUnloads } from "@triton/lib";
+import { ContextMenu, safeIntercept, tritonUnloads } from "@triton/lib";
 
 import Stack from "@mui/material/Stack";
-import { TritonModule, type Author } from "./TritonModule";
 import { TritonModuleSettings } from "./TritonModule.settings";
 
-const Inrixia: Author = {
-	name: "Inrixia",
-	url: "https://github.com/Inrixia",
-	avatarUrl: "https://2.gravatar.com/avatar/eeaffef9eb9b436dccc58c6c44c9fe8c3528e83e3bf64e1c736a68dbe8c097d3",
-};
-const Nick: Author = {
-	name: "Nick Oates",
-	url: "https://github.com/n1ckoates",
-	avatarUrl: "https://1.gravatar.com/avatar/665fef45b1c988d52f011b049b99417485b9b558947169bc4b726b8eb69a2226",
-};
-
-const coverTheme = TritonModule.fromName("CoverTheme", {
-	author: Nick,
-	desc: "Theme based on the current playing song. Also adds CSS variables to be used in custom themes",
-});
-const discordRPC = TritonModule.fromName("DiscordRPC", { author: Inrixia, desc: "Show off what you are listening to in your Discord status" });
-const realMax = TritonModule.fromName("RealMAX", { author: Inrixia, desc: "When playing songs if there is a HiRes version available use that" });
-const listenBrainz = TritonModule.fromName(
-	"ListenBrainz",
-	{
-		author: Inrixia,
-		desc: (
-			<>
-				Scrobbles and sets currently playing for{" "}
-				<TritonLink fontWeight="bold" href="https://listenbrainz.org">
-					listenbrainz.org
-				</TritonLink>
-			</>
-		),
-	},
-	{ enabled: false }
-);
-const lastFM = TritonModule.fromName(
-	"LastFM",
-	{
-		author: Inrixia,
-		desc: (
-			<>
-				Scrobbles and sets currently playing for{" "}
-				<TritonLink fontWeight="bold" href="https://last.fm">
-					last.fm
-				</TritonLink>
-			</>
-		),
-	},
-	{ enabled: false }
-);
-const shazam = TritonModule.fromName(
-	"Shazam",
-	{
-		author: Inrixia,
-		desc: (
-			<>
-				Any files you drag onto your client will be run through
-				<TritonLink fontWeight="bold" href="https://www.shazam.com">
-					Shazam
-				</TritonLink>{" "}
-				and added to the current playlist!
-			</>
-		),
-	},
-	{ enabled: false }
-);
-
-const nativeFullscreen = TritonModule.fromName(
-	"NativeFullscreen",
-	{
-		author: Inrixia,
-		desc: "Add F11 hotkey for fullscreen to either make the normal UI fullscreen or tidal native fullscreen in a window",
-	},
-	{ enabled: true }
-);
-
-// Dev Tools
-const devTools = TritonModule.fromName("DevTools", { author: Inrixia, desc: "Various tools used for development <3" }, { enabled: false });
+import { TritonStack } from "../lib/src/components/TritonStack";
+import { coverTheme, devTools, discordRPC, lastFM, listenBrainz, nativeFullscreen, realMax, shazam, volumeScroll } from "./modules";
 
 // TODO: REMOVE this is for testing only
 setTimeout(
@@ -111,15 +37,26 @@ const TritonSettings = async () => {
 				</Typography>
 			</Box>
 			<Stack spacing={2}>
-				<TritonModuleSettings module={coverTheme} />
-				<TritonModuleSettings module={discordRPC} />
-				<TritonModuleSettings module={realMax} />
-				<TritonModuleSettings module={listenBrainz} />
-				<TritonModuleSettings module={lastFM} />
-				<TritonModuleSettings module={shazam} />
-				<TritonModuleSettings module={nativeFullscreen} />
+				<TritonStack variant="h5" title="Main" desc="Core functionality of Triton">
+					<TritonModuleSettings module={coverTheme} />
+					<TritonModuleSettings module={realMax} />
+				</TritonStack>
 
-				<TritonModuleSettings module={devTools} />
+				<TritonStack variant="h5" title="Scrobbling" desc="Scrobblers for saving & sharing listen history & currently listening">
+					<TritonModuleSettings module={discordRPC} />
+					<TritonModuleSettings module={lastFM} />
+					<TritonModuleSettings module={listenBrainz} />
+				</TritonStack>
+
+				<TritonStack variant="h5" title="Tweaks" desc="A collection of tweaks and improvements to the tidal client">
+					<TritonModuleSettings module={nativeFullscreen} />
+					<TritonModuleSettings module={volumeScroll} />
+					<TritonModuleSettings module={shazam} />
+				</TritonStack>
+
+				<TritonStack variant="h5" title="_DEV.Tools" desc="Various developer tools for working with Neptune">
+					<TritonModuleSettings module={devTools} />
+				</TritonStack>
 			</Stack>
 		</Container>
 	);

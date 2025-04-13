@@ -1,16 +1,15 @@
 import Box from "@mui/material/Box";
-import Stack from "@mui/material/Stack";
 import React from "react";
 
 import { TritonSecureText, type TritonSecureTextProps } from "./TritonSecureText";
-import { TritonTitle, type TritonTitleValues } from "./TritonTitle";
+import { TritonSetting } from "./TritonSetting";
+import { type TritonTitleValues } from "./TritonTitle";
 
 export type TritonSecureTextSettingProps = TritonSecureTextProps & TritonTitleValues;
 export const TritonSecureTextSetting = (props: TritonSecureTextSettingProps) => (
-	<Stack direction="row" spacing={8}>
-		<TritonTitle title={props.title} desc={props.desc} />
+	<TritonSetting spacing={8} title={props.title} desc={props.desc}>
 		<Box flexGrow={1}>
-			<TritonSecureText size="small" sx={{ width: "100%", marginTop: 0.75 }} {...props} placeholder={props.title} label={null} />
+			<TritonSecureText fullWidth size="small" sx={{ marginTop: 0.75 }} {...props} placeholder={props.title} label={null} />
 		</Box>
-	</Stack>
+	</TritonSetting>
 );

@@ -1,9 +1,10 @@
-import Stack from "@mui/material/Stack";
-import React, { type PropsWithChildren } from "react";
+import React from "react";
+import { TritonStack, type TritonStackProps } from "./TritonStack";
 
-export const TritonSettings = ({ children }: PropsWithChildren) => (
-	<Stack
-		spacing={1}
+export const TritonSettings = (props: TritonStackProps) => (
+	<TritonStack
+		{...props}
+		variant="h7"
 		sx={{
 			borderRadius: 2,
 			backgroundColor: "rgba(0, 0, 0, 0.20)",
@@ -11,6 +12,5 @@ export const TritonSettings = ({ children }: PropsWithChildren) => (
 			padding: 2,
 			paddingBottom: 1,
 		}}
-		children={children}
 	/>
 );

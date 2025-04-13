@@ -3,6 +3,8 @@ export * from "./ReloadButton";
 export * from "./TritonButton";
 export * from "./TritonButtonSetting";
 export * from "./TritonLink";
+export * from "./TritonNumber";
+export * from "./TritonNumberSetting";
 export * from "./TritonSecureText";
 export * from "./TritonSecureTextSetting";
 export * from "./TritonSetting";
