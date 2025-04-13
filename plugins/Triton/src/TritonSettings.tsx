@@ -110,7 +110,14 @@ safeIntercept<{ search: string }>(
 				const notFound = document.querySelector<HTMLElement>(`[class^="_pageNotFoundError_"]`);
 				if (notFound) {
 					notFound.style.display = "none";
-					notFound.parentElement!.style.background = "linear-gradient(to right, rgba(134, 71, 115, 0.6), rgba(255, 25, 121, 0.6)";
+					// thx @n1ckoates re CoverTheme <3
+					notFound.parentElement!.style.background = `
+					radial-gradient(ellipse at top left, rgba(88, 10, 82, 0.5), transparent 70%),
+					radial-gradient(ellipse at center left, rgba(18, 234, 246, 0.5), transparent 70%),
+					radial-gradient(ellipse at bottom left, rgba(205, 172, 191, 0.5), transparent 70%),
+					radial-gradient(ellipse at top right, rgba(139, 203, 235, 0.5), transparent 70%),
+					radial-gradient(ellipse at center right, rgba(98, 103, 145, 0.5), transparent 70%),
+					radial-gradient(ellipse at bottom right, rgba(47, 48, 78, 0.5), transparent 70%)`;
 					notFound.insertAdjacentElement("afterend", root);
 				}
 			});
