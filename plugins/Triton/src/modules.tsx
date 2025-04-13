@@ -102,5 +102,10 @@ export const noBuffer = TritonModule.fromName("NoBuffer", {
 	desc: "Kicks the Tidal cdn if the current playback stalls so you never have to deal with constant stuttering or stalling again",
 });
 
+export const persistSettings = TritonModule.fromName("PersistSettings", {
+	author: Inrixia,
+	desc: "Ensures given settings are always applied",
+});
+
 // Dev Tools
 export const devTools = TritonModule.fromName("DevTools", { author: Inrixia }, { enabled: false });

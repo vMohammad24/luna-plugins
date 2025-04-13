@@ -19,6 +19,7 @@ import {
 	listenBrainz,
 	nativeFullscreen,
 	noBuffer,
+	persistSettings,
 	realMax,
 	shazam,
 	smallWindow,
@@ -65,6 +66,7 @@ const TritonSettings = async () => {
 					<TritonModuleSettings module={volumeScroll} />
 					<TritonModuleSettings module={nativeFullscreen} />
 					<TritonModuleSettings module={smallWindow} />
+					<TritonModuleSettings module={persistSettings} />
 					<TritonModuleSettings module={shazam} />
 				</TritonStack>
 
