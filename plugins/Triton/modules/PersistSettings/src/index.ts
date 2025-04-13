@@ -14,7 +14,7 @@ const interval = setInterval(() => {
 	}
 	// @ts-expect-error Bad Neptune types
 	const playerForceVolume = player.forceVolume[player.activeDeviceId];
-	if (storage.forceVolume !== playerForceVolume) {
+	if (storage.forceVolume !== !!playerForceVolume) {
 		// @ts-expect-error Bad Neptune types
 		actions.player.setForceVolume({ deviceId: player.activeDeviceId, on: storage.forceVolume });
 	}
