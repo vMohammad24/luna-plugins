@@ -13,6 +13,7 @@ const playMaxItem = async (elements: readonly TPlayQueueItem[], index: number) =
 	const mediaItem = await MediaItem.fromId(newElements[index].mediaItemId);
 	const maxItem = await mediaItem?.max();
 	if (maxItem !== undefined) {
+		await maxItem.ensureLoaded();
 		newElements[index].mediaItemId = maxItem.id;
 		redux.actions["playQueue/RESET"]({
 			elements: newElements,
@@ -30,6 +31,7 @@ MediaItem.onPreMediaTransition(unloads, async (mediaItem) => {
 	try {
 		const maxItem = await mediaItem.max();
 		if (maxItem !== undefined) {
+			await maxItem.ensureLoaded();
 			redux.actions["playQueue/ADD_NEXT"]({ mediaItemIds: [maxItem.id], context: { type: "UNKNOWN" } });
 			redux.actions["playQueue/MOVE_NEXT"]();
 		}
@@ -39,19 +41,21 @@ MediaItem.onPreMediaTransition(unloads, async (mediaItem) => {
 		redux.actions["playbackControls/PLAY"]();
 	}
 });
-redux.intercept("playQueue/ADD_NOW", unloads, (payload) => {
+redux.intercept("playQueue/ADD_NOW", unloads, async (payload) => {
 	const mediaItemIds = [...payload.mediaItemIds];
 	const currentIndex = payload.fromIndex ?? 0;
-	MediaItem.fromId(mediaItemIds[currentIndex])
-		.then(async (mediaItem) => {
-			const maxItem = await mediaItem?.max();
-			if (maxItem !== undefined) mediaItemIds[currentIndex] = maxItem.id;
-			redux.actions["playQueue/ADD_NOW"]({ ...payload, mediaItemIds });
-		})
-		.catch((err) => {
-			trace.msg.err.withContext("playQueue/ADD_NOW")(err);
-			redux.actions["playQueue/ADD_NOW"]({ ...payload, mediaItemIds });
-		});
+	try {
+		const mediaItem = await MediaItem.fromId(mediaItemIds[currentIndex]);
+		const maxItem = await mediaItem?.max();
+		if (maxItem !== undefined) {
+			await maxItem.ensureLoaded();
+			mediaItemIds[currentIndex] = maxItem.id;
+		}
+		redux.actions["playQueue/ADD_NOW"]({ ...payload, mediaItemIds });
+	} catch (err) {
+		trace.msg.err.withContext("playQueue/ADD_NOW")(err);
+		redux.actions["playQueue/ADD_NOW"]({ ...payload, mediaItemIds });
+	}
 	return true;
 });
 
