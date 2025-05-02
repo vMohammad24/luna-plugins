@@ -29,11 +29,12 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 			}
 			trackIds.push(maxItem.id);
 			maxItems++;
-			trace.msg.log(`Found Max quality for ${maxItem.title} in ${sourceTitle}!`);
+			trace.msg.log(`Found Max replacement for ${maxItem.tidalItem.title}!`);
 		}
 		if (trackIds.length !== itemCount) {
 			return trace.msg.err(`Failed to create playlist "${sourceTitle}" item count mismatch ${trackIds.length} != ${itemCount}`);
 		}
+		maxButton.innerText = `[RealMAX] Creating playlist...`;
 		const { playlist } = await redux.interceptActionResp(
 			() =>
 				redux.actions["folders/CREATE_PLAYLIST"]({
@@ -67,6 +68,7 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 		if (playlist?.uuid === undefined) {
 			return trace.msg.err(`Failed to create playlist "${sourceTitle}"`);
 		}
-		trace.msg.log(`Successfully created playlist "${sourceTitle}" - Found ${maxItems} replacements!`);
+		trace.msg.log(`Created playlist "${sourceTitle}" with ${maxItems} replacements!`);
+		maxButton.innerText = defaultText;
 	});
 });
