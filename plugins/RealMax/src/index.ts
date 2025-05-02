@@ -14,7 +14,7 @@ const playMaxItem = async (elements: readonly TPlayQueueItem[], index: number) =
 	const maxItem = await mediaItem?.max();
 	if (maxItem !== undefined) {
 		await maxItem.ensureLoaded();
-		newElements[index].mediaItemId = maxItem.id;
+		newElements[index] = { ...newElements[index], mediaItemId: maxItem.id };
 		redux.actions["playQueue/RESET"]({
 			elements: newElements,
 			currentIndex: index,
