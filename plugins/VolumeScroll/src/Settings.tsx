@@ -4,7 +4,7 @@ import React from "react";
 
 export const storage = await ReactiveStore.getPluginStorage("VolumeScroll", {
 	changeBy: 10,
-	changeByShift: 10,
+	changeByShift: 1,
 });
 
 export const Settings = () => {
@@ -18,13 +18,13 @@ export const Settings = () => {
 				value={changeBy}
 				min={0}
 				max={100}
-				onNumber={setChangeBy}
+				onNumber={(num) => setChangeBy((storage.changeBy = num))}
 			/>
 			<LunaNumberSetting
 				title="Change by shift"
-				desc="Percent to change volume by when SHIFT is held (default: 10)"
+				desc="Percent to change volume by when SHIFT is held (default: 1)"
 				value={changeByShift}
-				onNumber={setChangeByShift}
+				onNumber={(num) => setChangeByShift((storage.changeByShift = num))}
 			/>
 		</LunaSettings>
 	);
