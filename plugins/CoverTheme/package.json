@@ -1,0 +1,14 @@
+{
+	"name": "CoverTheme",
+	"description": "Theme based on the current playing song. Also adds CSS variables to be used in custom themes",
+	"homepage": "https://github.com/Inrixia/luna-plugins#CoverTheme",
+	"author": {
+		"name": "Nick Oates",
+		"url": "https://github.com/n1ckoates",
+		"avatarUrl": "https://1.gravatar.com/avatar/665fef45b1c988d52f011b049b99417485b9b558947169bc4b726b8eb69a2226"
+	},
+	"exports": "./src/index.tsx",
+	"dependencies": {
+		"node-vibrant": "4.0.3"
+	}
+}

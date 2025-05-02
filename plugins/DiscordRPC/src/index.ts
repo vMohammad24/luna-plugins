@@ -1,0 +1,19 @@
+import { Tracer, type LunaUnload } from "@luna/core";
+import { redux } from "@luna/lib";
+import { MediaItem } from "@luna/unstable";
+
+import { cleanupRPC } from "./discord.native";
+import { updateActivity } from "./updateActivity";
+
+export const unloads = new Set<LunaUnload>();
+export const { trace, errSignal } = Tracer("[DiscordRPC]");
+
+redux.intercept(["playbackControls/TIME_UPDATE", "playbackControls/SEEK", "playbackControls/SET_PLAYBACK_STATE"], unloads, () => {
+	updateActivity()
+		.then(() => (errSignal!._ = undefined))
+		.catch(trace.err.withContext("Failed to set activity"));
+});
+unloads.add(MediaItem.onMediaTransition(unloads, updateActivity));
+unloads.add(cleanupRPC.bind(cleanupRPC));
+
+setTimeout(updateActivity);

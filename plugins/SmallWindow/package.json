@@ -1,0 +1,11 @@
+{
+	"name": "SmallWindow",
+	"description": "Removes the minimum width and height limits on the window. Causes some UI bugs but can be useful if you want a smaller window",
+	"homepage": "https://github.com/Inrixia/luna-plugins#SmallWindow",
+	"author": {
+		"name": "Nick Oates",
+		"url": "https://github.com/n1ckoates",
+		"avatarUrl": "https://1.gravatar.com/avatar/665fef45b1c988d52f011b049b99417485b9b558947169bc4b726b8eb69a2226"
+	},
+	"exports": "./src/index.ts"
+}

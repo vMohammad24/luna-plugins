@@ -1,6 +1,0 @@
-{
-	"displayName": "LiveReload",
-	"description": "Listens to plugin urls and reloads when the hash changes",
-	"author": "Inrixia",
-	"main": "./src/index.js"
-}

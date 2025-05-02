@@ -1,23 +1,33 @@
 {
-	"name": "@inrixia/neptune-plugins",
-	"description": "Plugins for Neptune writtern by @inrixia",
+	"name": "@inrixia/luna-plugins",
+	"description": "Plugins for Tidal Luna",
+	"author": {
+		"name": "Inrixia",
+		"url": "https://github.com/Inrixia",
+		"avatarUrl": "https://2.gravatar.com/avatar/eeaffef9eb9b436dccc58c6c44c9fe8c3528e83e3bf64e1c736a68dbe8c097d3"
+	},
+	"homepage": "https://github.com/Inrixia/luna-plugins",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Inrixia/luna-plugins.git"
+	},
 	"type": "module",
 	"scripts": {
-		"watch": "set NODE_ENV=development && concurrently npm:build npm:serve",
-		"build": "rimraf ./dist && tsx build/build.ts",
+		"watch": "concurrently npm:esWatch npm:serve",
+		"build": "rimraf ./dist && tsx esbuild.config.ts",
+		"esWatch": "rimraf ./dist && tsx ./esbuild.config.ts --watch",
 		"serve": "http-server ./dist -p 3000 -s --cors -c-1"
 	},
 	"devDependencies": {
-		"@inrixia/helpers": "^3.6.0",
-		"@types/clean-css": "^4.2.11",
-		"@types/html-minifier-terser": "^7.0.2",
-		"@types/node": "^22.14.0",
-		"clean-css": "^5.3.3",
+		"@inrixia/helpers": "^3.15.1",
+		"@types/node": "^22.15.0",
+		"@types/react": "^19.1.2",
+		"@types/react-dom": "^19.1.2",
 		"concurrently": "^9.1.2",
-		"esbuild": "^0.25.2",
-		"html-minifier-terser": "^7.2.0",
+		"electron": "^36.1.0",
 		"http-server": "^14.1.1",
-		"neptune-types": "^1.0.1",
+		"luna": "github:Inrixia/TidaLuna",
+		"oby": "^15.1.2",
 		"rimraf": "^6.0.1",
 		"tsx": "^4.19.3",
 		"typescript": "^5.8.3"
