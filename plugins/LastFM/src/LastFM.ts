@@ -36,8 +36,8 @@ export type LastFmSession = {
 };
 
 export class LastFM {
-	public static readonly apiKey?: string = findModuleProperty<string>("lastFmApiKey", "string")!.value;
-	public static readonly secret?: string = findModuleProperty<string>("lastFmSecret", "string")!.value;
+	public static readonly apiKey?: string = findModuleProperty<string>((key, value) => key === "lastFmApiKey" && typeof value === "string")!.value;
+	public static readonly secret?: string = findModuleProperty<string>((key, value) => key === "lastFmSecret" && typeof value === "string")!.value;
 	static {
 		if (this.secret === undefined) throw new Error("Last.fm secret not found");
 		if (this.apiKey === undefined) throw new Error("Last.fm API key not found");
