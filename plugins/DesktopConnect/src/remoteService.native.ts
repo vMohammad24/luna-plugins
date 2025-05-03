@@ -7,9 +7,7 @@ const { generateDeviceId, generateFriendlyName } = require("./original.asar/app/
 const websocket = require("./original.asar/app/main/remoteDesktop/websocket.js").default;
 
 export const setup = () => {
-	if (RemoteDesktopController.__running) {
-		return console.warn("RemoteDesktopController is already running");
-	}
+	if (RemoteDesktopController.__running) return console.warn("RemoteDesktopController is already running");
 
 	const responder = getResponder();
 	const deviceId = generateDeviceId();
@@ -40,5 +38,6 @@ export const setup = () => {
 		console.log("DesktopConnect.remotePlayerProcess.stdout", ...args)
 	);
 };
+setup();
 
 export const send = websocket.send.bind(websocket);
