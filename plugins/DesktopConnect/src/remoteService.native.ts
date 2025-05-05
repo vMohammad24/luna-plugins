@@ -2,7 +2,7 @@ import { getResponder } from "@homebridge/ciao";
 import { hostname } from "os";
 
 const RemoteDesktopController = require("./original.asar/app/main/remoteDesktop/RemoteDesktopController.js").default;
-const { generateDeviceId, generateFriendlyName } = require("./original.asar/app/main/mdns/broadcast.js");
+const { generateDeviceId } = require("./original.asar/app/main/mdns/broadcast.js");
 
 const websocket = require("./original.asar/app/main/remoteDesktop/websocket.js").default;
 
