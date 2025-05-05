@@ -3,6 +3,7 @@ import { MediaItem, PlayState } from "@luna/unstable";
 
 import type { SetActivity } from "@xhayper/discord-rpc";
 import { setActivity } from "./discord.native";
+import { settings } from "./Settings";
 
 const STR_MAX_LEN = 127;
 const fmtStr = (s?: string) => {
@@ -12,6 +13,8 @@ const fmtStr = (s?: string) => {
 };
 
 export const updateActivity = asyncDebounce(async (mediaItem?: MediaItem) => {
+	if (PlayState.paused && !settings.displayOnPause) return await setActivity();
+
 	mediaItem ??= await MediaItem.fromPlaybackContext();
 	if (mediaItem === undefined) return;
 

@@ -7,6 +7,7 @@ import { updateActivity } from "./updateActivity";
 
 export const unloads = new Set<LunaUnload>();
 export const { trace, errSignal } = Tracer("[DiscordRPC]");
+export { Settings } from "./Settings";
 
 redux.intercept(["playbackControls/TIME_UPDATE", "playbackControls/SEEK", "playbackControls/SET_PLAYBACK_STATE"], unloads, () => {
 	updateActivity()
