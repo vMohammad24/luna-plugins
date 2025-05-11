@@ -49,13 +49,26 @@ main,
 	background-blend-mode: normal;
 }
 
-/* Use cover colors in search results header */
-[data-test="search-results-top"] > [class*="container"]::before {
+
+/* Cover colors in some of the icons */
+[class*="emptyStateImage"] {
+	background-color: transparent !important;
+}
+
+/* Cover colors in search results header (top, normal) */
+[data-test="search-results-top"] > [class*="container"]::before,
+[data-test="search-results-normal"] > [class*="container"]::before
+ {
 	background-image: var(--cover-gradient);
 	z-index: -1;
 	left: -36px;
 	right: -36px;
 	height: calc(var(--topSpacing) + 50px);
+}
+
+/* Hides remaining black rectangle from the normal search results. There might be a better way to do this */
+[data-test="search-results-normal"] > [class*="container"] > [class*="divider"]  {
+	display: none;
 }
 
 [data-test="search-results-top"] > [class*="container"],
