@@ -1,5 +1,5 @@
 import { asyncDebounce } from "@inrixia/helpers";
-import { MediaItem, PlayState } from "@luna/unstable";
+import { MediaItem, PlayState } from "@luna/lib";
 
 import type { SetActivity } from "@xhayper/discord-rpc";
 import { setActivity } from "./discord.native";
@@ -13,7 +13,7 @@ const fmtStr = (s?: string) => {
 };
 
 export const updateActivity = asyncDebounce(async (mediaItem?: MediaItem) => {
-	if (PlayState.paused && !settings.displayOnPause) return await setActivity();
+	if (!PlayState.playing && !settings.displayOnPause) return await setActivity();
 
 	mediaItem ??= await MediaItem.fromPlaybackContext();
 	if (mediaItem === undefined) return;
@@ -34,11 +34,7 @@ export const updateActivity = asyncDebounce(async (mediaItem?: MediaItem) => {
 	activity.state = fmtStr(artistNames.join(", ")) ?? "Unknown Artist";
 
 	// Pause indicator
-	if (PlayState.paused) {
-		activity.smallImageKey = "paused-icon";
-		activity.smallImageText = "Paused";
-		activity.endTimestamp = Date.now();
-	} else {
+	if (PlayState.playing) {
 		// Small Artist image
 		const artist = await mediaItem.artist();
 		activity.smallImageKey = artist?.coverUrl("320");
@@ -46,9 +42,13 @@ export const updateActivity = asyncDebounce(async (mediaItem?: MediaItem) => {
 
 		// Playback/Time
 		if (mediaItem.duration !== undefined) {
-			activity.startTimestamp = Date.now() - PlayState.latestCurrentTime * 1000;
+			activity.startTimestamp = Date.now() - PlayState.playTime * 1000;
 			activity.endTimestamp = activity.startTimestamp + mediaItem.duration * 1000;
 		}
+	} else {
+		activity.smallImageKey = "paused-icon";
+		activity.smallImageText = "Paused";
+		activity.endTimestamp = Date.now();
 	}
 
 	// Album

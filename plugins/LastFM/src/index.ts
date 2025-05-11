@@ -1,6 +1,5 @@
 import { Tracer, type LunaUnload } from "@luna/core";
-import { redux } from "@luna/lib";
-import { MediaItem, PlayState } from "@luna/unstable";
+import { MediaItem, PlayState, redux } from "@luna/lib";
 
 export const { trace, errSignal } = Tracer("[last.fm]");
 

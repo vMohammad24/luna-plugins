@@ -1,6 +1,5 @@
 import { Tracer, type LunaUnload } from "@luna/core";
-import { StyleTag, type ItemId } from "@luna/lib";
-import { ContentBase, MediaItem } from "@luna/unstable";
+import { ContentBase, MediaItem, StyleTag, type ItemId } from "@luna/lib";
 
 const { trace, errSignal } = Tracer("[CoverTheme]");
 export { errSignal, trace };

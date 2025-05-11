@@ -1,15 +1,14 @@
 import { trace, unloads } from "./init";
 
 import { chunkArray } from "@inrixia/helpers";
-import { redux, type ItemId } from "@luna/lib";
-import { ContextMenu } from "@luna/unstable";
+import { ContextMenu, redux, type ItemId } from "@luna/lib";
 
 import { interceptActionResp } from "plugins/lib/src/redux";
 
 const maxNewPlaylistSize = 450;
 
 ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
-	const itemCount = await mediaCollection.mediaItemsCount();
+	const itemCount = await mediaCollection.count();
 	if (itemCount === 0) return;
 
 	const defaultText = itemCount > 1 ? `[RealMAX] Process ${itemCount} tracks` : "[RealMAX] Process track";

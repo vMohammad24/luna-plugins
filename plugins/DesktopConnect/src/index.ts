@@ -1,6 +1,5 @@
 import { LunaUnload, unloadSet } from "@luna/core";
-import { ipcRenderer, redux } from "@luna/lib";
-import { MediaItem, PlayState } from "@luna/unstable";
+import { ipcRenderer, MediaItem, PlayState, redux } from "@luna/lib";
 import { send } from "./remoteService.native";
 
 export * from "./remoteService.native";

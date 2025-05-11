@@ -2,8 +2,7 @@ import { Tracer, type LunaUnload } from "@luna/core";
 
 import { recognizeTrack } from "./shazam.native";
 
-import { redux } from "@luna/lib";
-import { MediaItem } from "@luna/unstable";
+import { MediaItem, redux } from "@luna/lib";
 import { storage } from "./Settings";
 export { Settings } from "./Settings";
 

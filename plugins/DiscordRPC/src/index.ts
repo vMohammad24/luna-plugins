@@ -1,6 +1,5 @@
 import { Tracer, type LunaUnload } from "@luna/core";
-import { redux } from "@luna/lib";
-import { MediaItem } from "@luna/unstable";
+import { MediaItem, redux } from "@luna/lib";
 
 import { cleanupRPC } from "./discord.native";
 import { updateActivity } from "./updateActivity";

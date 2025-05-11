@@ -1,4 +1,4 @@
-import type { MediaItem } from "@luna/unstable";
+import type { MediaItem } from "@luna/lib";
 
 import { type Payload, MusicServiceDomain } from "./ListenBrainzTypes";
 

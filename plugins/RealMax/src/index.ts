@@ -1,7 +1,6 @@
 import { trace, unloads } from "./init";
 
-import { redux, type TPlayQueueItem } from "@luna/lib";
-import { MediaItem } from "@luna/unstable";
+import { MediaItem, redux, type TPlayQueueItem } from "@luna/lib";
 
 import "./contextMenu";
 

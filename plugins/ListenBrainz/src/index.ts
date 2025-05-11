@@ -1,5 +1,5 @@
 import { Tracer, type LunaUnload } from "@luna/core";
-import { MediaItem, PlayState } from "@luna/unstable";
+import { MediaItem, PlayState } from "@luna/lib";
 
 export const { trace, errSignal } = Tracer("[ListenBrainz]");
 
