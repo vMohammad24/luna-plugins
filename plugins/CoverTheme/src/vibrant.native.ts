@@ -1,14 +1,13 @@
 import { Vibrant } from "node-vibrant/node";
 
-export type Palette = { [key: string]: string };
+export type Palette = Record<string, RGBSwatch>;
+export type RGBSwatch = [r: number, g: number, b: number];
 export const getPalette = async (coverUrl: string) => {
-	const vibrant = new Vibrant(coverUrl, { quality: 1, useWorker: false });
-	const palette = await vibrant.getPalette();
-	const colors: Palette = {};
-	for (const colorName in palette) {
-		const color = palette[colorName];
-		if (!color) continue;
-		colors[colorName] = color.rgb.join(", ");
+	const vibrantPalette = await new Vibrant(coverUrl, { quality: 1, useWorker: false }).getPalette();
+	const palette: Palette = {};
+	for (const color in vibrantPalette) {
+		const swatch = vibrantPalette[color];
+		if (swatch) palette[color] = swatch.rgb;
 	}
-	return colors;
+	return palette;
 };

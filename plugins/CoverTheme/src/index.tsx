@@ -7,8 +7,8 @@ export { errSignal, trace };
 
 import transparent from "file://transparent.css?minify";
 
-import { settings, storage } from "./Settings";
-import { getPalette, type Palette } from "./vibrant.native";
+import { settings } from "./Settings";
+import { getPalette, type Palette, type RGBSwatch } from "./vibrant.native";
 
 const cachePalette = async (mediaItem: MediaItem): Promise<Palette | undefined> => {
 	// Try use tidalItem.album?.cover first to avoid extra request
@@ -16,11 +16,27 @@ const cachePalette = async (mediaItem: MediaItem): Promise<Palette | undefined> 
 	if (cover === undefined) return;
 	const coverUrl = ContentBase.formatCoverUrl(cover, "640");
 	if (coverUrl === undefined) return;
-	return await storage.ensure<Palette>(`palette.${cover}`, () => getPalette(coverUrl));
+	return getPalette(coverUrl);
+	// return await storage.ensure<Palette>(`palette.${cover}`, () => getPalette(coverUrl));
+};
+
+const docStyle = document.documentElement.style;
+const lerp = (a: number, b: number, t: number) => Math.round(a + (b - a) * t);
+const animateCssVar = (varName: string, from: RGBSwatch | undefined, to: RGBSwatch, duration = 250) => {
+	if (from === undefined || from.every((v, i) => v === to[i])) return docStyle.setProperty(varName, to.join(","));
+	const start = performance.now();
+	const frame = (now: number) => {
+		const t = Math.min(1, (now - start) / duration);
+		const current = from.map((v, i) => lerp(v, to[i], t));
+		docStyle.setProperty(varName, current.join(","));
+		if (t < 1) requestAnimationFrame(frame);
+	};
+	requestAnimationFrame(frame);
 };
 
 const vars = new Set<string>();
 let currentItem: ItemId;
+let currentPalette: Palette;
 const updateBackground = async (mediaItem?: MediaItem) => {
 	if (mediaItem === undefined || mediaItem.id === currentItem) return;
 	currentItem = mediaItem.id;
@@ -28,10 +44,12 @@ const updateBackground = async (mediaItem?: MediaItem) => {
 	if (palette === undefined) return;
 
 	for (const colorName in palette) {
+		const nextColor = palette[colorName];
 		const variableName = `--cover-${colorName}`;
 		vars.add(variableName);
-		document.documentElement.style.setProperty(variableName, palette[colorName] ?? null);
+		animateCssVar(variableName, currentPalette?.[colorName], nextColor, 250);
 	}
+	currentPalette = palette;
 };
 
 export { Settings } from "./Settings";
