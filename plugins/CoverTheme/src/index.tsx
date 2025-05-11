@@ -7,7 +7,7 @@ export { errSignal, trace };
 
 import transparent from "file://transparent.css?minify";
 
-import { settings } from "./Settings";
+import { settings, storage } from "./Settings";
 import { getPalette, type Palette, type RGBSwatch } from "./vibrant.native";
 
 const cachePalette = async (mediaItem: MediaItem): Promise<Palette | undefined> => {
@@ -16,8 +16,7 @@ const cachePalette = async (mediaItem: MediaItem): Promise<Palette | undefined> 
 	if (cover === undefined) return;
 	const coverUrl = ContentBase.formatCoverUrl(cover, "640");
 	if (coverUrl === undefined) return;
-	return getPalette(coverUrl);
-	// return await storage.ensure<Palette>(`palette.${cover}`, () => getPalette(coverUrl));
+	return await storage.ensure<Palette>(`palette_v2.${cover}`, () => getPalette(coverUrl));
 };
 
 const docStyle = document.documentElement.style;
