@@ -3,8 +3,6 @@ import { trace, unloads } from "./index.safe";
 import { chunkArray } from "@inrixia/helpers";
 import { ContextMenu, redux, type ItemId } from "@luna/lib";
 
-import { interceptActionResp } from "plugins/lib/src/redux";
-
 const maxNewPlaylistSize = 450;
 
 ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
@@ -50,7 +48,7 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 		);
 		if (trackIds.length > maxNewPlaylistSize) {
 			for (const trackIdsChunk of chunkArray(trackIds, maxNewPlaylistSize)) {
-				await interceptActionResp(
+				await redux.interceptActionResp(
 					() =>
 						redux.actions["content/ADD_MEDIA_ITEMS_TO_PLAYLIST"]({
 							addToIndex: -1,
