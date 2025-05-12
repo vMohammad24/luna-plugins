@@ -9,6 +9,7 @@ export { errSignal, unloads } from "./init";
 // TODO: Abstract PlayQueue in lib
 const playMaxItem = async (elements: readonly TPlayQueueItem[], index: number) => {
 	const newElements = [...elements];
+	if (newElements[index]?.mediaItemId === undefined) return false;
 	const mediaItem = await MediaItem.fromId(newElements[index].mediaItemId);
 	const maxItem = await mediaItem?.max();
 	if (maxItem !== undefined) {
