@@ -2,12 +2,12 @@ import { ReactiveStore } from "@luna/core";
 import { LunaSettings, LunaSwitchSetting } from "@luna/ui";
 import React from "react";
 
-export const storage = await ReactiveStore.getPluginStorage("RealMAX", {
+export const settings = await ReactiveStore.getPluginStorage("RealMAX", {
 	displayInfoPopups: true,
 });
 
 export const Settings = () => {
-	const [displayInfoPopups, setDisplayInfoPopups] = React.useState(storage.displayInfoPopups);
+	const [displayInfoPopups, setDisplayInfoPopups] = React.useState(settings.displayInfoPopups);
 	return (
 		<LunaSettings>
 			<LunaSwitchSetting
@@ -15,7 +15,7 @@ export const Settings = () => {
 				desc="Display a popup when a track is replaced in the play queue by RealMAX"
 				checked={displayInfoPopups}
 				onChange={(_, checked) => {
-					setDisplayInfoPopups((storage.displayInfoPopups = checked));
+					setDisplayInfoPopups((settings.displayInfoPopups = checked));
 				}}
 			/>
 		</LunaSettings>

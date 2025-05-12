@@ -1,27 +1,33 @@
 import { trace, unloads } from "./init";
 
-import { MediaItem, redux, type TPlayQueueItem } from "@luna/lib";
+import { MediaItem, PlayState, redux, type TPlayQueueItem } from "@luna/lib";
 
 import "./contextMenu";
+import { settings } from "./Settings";
 
 export { errSignal, unloads } from "./init";
 
-// TODO: Abstract PlayQueue in lib
+const getMaxItem = async (mediaItem?: MediaItem) => {
+	const maxItem = await mediaItem?.max();
+	if (maxItem === undefined) return;
+	if (settings.displayInfoPopups) trace.msg.log(`Found ${maxItem.tidalItem.title} replacement for ${mediaItem!.tidalItem.title}`);
+	return maxItem;
+};
+
 const playMaxItem = async (elements: readonly TPlayQueueItem[], index: number) => {
 	const newElements = [...elements];
 	if (newElements[index]?.mediaItemId === undefined) return false;
+
 	const mediaItem = await MediaItem.fromId(newElements[index].mediaItemId);
-	const maxItem = await mediaItem?.max();
-	if (maxItem !== undefined) {
-		await maxItem.ensureLoaded();
-		newElements[index] = { ...newElements[index], mediaItemId: maxItem.id };
-		redux.actions["playQueue/RESET"]({
-			elements: newElements,
-			currentIndex: index,
-		});
-		return true;
-	}
-	return false;
+	const maxItem = await getMaxItem(mediaItem);
+	if (maxItem === undefined) return false;
+
+	newElements[index] = { ...newElements[index], mediaItemId: maxItem.id };
+	redux.actions["playQueue/RESET"]({
+		elements: newElements,
+		currentIndex: index,
+	});
+	return true;
 };
 
 export { Settings } from "./Settings";
@@ -29,48 +35,39 @@ export { Settings } from "./Settings";
 MediaItem.onPreMediaTransition(unloads, async (mediaItem) => {
 	redux.actions["playbackControls/PAUSE"]();
 	try {
-		const maxItem = await mediaItem.max();
-		if (maxItem !== undefined) {
-			await maxItem.ensureLoaded();
-			redux.actions["playQueue/ADD_NEXT"]({ mediaItemIds: [maxItem.id], context: { type: "UNKNOWN" } });
-			redux.actions["playQueue/MOVE_NEXT"]();
-		}
-		redux.actions["playbackControls/PLAY"]();
+		const maxItem = await getMaxItem(mediaItem);
+		if (maxItem !== undefined) PlayState.playNext(maxItem.id);
 	} catch (err) {
 		trace.msg.err.withContext("addNext")(err);
-		redux.actions["playbackControls/PLAY"]();
 	}
+	PlayState.play();
 });
 redux.intercept("playQueue/ADD_NOW", unloads, async (payload) => {
 	const mediaItemIds = [...payload.mediaItemIds];
 	const currentIndex = payload.fromIndex ?? 0;
 	try {
 		const mediaItem = await MediaItem.fromId(mediaItemIds[currentIndex]);
-		const maxItem = await mediaItem?.max();
-		if (maxItem !== undefined) {
-			await maxItem.ensureLoaded();
-			mediaItemIds[currentIndex] = maxItem.id;
-		}
-		redux.actions["playQueue/ADD_NOW"]({ ...payload, mediaItemIds });
+		const maxItem = await getMaxItem(mediaItem);
+		if (maxItem !== undefined) mediaItemIds[currentIndex] = maxItem.id;
 	} catch (err) {
 		trace.msg.err.withContext("playQueue/ADD_NOW")(err);
-		redux.actions["playQueue/ADD_NOW"]({ ...payload, mediaItemIds });
 	}
+	redux.actions["playQueue/ADD_NOW"]({ ...payload, mediaItemIds });
 	return true;
 });
 
 redux.intercept(["playQueue/MOVE_TO", "playQueue/MOVE_NEXT", "playQueue/MOVE_PREVIOUS"], unloads, (payload, action) => {
 	(async () => {
-		const { elements, currentIndex } = redux.store.getState().playQueue;
+		const { elements, currentIndex } = PlayState.playQueue;
 		switch (action) {
 			case "playQueue/MOVE_NEXT":
-				if (!(await playMaxItem(elements, currentIndex + 1))) redux.actions["playQueue/MOVE_NEXT"]();
+				if (!(await playMaxItem(elements, currentIndex + 1))) PlayState.next();
 				break;
 			case "playQueue/MOVE_PREVIOUS":
-				if (!(await playMaxItem(elements, currentIndex - 1))) redux.actions["playQueue/MOVE_PREVIOUS"]();
+				if (!(await playMaxItem(elements, currentIndex - 1))) PlayState.previous();
 				break;
 			case "playQueue/MOVE_TO":
-				if (!(await playMaxItem(elements, payload ?? currentIndex))) redux.actions["playQueue/MOVE_TO"](payload ?? currentIndex);
+				if (!(await playMaxItem(elements, payload ?? currentIndex))) PlayState.moveTo(payload ?? currentIndex);
 				break;
 		}
 		redux.actions["playbackControls/PLAY"]();
