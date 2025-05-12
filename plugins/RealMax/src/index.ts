@@ -1,11 +1,11 @@
-import { trace, unloads } from "./init";
+import { trace, unloads } from "./index.safe";
 
 import { MediaItem, PlayState, redux, type TPlayQueueItem } from "@luna/lib";
 
 import "./contextMenu";
 import { settings } from "./Settings";
 
-export { errSignal, unloads } from "./init";
+export { errSignal, unloads } from "./index.safe";
 
 const getMaxItem = async (mediaItem?: MediaItem) => {
 	const maxItem = await mediaItem?.max();
@@ -31,6 +31,9 @@ const playMaxItem = async (elements: readonly TPlayQueueItem[], index: number) =
 };
 
 export { Settings } from "./Settings";
+
+// Prefetch max on preload
+MediaItem.onPreload(unloads, (mediaItem) => mediaItem.max());
 
 MediaItem.onPreMediaTransition(unloads, async (mediaItem) => {
 	redux.actions["playbackControls/PAUSE"]();

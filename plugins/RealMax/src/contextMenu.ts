@@ -1,4 +1,4 @@
-import { trace, unloads } from "./init";
+import { trace, unloads } from "./index.safe";
 
 import { chunkArray } from "@inrixia/helpers";
 import { ContextMenu, redux, type ItemId } from "@luna/lib";
