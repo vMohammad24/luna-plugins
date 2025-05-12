@@ -27,14 +27,14 @@ export const setup = () => {
 	});
 
 	RemoteDesktopController.__running = true;
-	const neptuneRemoteDesktop = new RemoteDesktopController();
-	neptuneRemoteDesktop.mdnsStartBroadcasting = () => service.advertise();
-	neptuneRemoteDesktop.mdnsStopBroadcasting = () => service.end();
+	const lunaRemoteDesktop = new RemoteDesktopController();
+	lunaRemoteDesktop.mdnsStartBroadcasting = () => service.advertise();
+	lunaRemoteDesktop.mdnsStopBroadcasting = () => service.end();
 
-	neptuneRemoteDesktop.initialize("https://desktop.tidal.com");
-	neptuneRemoteDesktop.mdnsStartBroadcasting();
+	lunaRemoteDesktop.initialize("https://desktop.tidal.com");
+	lunaRemoteDesktop.mdnsStartBroadcasting();
 
-	neptuneRemoteDesktop.remoteDesktopPlayer.remotePlayerProcess.stdout.on("data", (...args: any[]) =>
+	lunaRemoteDesktop.remoteDesktopPlayer.remotePlayerProcess.stdout.on("data", (...args: any[]) =>
 		console.log("DesktopConnect.remotePlayerProcess.stdout", ...args)
 	);
 };

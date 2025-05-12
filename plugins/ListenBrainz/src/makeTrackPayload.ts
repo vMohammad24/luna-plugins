@@ -26,7 +26,7 @@ export const makeTrackPayload = async (mediaItem: MediaItem): Promise<Payload> =
 		origin_url: mediaItem.url,
 		duration: mediaItem.duration,
 		media_player: "Tidal Desktop",
-		submission_client: "Neptune Scrobbler",
+		submission_client: "TidaLuna Scrobbler",
 	};
 	delUndefined(trackPayload.track_metadata.additional_info);
 	return trackPayload;

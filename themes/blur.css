@@ -7,21 +7,12 @@
 */
 
 :root {
-	--blur-background: color-mix(
-		in srgb,
-		var(--wave-color-solid-base-brighter),
-		transparent 60%
-	);
+	--blur-background: color-mix(in srgb, var(--wave-color-solid-base-brighter), transparent 60%);
 	--blur-radius: 16px;
 }
 
 #footerPlayer {
 	backdrop-filter: blur(var(--blur-radius));
-}
-
-[data-type="page"],
-.__NEPTUNE_PAGE {
-	padding-bottom: 128px !important;
 }
 
 [class^="_containerRow_"] {
