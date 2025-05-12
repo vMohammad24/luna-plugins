@@ -36,9 +36,11 @@ export const updateActivity = asyncDebounce(async (mediaItem?: MediaItem) => {
 	// Pause indicator
 	if (PlayState.playing) {
 		// Small Artist image
-		const artist = await mediaItem.artist();
-		activity.smallImageKey = artist?.coverUrl("320");
-		activity.smallImageText = fmtStr(artist?.name);
+		if (settings.displayArtistIcon) {
+			const artist = await mediaItem.artist();
+			activity.smallImageKey = artist?.coverUrl("320");
+			activity.smallImageText = fmtStr(artist?.name);
+		}
 
 		// Playback/Time
 		if (mediaItem.duration !== undefined) {
