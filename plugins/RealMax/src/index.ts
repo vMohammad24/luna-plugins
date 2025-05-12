@@ -10,7 +10,7 @@ export { errSignal, unloads } from "./init";
 const getMaxItem = async (mediaItem?: MediaItem) => {
 	const maxItem = await mediaItem?.max();
 	if (maxItem === undefined) return;
-	if (settings.displayInfoPopups) trace.msg.log(`Found ${maxItem.tidalItem.title} replacement for ${mediaItem!.tidalItem.title}`);
+	if (settings.displayInfoPopups) trace.msg.log(`Found replacement for ${mediaItem!.tidalItem.title}`);
 	return maxItem;
 };
 
@@ -23,7 +23,7 @@ const playMaxItem = async (elements: readonly TPlayQueueItem[], index: number) =
 	if (maxItem === undefined) return false;
 
 	newElements[index] = { ...newElements[index], mediaItemId: maxItem.id };
-	redux.actions["playQueue/RESET"]({
+	PlayState.updatePlayQueue({
 		elements: newElements,
 		currentIndex: index,
 	});
@@ -42,17 +42,19 @@ MediaItem.onPreMediaTransition(unloads, async (mediaItem) => {
 	}
 	PlayState.play();
 });
-redux.intercept("playQueue/ADD_NOW", unloads, async (payload) => {
-	const mediaItemIds = [...payload.mediaItemIds];
-	const currentIndex = payload.fromIndex ?? 0;
-	try {
-		const mediaItem = await MediaItem.fromId(mediaItemIds[currentIndex]);
-		const maxItem = await getMaxItem(mediaItem);
-		if (maxItem !== undefined) mediaItemIds[currentIndex] = maxItem.id;
-	} catch (err) {
-		trace.msg.err.withContext("playQueue/ADD_NOW")(err);
-	}
-	redux.actions["playQueue/ADD_NOW"]({ ...payload, mediaItemIds });
+redux.intercept("playQueue/ADD_NOW", unloads, (payload) => {
+	(async () => {
+		const mediaItemIds = [...payload.mediaItemIds];
+		const currentIndex = payload.fromIndex ?? 0;
+		try {
+			const mediaItem = await MediaItem.fromId(mediaItemIds[currentIndex]);
+			const maxItem = await getMaxItem(mediaItem);
+			if (maxItem !== undefined) mediaItemIds[currentIndex] = maxItem.id;
+		} catch (err) {
+			trace.msg.err.withContext("playQueue/ADD_NOW")(err);
+		}
+		redux.actions["playQueue/ADD_NOW"]({ ...payload, mediaItemIds });
+	})();
 	return true;
 });
 
@@ -70,7 +72,7 @@ redux.intercept(["playQueue/MOVE_TO", "playQueue/MOVE_NEXT", "playQueue/MOVE_PRE
 				if (!(await playMaxItem(elements, payload ?? currentIndex))) PlayState.moveTo(payload ?? currentIndex);
 				break;
 		}
-		redux.actions["playbackControls/PLAY"]();
+		PlayState.play();
 	})();
 	return true;
 });
