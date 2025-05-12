@@ -1,5 +1,5 @@
 import { Tracer, type LunaUnload } from "@luna/core";
-import { ContentBase, MediaItem, StyleTag, type ItemId } from "@luna/lib";
+import { MediaItem, StyleTag, type ItemId } from "@luna/lib";
 
 const { trace, errSignal } = Tracer("[CoverTheme]");
 export { errSignal, trace };
@@ -10,12 +10,9 @@ import { settings, storage } from "./Settings";
 import { getPalette, type Palette, type RGBSwatch } from "./vibrant.native";
 
 const cachePalette = async (mediaItem: MediaItem): Promise<Palette | undefined> => {
-	// Try use tidalItem.album?.cover first to avoid extra request
-	const cover = mediaItem.tidalItem.album?.cover !== undefined ? mediaItem.tidalItem.album.cover : (await mediaItem.album())?.tidalAlbum.cover;
-	if (cover === undefined) return;
-	const coverUrl = ContentBase.formatCoverUrl(cover, "640");
+	const coverUrl = await mediaItem.coverUrl("640");
 	if (coverUrl === undefined) return;
-	return await storage.ensure<Palette>(`palette_v2.${cover}`, () => getPalette(coverUrl));
+	return await storage.ensure<Palette>(`palette_v2.${coverUrl}`, () => getPalette(coverUrl));
 };
 
 const docStyle = document.documentElement.style;
