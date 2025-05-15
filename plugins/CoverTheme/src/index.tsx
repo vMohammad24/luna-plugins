@@ -1,5 +1,5 @@
 import { Tracer, type LunaUnload } from "@luna/core";
-import { MediaItem, PlayState, StyleTag, type redux } from "@luna/lib";
+import { MediaItem, PlayState, redux, StyleTag } from "@luna/lib";
 
 const { trace, errSignal } = Tracer("[CoverTheme]");
 export { errSignal, trace };
@@ -31,13 +31,13 @@ const animateCssVar = (varName: string, from: RGBSwatch | undefined, to: RGBSwat
 };
 
 const vars = new Set<string>();
-let currentItem: redux.ItemId;
+let currentItemId: redux.ItemId;
 let currentPalette: Palette;
 const updateBackground = async (mediaItem?: MediaItem) => {
-	if (mediaItem === undefined || mediaItem.id === currentItem) return;
-	currentItem = mediaItem.id;
+	if (mediaItem === undefined || mediaItem.id === currentItemId) return;
+	currentItemId = mediaItem.id;
 	const palette = await cachePalette(mediaItem).catch(trace.msg.err.withContext("Failed to update background"));
-	if (palette === undefined) return;
+	if (palette === undefined || currentPalette === palette) return;
 
 	for (const colorName in palette) {
 		const nextColor = palette[colorName];
@@ -46,13 +46,26 @@ const updateBackground = async (mediaItem?: MediaItem) => {
 		animateCssVar(variableName, currentPalette?.[colorName], nextColor, 250);
 	}
 	currentPalette = palette;
+	return true;
 };
 
 export { Settings } from "./Settings";
 
 export const unloads = new Set<LunaUnload>();
 export const style = new StyleTag("CoverTheme", unloads, settings.applyTheme ? transparent : "");
-setTimeout(() => MediaItem.fromPlaybackContext().then(updateBackground));
+setTimeout(async () => {
+	const mediaItem = await MediaItem.fromPlaybackContext()
+		.then(updateBackground)
+		.catch(trace.msg.err.withContext("MediaItem.fromPlaybackContext.updateBackground"));
+	if (mediaItem) return;
+
+	// Fallback for if no media is playing
+	const mediaItems = redux.store.getState().content.mediaItems;
+	for (const itemId in mediaItems) {
+		await MediaItem.fromId(itemId).then(updateBackground).catch(trace.msg.err.withContext("MediaItem.fromId.updateBackground"));
+		return;
+	}
+});
 
 MediaItem.onMediaTransition(unloads, async (mediaItem) => {
 	await updateBackground(mediaItem);
@@ -61,4 +74,15 @@ MediaItem.onMediaTransition(unloads, async (mediaItem) => {
 });
 MediaItem.onPreload(unloads, cachePalette);
 MediaItem.onPreMediaTransition(unloads, updateBackground);
+redux.intercept("playQueue/MOVE_TO", unloads, (payload) => {
+	const { mediaItemId } = PlayState.playQueue.elements[payload];
+	MediaItem.fromId(mediaItemId).then(updateBackground).catch(trace.msg.err.withContext("playQueue/MOVE_TO"));
+});
+redux.intercept("playQueue/MOVE_NEXT", unloads, () => {
+	PlayState.nextMediaItem().then(updateBackground).catch(trace.msg.err.withContext("playQueue/MOVE_NEXT"));
+});
+redux.intercept("playQueue/MOVE_PREVIOUS", unloads, () => {
+	PlayState.previousMediaItem().then(updateBackground).catch(trace.msg.err.withContext("playQueue/MOVE_PREVIOUS"));
+});
+
 unloads.add(() => vars.forEach((variable) => document.documentElement.style.removeProperty(variable)));
