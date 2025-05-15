@@ -1,6 +1,6 @@
 import { trace, unloads } from "./index.safe";
 
-import { MediaItem, PlayState, redux, type TPlayQueueItem } from "@luna/lib";
+import { MediaItem, PlayState, redux } from "@luna/lib";
 
 import "./contextMenu";
 import { settings } from "./Settings";
@@ -14,7 +14,7 @@ const getMaxItem = async (mediaItem?: MediaItem) => {
 	return maxItem;
 };
 
-const playMaxItem = async (elements: readonly TPlayQueueItem[], index: number) => {
+const playMaxItem = async (elements: redux.PlayQueueElement[], index: number) => {
 	const newElements = [...elements];
 	if (newElements[index]?.mediaItemId === undefined) return false;
 
@@ -33,10 +33,10 @@ const playMaxItem = async (elements: readonly TPlayQueueItem[], index: number) =
 export { Settings } from "./Settings";
 
 // Prefetch max on preload
-MediaItem.onPreload(unloads, (mediaItem) => mediaItem.max());
+MediaItem.onPreload(unloads, (mediaItem) => mediaItem.max().catch(trace.err.withContext("onPreload.max")));
 
 MediaItem.onPreMediaTransition(unloads, async (mediaItem) => {
-	redux.actions["playbackControls/PAUSE"]();
+	PlayState.pause();
 	try {
 		const maxItem = await getMaxItem(mediaItem);
 		if (maxItem !== undefined) PlayState.playNext(maxItem.id);
@@ -44,6 +44,10 @@ MediaItem.onPreMediaTransition(unloads, async (mediaItem) => {
 		trace.msg.err.withContext("addNext")(err);
 	}
 	PlayState.play();
+
+	// Preload next item
+	const nextItem = await PlayState.nextMediaItem();
+	nextItem?.max().catch(trace.err.withContext("onPreMediaTransition.nextItem.max"));
 });
 redux.intercept("playQueue/ADD_NOW", unloads, (payload) => {
 	(async () => {

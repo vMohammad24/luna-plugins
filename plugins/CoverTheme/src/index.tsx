@@ -1,5 +1,5 @@
 import { Tracer, type LunaUnload } from "@luna/core";
-import { MediaItem, StyleTag, type redux } from "@luna/lib";
+import { MediaItem, PlayState, StyleTag, type redux } from "@luna/lib";
 
 const { trace, errSignal } = Tracer("[CoverTheme]");
 export { errSignal, trace };
@@ -9,7 +9,8 @@ import transparent from "file://transparent.css?minify";
 import { settings, storage } from "./Settings";
 import { getPalette, type Palette, type RGBSwatch } from "./vibrant.native";
 
-const cachePalette = async (mediaItem: MediaItem): Promise<Palette | undefined> => {
+const cachePalette = async (mediaItem?: MediaItem): Promise<Palette | undefined> => {
+	if (mediaItem === undefined) return;
 	const coverUrl = await mediaItem.coverUrl("640");
 	if (coverUrl === undefined) return;
 	return await storage.ensure<Palette>(`palette_v2.${coverUrl}`, () => getPalette(coverUrl));
@@ -53,7 +54,11 @@ export const unloads = new Set<LunaUnload>();
 export const style = new StyleTag("CoverTheme", unloads, settings.applyTheme ? transparent : "");
 setTimeout(() => MediaItem.fromPlaybackContext().then(updateBackground));
 
-MediaItem.onMediaTransition(unloads, updateBackground);
+MediaItem.onMediaTransition(unloads, async (mediaItem) => {
+	await updateBackground(mediaItem);
+	// Preload next palette
+	await cachePalette(await PlayState.nextMediaItem());
+});
 MediaItem.onPreload(unloads, cachePalette);
 MediaItem.onPreMediaTransition(unloads, updateBackground);
 unloads.add(() => vars.forEach((variable) => document.documentElement.style.removeProperty(variable)));
