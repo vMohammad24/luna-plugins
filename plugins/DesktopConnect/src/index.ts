@@ -54,7 +54,7 @@ ipcRenderer.on(unloads, "remote.desktop.notify.session.state", (state) => {
 				return send({ command: "onStatusUpdated", playerState: "buffering", type: "media" });
 		}
 	});
-	redux.intercept<{ reason: "completed" | "skip" }>("playbackControls/ENDED", sessionUnloads, ({ reason }) => {
+	redux.intercept("playbackControls/ENDED", sessionUnloads, ({ reason }) => {
 		if (reason === "completed") send({ command: "onPlaybackCompleted", hasNextMedia: false, type: "media" });
 		return true;
 	});

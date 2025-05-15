@@ -1,12 +1,12 @@
 import { asyncDebounce } from "@inrixia/helpers";
 import { Tracer, type LunaUnload } from "@luna/core";
-import { MediaItem, PlayState, type ItemId } from "@luna/lib";
+import { MediaItem, PlayState, type redux } from "@luna/lib";
 
 import { voidTrack } from "./voidTrack.native";
 
 export const { trace, errSignal } = Tracer("[NoBuffer]");
 
-const kickCache = new Set<ItemId>();
+const kickCache = new Set<redux.ItemId>();
 const onStalled = asyncDebounce(async () => {
 	const mediaItem = await MediaItem.fromPlaybackContext();
 	if (mediaItem === undefined || kickCache.has(mediaItem.id)) return;

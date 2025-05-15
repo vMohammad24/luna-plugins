@@ -1,5 +1,5 @@
 import { Tracer, type LunaUnload } from "@luna/core";
-import { MediaItem, StyleTag, type ItemId } from "@luna/lib";
+import { MediaItem, StyleTag, type redux } from "@luna/lib";
 
 const { trace, errSignal } = Tracer("[CoverTheme]");
 export { errSignal, trace };
@@ -30,7 +30,7 @@ const animateCssVar = (varName: string, from: RGBSwatch | undefined, to: RGBSwat
 };
 
 const vars = new Set<string>();
-let currentItem: ItemId;
+let currentItem: redux.ItemId;
 let currentPalette: Palette;
 const updateBackground = async (mediaItem?: MediaItem) => {
 	if (mediaItem === undefined || mediaItem.id === currentItem) return;
