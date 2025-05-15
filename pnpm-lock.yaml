@@ -30,8 +30,8 @@ importers:
         specifier: ^14.1.1
         version: 14.1.1
       luna:
-        specifier: github:inrixia/TidaLuna#69ff902
-        version: https://codeload.github.com/inrixia/TidaLuna/tar.gz/69ff902
+        specifier: github:inrixia/TidaLuna#dfc4a89
+        version: https://codeload.github.com/inrixia/TidaLuna/tar.gz/dfc4a89
       oby:
         specifier: ^15.1.2
         version: 15.1.2
@@ -44,6 +44,8 @@ importers:
       typescript:
         specifier: ^5.8.3
         version: 5.8.3
+
+  plugins/Avatar: {}
 
   plugins/CoverTheme:
     dependencies:
@@ -1023,9 +1025,9 @@ packages:
     resolution: {integrity: sha512-QIXZUBJUx+2zHUdQujWejBkcD9+cs94tLn0+YL8UrCh+D5sCXZ4c7LaEH48pNwRY3MLDgqUFyhlCyjJPf1WP0A==}
     engines: {node: 20 || >=22}
 
-  luna@https://codeload.github.com/inrixia/TidaLuna/tar.gz/69ff902:
-    resolution: {tarball: https://codeload.github.com/inrixia/TidaLuna/tar.gz/69ff902}
-    version: 1.2.0-alpha
+  luna@https://codeload.github.com/inrixia/TidaLuna/tar.gz/dfc4a89:
+    resolution: {tarball: https://codeload.github.com/inrixia/TidaLuna/tar.gz/dfc4a89}
+    version: 1.2.2-alpha
 
   magic-bytes.js@1.12.1:
     resolution: {integrity: sha512-ThQLOhN86ZkJ7qemtVRGYM+gRgR8GEXNli9H/PMvpnZsE44Xfh3wx9kGJaldg314v85m+bFW6WBMaVHJc/c3zA==}
@@ -2377,7 +2379,7 @@ snapshots:
 
   lru-cache@11.1.0: {}
 
-  luna@https://codeload.github.com/inrixia/TidaLuna/tar.gz/69ff902:
+  luna@https://codeload.github.com/inrixia/TidaLuna/tar.gz/dfc4a89:
     dependencies:
       '@inrixia/helpers': 3.20.0
       '@types/clean-css': 4.2.11
