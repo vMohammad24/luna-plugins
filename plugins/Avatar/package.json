@@ -1,0 +1,11 @@
+{
+	"name": "Avatar",
+	"description": "Allows setting a custom Avatar profile picture url. Uses your Gravatar profile picture as your avatar if you dont have one set",
+	"homepage": "https://github.com/Inrixia/luna-plugins#Avatar",
+	"author": {
+		"name": "Inrixia",
+		"url": "https://github.com/Inrixia",
+		"avatarUrl": "https://2.gravatar.com/avatar/eeaffef9eb9b436dccc58c6c44c9fe8c3528e83e3bf64e1c736a68dbe8c097d3"
+	},
+	"exports": "./src/index.tsx"
+}
