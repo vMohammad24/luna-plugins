@@ -9,7 +9,7 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 	const itemCount = await mediaCollection.count();
 	if (itemCount === 0) return;
 
-	const defaultText = itemCount > 1 ? `[RealMAX] Process ${itemCount} tracks` : "[RealMAX] Process track";
+	const defaultText = `[RealMAX] Process ${itemCount} tracks`;
 
 	const maxButton = contextMenu.addButton(defaultText, async () => {
 		let trackIds: redux.ItemId[] = [];
