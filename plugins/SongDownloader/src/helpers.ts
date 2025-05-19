@@ -1,0 +1,26 @@
+import { MediaItem } from "@luna/lib";
+import { showOpenDialog, showSaveDialog } from "@luna/lib.native";
+import { settings } from "./Settings";
+
+export const getDownloadFolder = async () => {
+	const { canceled, filePaths } = await showOpenDialog({ properties: ["openDirectory", "createDirectory"] });
+	if (!canceled) return filePaths[0];
+};
+export const getDownloadPath = async (defaultPath: string) => {
+	const { canceled, filePath } = await showSaveDialog({
+		defaultPath,
+		filters: [{ name: "", extensions: [defaultPath ?? "*"] }],
+	});
+	if (!canceled) return filePath;
+};
+export const getFileName = async (mediaItem: MediaItem) => {
+	let fileName = `${settings.pathFormat}.${await mediaItem.fileExtension()}`;
+	const { tags } = await mediaItem.flacTags();
+	for (const tag of MediaItem.availableTags) {
+		let tagValue = tags[tag];
+		if (Array.isArray(tagValue)) tagValue = tagValue[0];
+		if (tagValue === undefined) continue;
+		fileName = fileName.replaceAll(`{${tag}}`, tagValue);
+	}
+	return fileName;
+};
