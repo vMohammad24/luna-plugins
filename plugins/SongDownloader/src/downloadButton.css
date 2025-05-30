@@ -1,0 +1,19 @@
+.download-button {
+	z-index: 1;
+	position: relative;
+	display: inline-block;
+	overflow: hidden;
+	border-radius: 10px;
+}
+
+.download-button::before {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	bottom: 0;
+	width: var(--progress, 0%);
+	background-color: #9e46ff;
+	z-index: -1;
+	transition: width 0.1s ease-out;
+}
