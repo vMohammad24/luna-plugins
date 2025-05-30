@@ -29,8 +29,7 @@ const handleDrop = async (event: DragEvent) => {
 		event.preventDefault();
 		event.stopPropagation();
 
-		// @ts-expect-error TS Api
-		const { currentPath, currentParams } = store.getState().router;
+		const { currentPath, currentParams } = redux.store.getState().router;
 
 		if (!currentPath.startsWith("/playlist/")) {
 			return trace.msg.err(`This is not a playlist!`);
