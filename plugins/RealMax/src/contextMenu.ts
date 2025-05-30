@@ -9,18 +9,18 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 	const itemCount = await mediaCollection.count();
 	if (itemCount === 0) return;
 
-	const defaultText = `[RealMAX] Process ${itemCount} tracks`;
+	const defaultText = `RealMAX ${itemCount} tracks`;
 
 	const maxButton = contextMenu.addButton(defaultText, async () => {
 		let trackIds: redux.ItemId[] = [];
 		const sourceTitle = await mediaCollection.title();
-		maxButton.innerText = `[RealMAX] Loading...`;
+		maxButton.innerText = `RealMAX Loading...`;
 
 		try {
 			let maxItems = 0;
 			for await (const mediaItem of await mediaCollection.mediaItems()) {
 				const maxItem = await mediaItem.max();
-				maxButton.innerText = `[RealMAX] ${trackIds.length}/${itemCount} done. Found ${maxItems} replacements`;
+				maxButton.innerText = `RealMAX ${trackIds.length}/${itemCount} done. Found ${maxItems} replacements`;
 				if (maxItem === undefined) {
 					trackIds.push(mediaItem.id);
 					continue;
@@ -37,7 +37,7 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 				return trace.msg.err(`No replacements found for ${sourceTitle}`);
 			}
 
-			maxButton.innerText = `[RealMAX] Creating playlist...`;
+			maxButton.innerText = `RealMAX Creating playlist...`;
 			const { playlist } = await redux.interceptActionResp(
 				() =>
 					redux.actions["folders/CREATE_PLAYLIST"]({
