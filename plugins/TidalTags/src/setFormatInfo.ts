@@ -5,8 +5,9 @@ import { hexToRgba } from "./lib/hexToRgba";
 import { unloads } from "./index.safe";
 
 import type { LunaUnload } from "@luna/core";
+import { settings } from "./Settings";
 
-const formatInfoElem = document.createElement("span");
+export const formatInfoElem = document.createElement("span");
 formatInfoElem.className = "format-info";
 unloads.add(() => formatInfoElem.remove());
 
@@ -31,9 +32,6 @@ const setupInfoElem = memoizeArgless(async () => {
 	return { progressBar, qualityIndicator };
 });
 
-export const hideFlacInfo = async () => (formatInfoElem.style.display = "none");
-export const displayFlacInfo = async () => (formatInfoElem.style.display = "");
-
 let formatUnload: LunaUnload | undefined;
 export const setFormatInfo = async (mediaItem?: MediaItem) => {
 	if (mediaItem === undefined) return;
@@ -41,12 +39,12 @@ export const setFormatInfo = async (mediaItem?: MediaItem) => {
 
 	const { progressBar, qualityIndicator } = await setupInfoElem();
 
-	if (mediaItem.id != PlayState.playbackContext.actualProductId) return hideFlacInfo();
+	if (mediaItem.id != PlayState.playbackContext.actualProductId) return;
 	const audioQuality = PlayState.playbackContext.actualAudioQuality;
 
 	const qualityColor = Quality.fromAudioQuality(audioQuality);
-	const color = (qualityIndicator.style.color = progressBar.style.color = qualityColor?.color ?? "#cfcfcf");
-	formatInfoElem.style.border = `solid 1px ${hexToRgba(color, 0.3)}`;
+	const color = (progressBar.style.color = qualityIndicator.style.color = qualityColor?.color ?? "#cfcfcf");
+	if (settings.displayFormatBorder) formatInfoElem.style.border = `solid 1px ${hexToRgba(color, 0.3)}`;
 
 	formatUnload?.();
 	formatUnload = mediaItem.withFormat(unloads, audioQuality, ({ sampleRate, bitDepth, bitrate }) => {
