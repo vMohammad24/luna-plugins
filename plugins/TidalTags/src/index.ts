@@ -1,10 +1,11 @@
-import type { LunaUnload } from "@luna/core";
 import { MediaItem, observe, StyleTag } from "@luna/lib";
 
 import styles from "file://styles.css?minify";
+import { unloads } from "./index.safe";
+import { setFormatInfo } from "./setFLACInfo";
 import { setQualityTags } from "./setQualityTags";
 
-const unloads = new Set<LunaUnload>();
+export { unloads };
 
 new StyleTag("TidalTags", unloads, styles);
 
@@ -18,3 +19,6 @@ observe(unloads, 'div[data-test="tracklist-row"]', async (elem) => {
 	setQualityTags(elem, mediaItem);
 	// 	if (settings.displayInfoColumns) setInfoColumns(trackRow, trackId, trackItem);
 });
+
+MediaItem.onMediaTransition(unloads, setFormatInfo);
+MediaItem.fromPlaybackContext().then(setFormatInfo);
