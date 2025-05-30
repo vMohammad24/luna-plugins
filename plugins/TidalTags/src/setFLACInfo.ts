@@ -51,7 +51,6 @@ export const setFormatInfo = async (mediaItem?: MediaItem) => {
 
 	formatUnload?.();
 	formatUnload = mediaItem.withFormat(unloads, audioQuality, ({ sampleRate, bitDepth, bitrate }) => {
-		console.log("BOOP!", sampleRate, bitDepth, bitrate);
 		formatInfoElem.textContent = "";
 		if (!!sampleRate) formatInfoElem.textContent += `${sampleRate / 1000}kHz `;
 		if (!!bitDepth) formatInfoElem.textContent += `${bitDepth}bit `;
