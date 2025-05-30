@@ -1,7 +1,6 @@
 import { memoizeArgless } from "@inrixia/helpers";
 import { observePromise, PlayState, Quality, type MediaItem } from "@luna/lib";
 import { hexToRgba } from "./lib/hexToRgba";
-import { settings } from "./Settings";
 
 import { unloads } from "./index.safe";
 
@@ -47,7 +46,7 @@ export const setFormatInfo = async (mediaItem?: MediaItem) => {
 
 	const qualityColor = Quality.fromAudioQuality(audioQuality);
 	const color = (qualityIndicator.style.color = progressBar.style.color = qualityColor?.color ?? "#cfcfcf");
-	if (settings.displayFormatBorder) formatInfoElem.style.border = `solid 1px ${hexToRgba(color, 0.3)}`;
+	formatInfoElem.style.border = `solid 1px ${hexToRgba(color, 0.3)}`;
 
 	formatUnload?.();
 	formatUnload = mediaItem.withFormat(unloads, audioQuality, ({ sampleRate, bitDepth, bitrate }) => {
