@@ -10,8 +10,11 @@ export const setQualityTags = (trackRow: Element, mediaItem: MediaItem) => {
 
 	if (qualityTags.length === 1 && qualityTags[0] === Quality.High && bestQuality === Quality.High) return;
 
-	const span = trackTitle.querySelector(".quality-tag-container") ?? document.createElement("span");
-	if (span.getAttribute("track-id") === id) return;
+	let span = trackTitle.querySelector(".quality-tag-container");
+	if (span?.getAttribute("track-id") === id) return;
+
+	span?.remove();
+	span = document.createElement("span");
 
 	span.className = "quality-tag-container";
 	span.setAttribute("track-id", id);
