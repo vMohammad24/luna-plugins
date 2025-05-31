@@ -35,7 +35,7 @@ export const Settings = () => {
 				tooltip="Display artist icon"
 				checked={displayArtistIcon}
 				onChange={(_, checked) => {
-					setDisplayOnPause((settings.displayArtistIcon = checked));
+					setDisplayArtistIcon((settings.displayArtistIcon = checked));
 					updateActivity()
 						.then(() => (errSignal!._ = undefined))
 						.catch(trace.err.withContext("Failed to set activity"));
