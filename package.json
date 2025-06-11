@@ -1,7 +1,8 @@
 {
-	"name": "@luna/template",
-	"description": "Template repo for making your own luna plugins",
+	"name": "@vmohammad/plugins",
+	"description": "A collection of plugins for TidaLuna made by vMohammad",
 	"type": "module",
+	"author": "vMohammad",
 	"scripts": {
 		"watch": "concurrently \"pnpm:build --watch\" pnpm:serve",
 		"build": "rimraf ./dist && tsx esbuild.config.ts",
