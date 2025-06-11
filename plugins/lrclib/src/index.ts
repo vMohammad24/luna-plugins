@@ -1,8 +1,8 @@
-import { LunaUnload, Tracer } from "@luna/core";
-import { redux, TidalApi } from "@luna/lib";
+import { ftch, LunaUnload, Tracer } from "@luna/core";
+import { MediaItem, redux } from "@luna/lib";
 
-const { trace } = Tracer("[lrclib]");
-const unloads = new Set<LunaUnload>();
+export const { trace } = Tracer("[lrclib]");
+export const unloads = new Set<LunaUnload>();
 
 interface LyricsData {
     id?: number;
@@ -17,22 +17,29 @@ interface LyricsData {
 }
 // cached it then removed cuz tidal already caches it and lrclib has no ratelimiting 
 redux.intercept("content/LOAD_ITEM_LYRICS_FAIL", unloads, async (payload) => {
-    const track = await TidalApi.track(payload.itemId);
+    const track = await MediaItem.fromId(payload.itemId, 'track');
     if (!track) return;
-    const res = await fetch(`https://lrclib.net/api/get?track_name=${encodeURIComponent(track.title)}&artist_name=${encodeURIComponent(track.artist?.name || '')}&album_name=${encodeURIComponent(track.album?.title || '')}&duration=${track.duration}`);
-    if (!res.ok) {
-        trace.err(`Failed to fetch lyrics for track: ${track.title}`);
+    const [title, artist, album] = await Promise.all([
+        track.title(),
+        track.artist(),
+        track.album()
+    ])
+    const albumName = album ? await album.title() || '' : '';
+    try {
+        const lyricsData: LyricsData = await ftch.json(`https://lrclib.net/api/get?track_name=${encodeURIComponent(title)}&artist_name=${encodeURIComponent(artist?.name || '')}&album_name=${encodeURIComponent(albumName)}&duration=${track.duration}`);
+        await redux.actions["content/LOAD_ITEM_LYRICS_SUCCESS"]({
+            isRightToLeft: false,
+            lyrics: lyricsData.plainLyrics || "",
+            lyricsProvider: "lrclib",
+            trackId: payload.itemId,
+            subtitles: lyricsData.syncedLyrics || '',
+            providerLyricsId: lyricsData.id || 0,
+            providerCommontrackId: lyricsData.id || 0,
+        });
+        trace.log(`Loaded lyrics for track: ${track.title} (${payload.itemId})`);
+    } catch (e) {
+        trace.err(`Failed to fetch lyrics for track: ${track.title}, error: ${e}`);
         return;
     }
-    const lyricsData: LyricsData = await res.json();
-    await redux.actions["content/LOAD_ITEM_LYRICS_SUCCESS"]({
-        isRightToLeft: false,
-        lyrics: lyricsData.plainLyrics || "",
-        lyricsProvider: "lrclib",
-        trackId: payload.itemId,
-        subtitles: lyricsData.syncedLyrics || '',
-        providerLyricsId: lyricsData.id || 0,
-        providerCommontrackId: lyricsData.id || 0,
-    });
-    trace.log(`Loaded lyrics for track: ${track.title} (${payload.itemId})`);
+
 });
