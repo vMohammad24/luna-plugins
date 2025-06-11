@@ -13,32 +13,36 @@ export const unloads = new Set<LunaUnload>();
 
 new StyleTag("SongDownloader", unloads, styles);
 
+const downloadButton = ContextMenu.addButton(unloads);
+
 export { Settings } from "./Settings";
-ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
+ContextMenu.onMediaItem(unloads, async ({ mediaCollection }) => {
 	const trackCount = await mediaCollection.count();
 	if (trackCount === 0) return;
 
-	const defaultText = `Download ${trackCount} tracks`;
-	const downloadButton = contextMenu.addButton(defaultText, async () => {
+	const defaultText = (downloadButton.text = `Download ${trackCount} tracks`);
+
+	downloadButton.onClick(async () => {
+		if (downloadButton.elem === undefined) return;
 		const downloadFolder = settings.defaultPath ?? (trackCount > 1 ? await getDownloadFolder() : undefined);
-		downloadButton.classList.add("download-button");
+		downloadButton.elem.classList.add("download-button");
 		for await (let mediaItem of await mediaCollection.mediaItems()) {
 			if (settings.useRealMAX) {
-				downloadButton.innerText = `Checking RealMax...`;
+				downloadButton.text = `Checking RealMax...`;
 				mediaItem = (await mediaItem.max()) ?? mediaItem;
 			}
 
-			downloadButton.innerText = `Loading tags...`;
+			downloadButton.text = `Loading tags...`;
 			await mediaItem.flacTags();
 
-			downloadButton.innerText = `Fetching filename...`;
+			downloadButton.text = `Fetching filename...`;
 			const fileName = await getFileName(mediaItem);
 
-			downloadButton.innerText = `Fetching download path...`;
+			downloadButton.text = `Fetching download path...`;
 			const path = downloadFolder !== undefined ? join(downloadFolder, fileName) : await getDownloadPath(fileName);
 			if (path === undefined) return;
 
-			downloadButton.innerText = `Downloading...`;
+			downloadButton.text = `Downloading...`;
 			const clearInterval = safeInterval(
 				unloads,
 				async () => {
@@ -47,17 +51,17 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 					const { total, downloaded } = progress;
 					if (total === undefined || downloaded === undefined) return;
 					const percent = (downloaded / total) * 100;
-					downloadButton.style.setProperty("--progress", `${percent}%`);
+					downloadButton.elem!.style.setProperty("--progress", `${percent}%`);
 					const downloadedMB = (downloaded / 1048576).toFixed(0);
 					const totalMB = (total / 1048576).toFixed(0);
-					downloadButton.innerText = `Downloading... ${downloadedMB}/${totalMB}MB ${percent.toFixed(0)}%`;
+					downloadButton.text = `Downloading... ${downloadedMB}/${totalMB}MB ${percent.toFixed(0)}%`;
 				},
 				50
 			);
 			await mediaItem.download(path);
 			clearInterval();
 		}
-		downloadButton.innerText = defaultText;
-		downloadButton.classList.remove("download-button");
+		downloadButton.text = defaultText;
+		downloadButton.elem.classList.remove("download-button");
 	});
 });
