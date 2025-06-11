@@ -19,23 +19,20 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 		maxButton.text = `RealMAX Loading...`;
 
 		try {
-			let maxItems = 0;
+			let newItems = 0;
 			for await (const mediaItem of await mediaCollection.mediaItems()) {
 				const maxItem = await mediaItem.max();
-				maxButton.text = `RealMAX ${trackIds.length}/${itemCount} done. Found ${maxItems} replacements`;
+				maxButton.text = `RealMAX ${trackIds.length}/${itemCount} done. Found ${newItems} replacements`;
 				if (maxItem === undefined) {
 					trackIds.push(mediaItem.id);
+					newItems++;
 					continue;
 				}
 				trackIds.push(maxItem.id);
-				maxItems++;
 				trace.msg.log(`Found Max replacement for ${maxItem.tidalItem.title}!`);
 			}
-			if (trackIds.length !== itemCount) {
-				return trace.msg.err(`Failed to create playlist "${sourceTitle}" item count mismatch ${trackIds.length} != ${itemCount}`);
-			}
 
-			if (maxItems === 0) {
+			if (newItems === 0) {
 				return trace.msg.err(`No replacements found for ${sourceTitle}`);
 			}
 
@@ -72,7 +69,7 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 			if (playlist?.uuid === undefined) {
 				return trace.msg.err(`Failed to create playlist "${sourceTitle}"`);
 			}
-			trace.msg.log(`Created playlist "${sourceTitle}" with ${maxItems} replacements!`);
+			trace.msg.log(`Created playlist "${sourceTitle}" with ${newItems} replacements!`);
 		} finally {
 			maxButton.text = defaultText;
 		}
