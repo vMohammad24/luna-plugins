@@ -19,7 +19,7 @@
 		"serve": "http-server ./dist -p 3000 -s --cors -c-1"
 	},
 	"devDependencies": {
-		"@inrixia/helpers": "^3.20.1",
+		"@inrixia/helpers": "^3.20.2",
 		"@types/node": "^24.0.0",
 		"@types/react": "^19.1.7",
 		"@types/react-dom": "^19.1.6",

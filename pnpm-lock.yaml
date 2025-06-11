@@ -9,8 +9,8 @@ importers:
   .:
     devDependencies:
       '@inrixia/helpers':
-        specifier: ^3.20.1
-        version: 3.20.1
+        specifier: ^3.20.2
+        version: 3.20.2
       '@types/node':
         specifier: ^24.0.0
         version: 24.0.0
@@ -277,8 +277,8 @@ packages:
     engines: {node: ^18 || ^20 || ^22}
     hasBin: true
 
-  '@inrixia/helpers@3.20.1':
-    resolution: {integrity: sha512-RIFQcklUUXsT/e2HdmEn2dxh/3i2xkVA8t82mCAKtY5MYF3ttPz7H2LRG6pIrm2RPl2GbxUmpoE8hEN4Ji993g==}
+  '@inrixia/helpers@3.20.2':
+    resolution: {integrity: sha512-iRD7YI9aF2SIhboH/8aBbTI33Iur8eo540ZyP+Fq4VGtPIKa7s6PBq8kYAugHud/zCWIZsHj9TP3GUekNpNKHA==}
 
   '@isaacs/cliui@8.0.2':
     resolution: {integrity: sha512-O8jcjabXaleOG9DQ0+ARXWZBTfnP4WNAqzuiJK7ll44AmxGKv/J2M4TPjxjY3znBCfvBXFzucm1twdyFybFqEA==}
@@ -1425,7 +1425,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@inrixia/helpers@3.20.1':
+  '@inrixia/helpers@3.20.2':
     dependencies:
       dequal: 2.0.3
 
@@ -2136,7 +2136,7 @@ snapshots:
 
   luna@https://codeload.github.com/inrixia/TidaLuna/tar.gz/10ae3d0:
     dependencies:
-      '@inrixia/helpers': 3.20.1
+      '@inrixia/helpers': 3.20.2
       '@types/clean-css': 4.2.11
       '@types/html-minifier-terser': 7.0.2
       '@types/node': 22.15.31
