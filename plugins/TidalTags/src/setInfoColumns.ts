@@ -3,6 +3,7 @@ import type { MediaItem } from "@luna/lib";
 import { unloads } from "./index.safe";
 import { ensureColumnHeader } from "./lib/ensureColumnHeader";
 import { setColumn } from "./lib/setColumn";
+import { settings } from "./Settings";
 
 export const setInfoColumnHeaders = debounce(() => {
 	for (const trackList of document.querySelectorAll(`div[aria-label="Tracklist"]`)) {
@@ -20,7 +21,7 @@ export const setInfoColumnHeaders = debounce(() => {
 	}
 }, 50);
 
-export const setInfoColumns = (trackRow: Element, mediaItem: MediaItem) => {
+export const setInfoColumns = async (trackRow: Element, mediaItem: MediaItem) => {
 	setInfoColumnHeaders();
 	const bitDepthContent = document.createElement("span");
 	const bitDepthColumn = setColumn(trackRow, "Depth", `div[data-test="duration"]`, bitDepthContent, `div[data-test="duration"]`);
@@ -34,11 +35,15 @@ export const setInfoColumns = (trackRow: Element, mediaItem: MediaItem) => {
 	const bitrateColumn = setColumn(trackRow, "Bitrate", `div[data-test="duration"]`, bitrateContent, sampleRateColumn);
 	bitrateColumn?.style.setProperty("min-width", "100px");
 
-	bitDepthContent.style.color = sampleRateContent.style.color = bitrateContent.style.color = mediaItem.bestQuality.color;
+	const quality = mediaItem.bestQuality;
 
-	mediaItem.withFormat(unloads, mediaItem.bestQuality.audioQuality, ({ sampleRate, bitDepth, bitrate }) => {
+	bitDepthContent.style.color = sampleRateContent.style.color = bitrateContent.style.color = quality.color;
+
+	mediaItem.withFormat(unloads, quality.audioQuality, ({ sampleRate, bitDepth, bitrate }) => {
 		if (!!sampleRate) sampleRateContent.textContent = `${sampleRate / 1000}kHz`;
 		if (!!bitDepth) bitDepthContent.textContent = `${bitDepth}bit`;
 		if (!!bitrate) bitrateContent.textContent = `${Math.floor(bitrate / 1000).toLocaleString()}kbps`;
 	});
+
+	if (settings.autoPopulateColumns) await mediaItem.updateFormat(quality.audioQuality);
 };

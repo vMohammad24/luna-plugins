@@ -20,7 +20,7 @@ observe(unloads, 'div[data-test="tracklist-row"]', async (trackRow) => {
 	if (mediaItem === undefined) return;
 
 	if (settings.displayQalityTags) setQualityTags(trackRow, mediaItem);
-	if (settings.displayFormatColumns) setFormatColumns(trackRow, mediaItem);
+	if (settings.displayFormatColumns) await setFormatColumns(trackRow, mediaItem);
 });
 
 MediaItem.onMediaTransition(unloads, setFormatInfo);

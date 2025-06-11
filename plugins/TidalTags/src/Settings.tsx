@@ -8,12 +8,14 @@ export const settings = await ReactiveStore.getPluginStorage("TidalTags", {
 	displayFormatBorder: true,
 	displayQalityTags: true,
 	displayFormatColumns: true,
+	autoPopulateColumns: false,
 });
 
 export const Settings = () => {
 	const [displayFormatBorder, setDisplayFormatBorder] = React.useState(settings.displayFormatBorder);
 	const [displayQalityTags, setDisplayQalityTags] = React.useState(settings.displayQalityTags);
 	const [displayFormatColumns, setDisplayFormatColumns] = React.useState(settings.displayFormatColumns);
+	const [autoPopulateColumns, setAutoPopulateColumns] = React.useState(settings.autoPopulateColumns);
 	return (
 		<LunaSettings>
 			<LunaSwitchSetting
@@ -40,6 +42,14 @@ export const Settings = () => {
 				checked={displayFormatColumns}
 				onChange={(_, checked) => {
 					setDisplayFormatColumns((settings.displayFormatColumns = checked));
+				}}
+			/>
+			<LunaSwitchSetting
+				title="Auto populate columns"
+				desc="Populate clumns with format info without having to play the track"
+				checked={autoPopulateColumns}
+				onChange={(_, checked) => {
+					setAutoPopulateColumns((settings.autoPopulateColumns = checked));
 				}}
 			/>
 		</LunaSettings>
