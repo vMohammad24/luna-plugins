@@ -1,19 +1,17 @@
 import { trace, unloads } from "./index.safe";
 
-import { chunkArray, Semaphore } from "@inrixia/helpers";
+import { chunkArray } from "@inrixia/helpers";
 import { ContextMenu, redux } from "@luna/lib";
 
 const maxNewPlaylistSize = 450;
 
 const maxButton = ContextMenu.addButton(unloads);
-const maxButtonSema = new Semaphore(1);
 
-ContextMenu.onMediaItem(unloads, async ({ mediaCollection }) => {
+ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 	const itemCount = await mediaCollection.count();
 	if (itemCount === 0) return;
 
-	const defaultText = `RealMAX ${itemCount} tracks`;
-	maxButton.text ??= defaultText;
+	const defaultText = (maxButton.text = `RealMAX ${itemCount} tracks`);
 
 	maxButton.onClick(async () => {
 		let trackIds: redux.ItemId[] = [];
@@ -76,7 +74,9 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection }) => {
 			}
 			trace.msg.log(`Created playlist "${sourceTitle}" with ${maxItems} replacements!`);
 		} finally {
-			maxButton.text = `RealMAX Done...`;
+			maxButton.text = defaultText;
 		}
 	});
+
+	await maxButton.show(contextMenu);
 });

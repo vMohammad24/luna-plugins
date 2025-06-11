@@ -16,7 +16,7 @@ new StyleTag("SongDownloader", unloads, styles);
 const downloadButton = ContextMenu.addButton(unloads);
 
 export { Settings } from "./Settings";
-ContextMenu.onMediaItem(unloads, async ({ mediaCollection }) => {
+ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 	const trackCount = await mediaCollection.count();
 	if (trackCount === 0) return;
 
@@ -58,10 +58,12 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection }) => {
 				},
 				50
 			);
-			await mediaItem.download(path);
+			await mediaItem.download(path, settings.downloadQuality);
 			clearInterval();
 		}
 		downloadButton.text = defaultText;
 		downloadButton.elem.classList.remove("download-button");
 	});
+
+	await downloadButton.show(contextMenu);
 });
