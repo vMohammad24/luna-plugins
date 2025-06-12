@@ -21,3 +21,4 @@ Install plugins directly from the GitHub releases:
 2. Go to Luna Settings > Plugin Store
 3. Add the plugin store URL or install individual plugins
 4. Enable the plugins you want to use
+
