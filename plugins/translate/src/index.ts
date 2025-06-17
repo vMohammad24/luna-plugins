@@ -46,8 +46,7 @@ async function translate(text: string, targetLang: string = 'en'): Promise<Googl
         dj: '1',
         q: text
     });
-    const res = await ftch.json<GoogleData>(`https://translate.googleapis.com/translate_a/single?${params.toString()}`)
-    return res;
+    return ftch.json<GoogleData>(`https://translate.googleapis.com/translate_a/single?${params.toString()}`)
 }
 
 let currentLyrics: redux.Lyrics | null = null;
@@ -136,7 +135,6 @@ async function handleTranslate() {
             trace.msg.err('Failed to translate lyrics');
         }
     } catch (error) {
-        trace.msg.err('Failed to translate lyrics (Check console)');
-        trace.err('Error during translation:', error);
+        trace.msg.err('Failed to translate:', error);
     }
 }

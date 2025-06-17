@@ -6,18 +6,16 @@ A collection of plugins for **[Tidal Luna](https://github.com/Inrixia/TidaLuna)*
 
 ### @vmohammad/lrclib
 
-Uses lrclib.net to fetch lyrics when Tidal (Musixmatch) fails to provide them.
+Uses [lrclib](https://lrclib.net) to fetch lyrics when Tidal (Musixmatch) fails to provide them.
 
-## Installation
+### @vmohammad/translate
 
-Install plugins directly from the GitHub releases:
-- **Plugin store**: `https://github.com/vMohammad24/luna-plugins/releases/download/latest/store.json`
-- **lrclib plugin**: `https://github.com/vMohammad24/luna-plugins/releases/download/latest/vmohammad.lrclib.json`
-- **translate plugin**: `https://github.com/vMohammad24/luna-plugins/releases/download/latest/vmohammad.translate.json`
+Uses [Google Translate](https://translate.google.com/) to translate lyrics into your preferred language.
+
+
 ## Usage
 
 1. Install Tidal Luna
 2. Go to Luna Settings > Plugin Store
-3. Add the plugin store URL or install individual plugins
-4. Enable the plugins you want to use
-
+3. Scroll down until you find "@vmohammad/plugins"
+4. Click on the plugin you want to install
