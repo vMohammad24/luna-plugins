@@ -1,0 +1,11 @@
+{
+    "name": "@vmohammad/translate",
+    "description": "Uses google translate for lyric trasnlation",
+    "author": {
+        "name": "vMohammad",
+        "url": "https://vmohammad.dev",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/62218284?v=4"
+    },
+    "main": "./src/index.ts",
+    "type": "module"
+}
