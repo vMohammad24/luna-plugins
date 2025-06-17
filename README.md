@@ -11,10 +11,9 @@ Uses lrclib.net to fetch lyrics when Tidal (Musixmatch) fails to provide them.
 ## Installation
 
 Install plugins directly from the GitHub releases:
-
-- **lrclib plugin**: `https://github.com/vMohammad24/luna-plugins/releases/download/latest/vmohammad.lrclib.json`
 - **Plugin store**: `https://github.com/vMohammad24/luna-plugins/releases/download/latest/store.json`
-
+- **lrclib plugin**: `https://github.com/vMohammad24/luna-plugins/releases/download/latest/vmohammad.lrclib.json`
+- **translate plugin**: `https://github.com/vMohammad24/luna-plugins/releases/download/latest/vmohammad.translate.json`
 ## Usage
 
 1. Install Tidal Luna
