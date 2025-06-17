@@ -17,6 +17,5 @@ Uses [Google Translate](https://translate.google.com/) to translate lyrics into 
 
 1. Install Tidal Luna
 2. Go to Luna Settings > Plugin Store
-3. Add the plugin store URL or install individual plugins
-4. Enable the plugins you want to use
-
+3. Scroll down until you find "@vmohammad/plugins"
+4. Click on the plugin you want to install
