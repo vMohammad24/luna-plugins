@@ -6,7 +6,7 @@ A collection of plugins for **[Tidal Luna](https://github.com/Inrixia/TidaLuna)*
 
 ### @vmohammad/lrclib
 
-Uses lrclib.net to fetch lyrics when Tidal (Musixmatch) fails to provide them.
+Uses [lrclib](https://lrclib.net) to fetch lyrics when Tidal (Musixmatch) fails to provide them.
 
 ### @vmohammad/translate
 
