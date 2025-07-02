@@ -15,7 +15,6 @@ interface LyricsData {
     syncedLyrics?: string;
     instrumental?: boolean;
 }
-// cached it then removed cuz tidal already caches it and lrclib has no ratelimiting 
 redux.intercept("content/LOAD_ITEM_LYRICS_FAIL", unloads, async (payload) => {
     const track = await MediaItem.fromId(payload.itemId, 'track');
     if (!track) return;
@@ -23,23 +22,58 @@ redux.intercept("content/LOAD_ITEM_LYRICS_FAIL", unloads, async (payload) => {
         track.title(),
         track.artist(),
         track.album()
-    ])
+    ]);
     const albumName = album ? await album.title() || '' : '';
-    try {
-        const lyricsData: LyricsData = await ftch.json(`https://lrclib.net/api/get?track_name=${encodeURIComponent(title)}&artist_name=${encodeURIComponent(artist?.name || '')}&album_name=${encodeURIComponent(albumName)}&duration=${track.duration}`);
-        await redux.actions["content/LOAD_ITEM_LYRICS_SUCCESS"]({
-            isRightToLeft: false,
-            lyrics: lyricsData.plainLyrics || "",
-            lyricsProvider: "lrclib",
-            trackId: payload.itemId,
-            subtitles: lyricsData.syncedLyrics || '',
-            providerLyricsId: lyricsData.id || 0,
-            providerCommontrackId: lyricsData.id || 0,
+    const albumNameVariations = (albumName.includes('(') ? [albumName, albumName.split('(')[0].trim()] : [albumName]);
+    const artistName = artist?.name;
+    const artistNameVariations = artistName?.includes(',') ? [artistName, artistName.split(',')[0].trim()] : [artistName];
+    const titleVariations = title?.includes('(') ? [title, title.split('(')[0].trim()] : [title];
+
+    const variations = [
+        ...albumNameVariations.map(album => ({ title, artist: artistName, album })),
+        ...artistNameVariations.map(artist => ({ title, artist, album: albumName })),
+        ...titleVariations.map(title => ({ title, artist: artistName, album: albumName })),
+        ...titleVariations.map(title => ({ title, artist: artistName, album: undefined })),
+        ...artistNameVariations.map(artist => ({ title, artist: undefined, album: albumName })),
+        ...albumNameVariations.map(album => ({ title, artist: artistName, album: albumName })),
+        ...titleVariations.map(title => ({ title, artist: artistName, album: '' })),
+        ...artistNameVariations.map(artist => ({ title, artist: artistName, album: '' })),
+        ...albumNameVariations.map(album => ({ title, artist: artistName, album: '' }))
+    ].filter(variation => variation.title && variation.title.trim());
+
+    const uniqueVariations = Array.from(new Set(variations.map(v => JSON.stringify(v)))).map(v => JSON.parse(v));
+
+    const fetchLyrics = (params: { title?: string; artist?: string; album?: string }) => {
+        const urlParams = new URLSearchParams({
+            track_name: params.title || '',
+            artist_name: params.artist || ''
         });
-        trace.log(`Loaded lyrics for track: ${track.title} (${payload.itemId})`);
+        if (params.album) urlParams.append('album_name', params.album);
+
+        return ftch.json<LyricsData>(`https://lrclib.net/api/get?${urlParams}`);
+    };
+
+    try {
+        for (const params of uniqueVariations) {
+            try {
+                const lyricsData = await fetchLyrics(params);
+                if (lyricsData) {
+                    await redux.actions["content/LOAD_ITEM_LYRICS_SUCCESS"]({
+                        isRightToLeft: false,
+                        lyrics: lyricsData.plainLyrics || "",
+                        lyricsProvider: "lrclib",
+                        trackId: payload.itemId,
+                        subtitles: lyricsData.syncedLyrics || '',
+                        providerLyricsId: lyricsData.id || 0,
+                        providerCommontrackId: lyricsData.id || 0,
+                    });
+                    trace.log(`Loaded lyrics for track: ${title} (${payload.itemId})`);
+                    return;
+                }
+            } catch { }
+        }
     } catch (e) {
-        trace.err(`Failed to fetch lyrics for track: ${track.title}, error: ${e}`);
+        trace.msg.err("Failed to fetch lyrics:", e);
         return;
     }
-
 });
