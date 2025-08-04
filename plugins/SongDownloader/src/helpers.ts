@@ -2,6 +2,8 @@ import { MediaItem } from "@luna/lib";
 import { showOpenDialog, showSaveDialog } from "@luna/lib.native";
 import { settings } from "./Settings";
 
+import sanitize from "sanitize-filename";
+
 export const getDownloadFolder = async () => {
 	const { canceled, filePaths } = await showOpenDialog({ properties: ["openDirectory", "createDirectory"] });
 	if (!canceled) return filePaths[0];
@@ -20,7 +22,7 @@ export const getFileName = async (mediaItem: MediaItem) => {
 		let tagValue = tags[tag];
 		if (Array.isArray(tagValue)) tagValue = tagValue[0];
 		if (tagValue === undefined) continue;
-		fileName = fileName.replaceAll(`{${tag}}`, tagValue);
+		fileName = fileName.replaceAll(`{${tag}}`, sanitize(tagValue));
 	}
 	return fileName;
 };

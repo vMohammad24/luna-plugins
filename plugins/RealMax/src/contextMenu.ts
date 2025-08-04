@@ -5,39 +5,38 @@ import { ContextMenu, redux } from "@luna/lib";
 
 const maxNewPlaylistSize = 450;
 
+const maxButton = ContextMenu.addButton(unloads);
+
 ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 	const itemCount = await mediaCollection.count();
 	if (itemCount === 0) return;
 
-	const defaultText = `RealMAX ${itemCount} tracks`;
+	const defaultText = (maxButton.text = `RealMAX ${itemCount} tracks`);
 
-	const maxButton = contextMenu.addButton(defaultText, async () => {
+	maxButton.onClick(async () => {
 		let trackIds: redux.ItemId[] = [];
 		const sourceTitle = await mediaCollection.title();
-		maxButton.innerText = `RealMAX Loading...`;
+		maxButton.text = `RealMAX Loading...`;
 
 		try {
-			let maxItems = 0;
+			let newItems = 0;
 			for await (const mediaItem of await mediaCollection.mediaItems()) {
 				const maxItem = await mediaItem.max();
-				maxButton.innerText = `RealMAX ${trackIds.length}/${itemCount} done. Found ${maxItems} replacements`;
+				maxButton.text = `RealMAX ${trackIds.length}/${itemCount} done. Found ${newItems} replacements`;
 				if (maxItem === undefined) {
 					trackIds.push(mediaItem.id);
+					newItems++;
 					continue;
 				}
 				trackIds.push(maxItem.id);
-				maxItems++;
 				trace.msg.log(`Found Max replacement for ${maxItem.tidalItem.title}!`);
 			}
-			if (trackIds.length !== itemCount) {
-				return trace.msg.err(`Failed to create playlist "${sourceTitle}" item count mismatch ${trackIds.length} != ${itemCount}`);
-			}
 
-			if (maxItems === 0) {
+			if (newItems === 0) {
 				return trace.msg.err(`No replacements found for ${sourceTitle}`);
 			}
 
-			maxButton.innerText = `RealMAX Creating playlist...`;
+			maxButton.text = `RealMAX Creating playlist...`;
 			const { playlist } = await redux.interceptActionResp(
 				() =>
 					redux.actions["folders/CREATE_PLAYLIST"]({
@@ -70,9 +69,11 @@ ContextMenu.onMediaItem(unloads, async ({ mediaCollection, contextMenu }) => {
 			if (playlist?.uuid === undefined) {
 				return trace.msg.err(`Failed to create playlist "${sourceTitle}"`);
 			}
-			trace.msg.log(`Created playlist "${sourceTitle}" with ${maxItems} replacements!`);
+			trace.msg.log(`Created playlist "${sourceTitle}" with ${newItems} replacements!`);
 		} finally {
-			maxButton.innerText = defaultText;
+			maxButton.text = defaultText;
 		}
 	});
+
+	await maxButton.show(contextMenu);
 });

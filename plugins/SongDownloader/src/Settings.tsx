@@ -1,5 +1,5 @@
 import { ReactiveStore } from "@luna/core";
-import { MediaItem, Quality } from "@luna/lib";
+import { MediaItem, Quality, type redux } from "@luna/lib";
 import { LunaButtonSetting, LunaSelectItem, LunaSelectSetting, LunaSettings, LunaSwitchSetting, LunaTextSetting } from "@luna/ui";
 
 import React from "react";
@@ -8,16 +8,19 @@ import { getDownloadFolder } from "./helpers";
 const defaultFilenameFormat = "{artist} - {album} - {title}";
 
 type Settings = {
-	downloadQuality: string;
+	downloadQuality: redux.AudioQuality;
 	defaultPath?: string;
 	pathFormat: string;
 	useRealMAX: boolean;
 };
 export const settings = await ReactiveStore.getPluginStorage<Settings>("SongDownloader", {
-	downloadQuality: Quality.Max.name,
+	downloadQuality: Quality.Max.audioQuality,
 	pathFormat: defaultFilenameFormat,
 	useRealMAX: true,
 });
+
+// Sanitize download quality
+if (Quality.fromAudioQuality(settings.downloadQuality) === undefined) settings.downloadQuality = Quality.Max.audioQuality;
 
 export const Settings = () => {
 	const [downloadQuality, setDownloadQuality] = React.useState(settings.downloadQuality);
@@ -33,7 +36,7 @@ export const Settings = () => {
 				onChange={(e) => setDownloadQuality((settings.downloadQuality = e.target.value))}
 			>
 				{Object.values(Quality.lookups.audioQuality).map((quality) => {
-					if (typeof quality !== "string") return <LunaSelectItem key={quality.name} value={quality.name} children={quality.name} />;
+					if (typeof quality !== "string") return <LunaSelectItem key={quality.name} value={quality.audioQuality} children={quality.name} />;
 				})}
 			</LunaSelectSetting>
 			<LunaSwitchSetting

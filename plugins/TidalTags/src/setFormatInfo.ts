@@ -45,6 +45,7 @@ export const setFormatInfo = async (mediaItem?: MediaItem) => {
 	const qualityColor = Quality.fromAudioQuality(audioQuality);
 	const color = (progressBar.style.color = qualityIndicator.style.color = qualityColor?.color ?? "#cfcfcf");
 	if (settings.displayFormatBorder) formatInfoElem.style.border = `solid 1px ${hexToRgba(color, 0.3)}`;
+	else formatInfoElem.style.border = "none";
 
 	formatUnload?.();
 	formatUnload = mediaItem.withFormat(unloads, audioQuality, ({ sampleRate, bitDepth, bitrate }) => {
