@@ -9,15 +9,24 @@
 		"serve": "http-server ./dist -p 3000 -s --cors -c-1"
 	},
 	"devDependencies": {
+		"@emotion/react": "^11.14.0",
+		"@emotion/styled": "^11.14.1",
+		"@inrixia/helpers": "^3.20.3",
+		"@mui/material": "^7.2.0",
 		"@types/node": "^22.15.29",
 		"@types/react": "^19.1.6",
 		"@types/react-dom": "^19.1.5",
+		"@types/ws": "^8.18.1",
 		"concurrently": "^9.1.2",
+		"electron": "^37.2.5",
 		"http-server": "^14.1.1",
 		"luna": "github:Inrixia/TidaLuna#81369c7",
 		"oby": "^15.1.2",
 		"rimraf": "^6.0.1",
 		"tsx": "^4.19.4",
 		"typescript": "^5.8.3"
+	},
+	"dependencies": {
+		"ws": "^8.18.3"
 	}
 }
