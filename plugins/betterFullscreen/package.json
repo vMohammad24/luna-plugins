@@ -1,0 +1,11 @@
+{
+    "name": "@vmohammad/betterFullscreen",
+    "description": "Improves fullscreen experience",
+    "author": {
+        "name": "vMohammad",
+        "url": "https://vmohammad.dev",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/62218284?v=4"
+    },
+    "main": "./src/index.ts",
+    "type": "module"
+}
