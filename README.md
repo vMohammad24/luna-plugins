@@ -22,6 +22,8 @@ Uses [lrclib](https://lrclib.net) to fetch lyrics when Tidal (Musixmatch) fails 
 
 Uses [Google Translate](https://translate.google.com/) to translate lyrics into your preferred language.
 
+### @vmohammad/noTrack
+Disables Tidal's tracking features, such as Sentry and event-batch requests to enhance user privacy.
 
 ## Usage
 
