@@ -94,7 +94,7 @@ const getCurrentPlaybackTime = (): number => {
     return currentTime;
 };
 
-ipcRenderer.on(unloads, "api.playback.control", (data) => {
+ipcRenderer.on(unloads, "api.playback.control", async (data) => {
     switch (data.action) {
         case "pause":
             PlayState.pause();
@@ -140,6 +140,22 @@ ipcRenderer.on(unloads, "api.playback.control", (data) => {
                     volume: Number.parseInt(data.volume),
                 });
             }
+            break;
+        case "playNext":
+            if (data.itemId) {
+                PlayState.playNext(data.itemId);
+            }
+            break;
+        case "addToQueue":
+            const { itemId } = data;
+            if (!itemId) return;
+            redux.actions["playQueue/ADD_LAST"]({
+                context: {
+                    type: "UNKNOWN",
+                    id: itemId,
+                },
+                mediaItemIds: [itemId],
+            });
             break;
     }
     updateStateFields();
