@@ -1,0 +1,11 @@
+{
+    "name": "@vmohammad/noTrack",
+    "description": "Disables various tracking and analytics features in Tidal.",
+    "author": {
+        "name": "vMohammad",
+        "url": "https://vmohammad.dev",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/62218284?v=4"
+    },
+    "main": "./src/index.ts",
+    "type": "module"
+}
