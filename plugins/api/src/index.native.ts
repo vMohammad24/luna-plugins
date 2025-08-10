@@ -8,7 +8,7 @@ const fields: any = {};
 const wsSubscriptions = new Map<WebSocket, { fields: Set<string>; all: boolean }>();
 
 const controlActions = [
-    "pause", "resume", "toggle", "next", "previous", "volume"
+    "pause", "resume", "toggle", "next", "previous", "volume", "playNext", "addToQueue"
 ] as const;
 type ControlAction = typeof controlActions[number];
 
@@ -101,6 +101,22 @@ export const startServer = async (port: number) => {
                             ws.send(JSON.stringify({ type: "ok", action: data.action, volume: data.volume }));
                         } else {
                             ws.send(JSON.stringify({ type: "error", error: `Malformed volume action` }));
+                        }
+                        break;
+                    case "playNext":
+                        if (data.itemId) {
+                            sendToRenderer("api.playback.control", { action: data.action, itemId: data.itemId });
+                            ws.send(JSON.stringify({ type: "ok", action: data.action, itemId: data.itemId }));
+                        } else {
+                            ws.send(JSON.stringify({ type: "error", error: `Malformed playNext action` }));
+                        }
+                        break;
+                    case "addToQueue":
+                        if (data.itemId) {
+                            sendToRenderer("api.playback.control", { action: data.action, itemId: data.itemId });
+                            ws.send(JSON.stringify({ type: "ok", action: data.action, itemId: data.itemId }));
+                        } else {
+                            ws.send(JSON.stringify({ type: "error", error: `Malformed addToQueue action` }));
                         }
                         break;
                     default:
