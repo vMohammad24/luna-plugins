@@ -4,6 +4,10 @@ A collection of plugins for **[Tidal Luna](https://github.com/Inrixia/TidaLuna)*
 
 ## Plugins
 
+### @vmohammad/betterFullscreen
+Provides a better fullscreen experience for Tidal with better lyrics and a better UI.
+
+
 ### @vmohammad/api
 
 Provides a local HTTP and WebSocket API for real-time access to Tidal Data. The API server runs on port **24123**.
