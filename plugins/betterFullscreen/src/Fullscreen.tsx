@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
 import { settings } from './settings';
 import { EnhancedSyncedLyric } from './types';
 import { getLyrics } from './util';
@@ -14,58 +14,114 @@ export const FullScreen = () => {
 
     useEffect(() => {
         if (coverUrl) {
-            coverUrl().then(url => setAlbumArt(url || '')).catch(() => setAlbumArt(''));
+            let isCancelled = false;
+            coverUrl()
+                .then(url => {
+                    if (!isCancelled) {
+                        setAlbumArt(url || '');
+                    }
+                })
+                .catch(() => {
+                    if (!isCancelled) {
+                        setAlbumArt('');
+                    }
+                });
+
+            return () => {
+                isCancelled = true;
+            };
         }
     }, [coverUrl]);
 
     useEffect(() => {
         if (mediaItem?.tidalItem?.id) {
             setLoading(true);
+            let isCancelled = false;
             const trackId = parseInt(mediaItem.tidalItem.id as string, 10);
+
             getLyrics(trackId)
-                .then(setLyrics)
-                .catch((e) => {
-                    setLyrics([]);
-                    console.error('Failed to fetch lyrics for track ID:', trackId, e);
+                .then(lyricsData => {
+                    if (!isCancelled) {
+                        setLyrics(lyricsData);
+                    }
                 })
-                .finally(() => setLoading(false));
+                .catch((e) => {
+                    if (!isCancelled) {
+                        setLyrics([]);
+                        console.error('Failed to fetch lyrics for track ID:', trackId, e);
+                    }
+                })
+                .finally(() => {
+                    if (!isCancelled) {
+                        setLoading(false);
+                    }
+                });
+
+            return () => {
+                isCancelled = true;
+            };
         }
     }, [mediaItem?.tidalItem?.id]);
 
-    const getCurrentLyric = () => {
+    const getCurrentLyric = useCallback(() => {
         if (!lyrics.length) return null;
 
-        for (let i = lyrics.length - 1; i >= 0; i--) {
-            if (lyrics[i].time <= currentTime) {
-                return {
-                    current: lyrics[i],
-                    index: i,
-                    next: lyrics[i + 1] || null,
-                    previous: lyrics[i - 1] || null
-                };
+        let left = 0;
+        let right = lyrics.length - 1;
+        let currentIndex = -1;
+
+        while (left <= right) {
+            const mid = Math.floor((left + right) / 2);
+            if (lyrics[mid].time <= currentTime) {
+                currentIndex = mid;
+                left = mid + 1;
+            } else {
+                right = mid - 1;
             }
         }
-        return {
-            current: lyrics[0],
-            index: 0,
-            next: lyrics[1] || null,
-            previous: null
-        };
-    };
 
-    const getHighlightedContent = (lyric: EnhancedSyncedLyric) => {
+        if (currentIndex === -1) {
+            return {
+                current: lyrics[0],
+                index: 0,
+                next: lyrics[1] || null,
+                previous: null
+            };
+        }
+
+        return {
+            current: lyrics[currentIndex],
+            index: currentIndex,
+            next: lyrics[currentIndex + 1] || null,
+            previous: lyrics[currentIndex - 1] || null
+        };
+    }, [lyrics, currentTime]);
+
+    const getHighlightedContent = useCallback((lyric: EnhancedSyncedLyric) => {
         if (syncLevel === 'Line') {
             return lyric.text;
         }
+
         if (syncLevel === 'Word' && lyric.words) {
             const activeWordIndex = lyric.words.findIndex(
                 w => w.time <= currentTime && currentTime < w.endTime
             );
+
+            const lastFinishedWordIndex = activeWordIndex === -1
+                ? lyric.words.findIndex((w, i) => w.endTime > currentTime) - 1
+                : -1;
+
             return lyric.words.map((word, index) => {
                 const isActive = word.time <= currentTime && currentTime < word.endTime;
+                const isPrevious = activeWordIndex !== -1
+                    ? index < activeWordIndex
+                    : lastFinishedWordIndex !== -1 && index <= lastFinishedWordIndex;
+
                 const className = isActive
                     ? 'word-active'
-                    : `word${activeWordIndex !== -1 && index < activeWordIndex ? ' word-previous' : ''}`;
+                    : isPrevious
+                        ? 'word word-previous'
+                        : 'word';
                 return (
                     <span key={index} className={className}>
                         {word.word}
@@ -75,56 +131,51 @@ export const FullScreen = () => {
             });
         }
 
-        if (syncLevel === 'Character') {
-            const words = lyric.words || [];
-            if (!words.length) return lyric.text;
+        if (syncLevel === 'Character' && lyric.words) {
+            const nodes: React.ReactNode[] = [];
 
-            const activeWordIndex = words.findIndex(
+            const activeWordIndex = lyric.words.findIndex(
                 w => w.time <= currentTime && currentTime < w.endTime
             );
 
-            const nodes: React.ReactNode[] = [];
-            words.forEach((w, wi) => {
-                const isActiveWord = wi === activeWordIndex;
+            const lastFinishedWordIndex = activeWordIndex === -1
+                ? lyric.words.findIndex((w, i) => w.endTime > currentTime) - 1
+                : -1;
 
-                if (isActiveWord) {
-                    const hasChars = Array.isArray(w.characters) && w.characters.length > 0;
-                    const activeCharIdx = hasChars
-                        ? w.characters!.findIndex(
-                            ch => ch.time <= currentTime && currentTime < ch.endTime
-                        )
-                        : -1;
+            lyric.words.forEach((word, wordIndex) => {
+                const isActiveWord = word.time <= currentTime && currentTime < word.endTime;
+                const isWordPrevious = activeWordIndex !== -1
+                    ? wordIndex < activeWordIndex
+                    : lastFinishedWordIndex !== -1 && wordIndex <= lastFinishedWordIndex;
 
-                    type CharItem = { char: string; time?: number; endTime?: number };
-                    const charItems: CharItem[] = hasChars
-                        ? w.characters!.map(ch => ({ char: ch.char, time: ch.time, endTime: ch.endTime }))
-                        : Array.from(w.word).map(c => ({ char: c }));
-
-                    charItems.forEach((ch, ci) => {
-                        const isActiveChar = ci === activeCharIdx;
-                        const isBeforeActive = activeCharIdx !== -1 && ci < activeCharIdx;
+                if (isActiveWord && word.characters && word.characters.length > 0) {
+                    word.characters.forEach((char, charIndex) => {
+                        const isActiveChar = char.time <= currentTime && currentTime < char.endTime;
+                        const isCharPrevious = char.endTime <= currentTime;
                         const className = isActiveChar
                             ? 'char-active'
-                            : isBeforeActive
+                            : isCharPrevious
                                 ? 'char char-current'
                                 : 'char';
                         nodes.push(
-                            <span key={`w${wi}-c${ci}`} className={className}>
-                                {ch.char}
+                            <span key={`w${wordIndex}-c${charIndex}`} className={className}>
+                                {char.char}
                             </span>
                         );
                     });
                 } else {
-                    const isBeforeActiveWord = activeWordIndex !== -1 && wi < activeWordIndex;
+                    const className = isWordPrevious
+                        ? 'word char-current'
+                        : 'word';
                     nodes.push(
-                        <span key={`w${wi}`} className={`word${isBeforeActiveWord ? ' char-current' : ''}`}>
-                            {w.word}
+                        <span key={`w${wordIndex}`} className={className}>
+                            {word.word}
                         </span>
                     );
                 }
 
-                if (wi < words.length - 1) {
-                    nodes.push(<span key={`space-${wi}`}>{' '}</span>);
+                if (wordIndex < lyric.words.length - 1) {
+                    nodes.push(<span key={`space-${wordIndex}`}> </span>);
                 }
             });
 
@@ -132,10 +183,18 @@ export const FullScreen = () => {
         }
 
         return lyric.text;
-    };
+    }, [syncLevel, currentTime]);
 
     const currentLyric = getCurrentLyric();
-    const releaseYear = releaseDate ? new Date(releaseDate).getFullYear() : '';
+    const releaseYear = useMemo(() =>
+        releaseDate ? new Date(releaseDate).getFullYear() : '',
+        [releaseDate]
+    );
+
+    const upcomingLyrics = useMemo(() => {
+        if (!currentLyric || !lyrics.length) return [];
+        return lyrics.slice(currentLyric.index + 2, currentLyric.index + 5);
+    }, [currentLyric, lyrics]);
 
     return (
         <div className="betterFullscreen-player" style={{ '--vibrant-color': vibrantColor } as any}>
@@ -172,7 +231,7 @@ export const FullScreen = () => {
                                 <>
                                     {currentLyric.previous && (
                                         <div className="betterFullscreen-lyric previous">
-                                            {getHighlightedContent(currentLyric.previous)}
+                                            {currentLyric.previous.text}
                                         </div>
                                     )}
 
@@ -182,13 +241,13 @@ export const FullScreen = () => {
 
                                     {currentLyric.next && (
                                         <div className="betterFullscreen-lyric next">
-                                            {getHighlightedContent(currentLyric.next)}
+                                            {currentLyric.next.text}
                                         </div>
                                     )}
                                 </>
                             )}
 
-                            {currentLyric && lyrics.slice(currentLyric.index + 2, currentLyric.index + 5).map((lyric, index) => (
+                            {currentLyric && upcomingLyrics.map((lyric, index) => (
                                 <div key={currentLyric.index + index + 2} className="betterFullscreen-lyric upcoming">
                                     {lyric.text}
                                 </div>
