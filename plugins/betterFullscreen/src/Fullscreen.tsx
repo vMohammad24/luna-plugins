@@ -4,7 +4,8 @@ import { EnhancedSyncedLyric } from './types';
 import { getLyrics } from './util';
 
 export const FullScreen = () => {
-    const { currentTime, mediaItem, syncLevel } = useSyncExternalStore(settings.subscribe, settings.getSnapshot);
+    const snapshot = useSyncExternalStore(settings.subscribe, settings.getSnapshot);
+    const { currentTime, mediaItem, syncLevel } = snapshot;
     const { coverUrl, tidalItem: { title, artists, album, artist } } = mediaItem!;
     const { releaseDate, vibrantColor } = album!;
 
@@ -196,8 +197,23 @@ export const FullScreen = () => {
         return lyrics.slice(currentLyric.index + 2, currentLyric.index + 5);
     }, [currentLyric, lyrics]);
 
+    const effectiveVibrantColor = snapshot.customVibrantColor || vibrantColor;
+    const effectiveCurrentLyricColor = snapshot.currentLyricColor || effectiveVibrantColor;
     return (
-        <div className="betterFullscreen-player" style={{ '--vibrant-color': vibrantColor } as any}>
+        <div className="betterFullscreen-player" style={{
+            '--vibrant-color': effectiveVibrantColor,
+            '--current-lyric-color': effectiveCurrentLyricColor,
+            '--background-blur': `${snapshot.backgroundBlur}px`,
+            '--vibrant-color-opacity': snapshot.vibrantColorOpacity,
+            '--text-shadow-intensity': snapshot.textShadowIntensity,
+            '--animation-speed': snapshot.animationSpeed,
+            '--enable-floating': snapshot.enableFloatingAnimation ? '1' : '0',
+            '--enable-pulse': snapshot.enablePulseEffects ? '1' : '0',
+            '--font-size-scale': snapshot.fontSizeScale,
+            '--text-opacity': snapshot.textOpacity,
+            '--padding-scale': snapshot.paddingScale,
+            '--border-radius': `${snapshot.borderRadius}px`
+        } as any}>
             <div className="betterFullscreen-background">
                 <img src={albumArt} alt="" className="betterFullscreen-bg-image" />
                 <div className="betterFullscreen-overlay"></div>
