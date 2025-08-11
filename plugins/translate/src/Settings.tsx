@@ -48,17 +48,16 @@ export const languages = [
 ];
 
 export const Settings = () => {
-    
+
     const [targetLanguage, setTargetLanguage] = React.useState<string>(settings.targetLanguage);
-    const onChange = React.useCallback((_: React.ChangeEvent<HTMLInputElement>, v?: {props: {value: string}}) => {
-        const value = v?.props.value;
-		trace.msg.log(`Language Changed to ${languages.find(lang => lang.value === value)?.label} (${value})`);
-		setTargetLanguage((settings.targetLanguage = value ?? "en"));
-	}, []);
     const [alwaysTranslate, setAlwaysTranslate] = React.useState<boolean>(settings.alwaysTranslate);
-	return (
-		<LunaSettings>
-            <LunaSelectSetting title="Target Language" desc="Select the target language for translation" onChange={onChange} value={targetLanguage}>
+    return (
+        <LunaSettings>
+            <LunaSelectSetting title="Target Language" desc="Select the target language for translation" onChange={(event) => {
+                const { value } = event.target;
+                trace.msg.log(`Language Changed to ${languages.find(lang => lang.value === value)?.label} (${value})`);
+                setTargetLanguage((settings.targetLanguage = value ?? "en"));
+            }} value={targetLanguage}>
                 {languages.map(lang => (
                     <LunaSelectItem key={lang.value} value={lang.value}>
                         {lang.label}
@@ -67,6 +66,6 @@ export const Settings = () => {
             </LunaSelectSetting>
             {/* @ts-ignore */}
             <LunaSwitchSetting title="Always Translate" checked={alwaysTranslate} desc="Always translate lyrics" onChange={(_, checked) => setAlwaysTranslate((settings.alwaysTranslate = checked))} />
-		</LunaSettings>
-	);
+        </LunaSettings>
+    );
 };
