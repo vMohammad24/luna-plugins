@@ -1,5 +1,5 @@
 import { LunaUnload, Tracer } from "@luna/core";
-import { ipcRenderer, MediaItem, StyleTag } from "@luna/lib";
+import { ipcRenderer, MediaItem, observe, PlayState, StyleTag } from "@luna/lib";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { FullScreen } from "./Fullscreen";
@@ -10,10 +10,13 @@ export const { trace } = Tracer("[BetterFullscreen]");
 export const unloads = new Set<LunaUnload>();
 const styleTag = new StyleTag("BetterFullscreen", unloads);
 
-const enterFullscreen = () => {
+const loadCss = () => {
     import("file://styles.css?minify").then(m => {
         styleTag.css = m.default;
     })
+}
+const enterFullscreen = () => {
+    loadCss();
     setTimeout(() => {
         const parent = document.querySelector(".is-fullscreen.is-now-playing");
         if (parent) {
@@ -32,22 +35,26 @@ ipcRenderer.on(unloads, "window.enter.fullscreen", () => {
     enterFullscreen();
 })
 
-const observer = new MutationObserver(() => {
+let lastCheck = 0;
+observe(unloads, ".is-fullscreen.is-now-playing", () => {
     if (doesIPCWork) {
-        observer.disconnect();
         return;
     }
     const parent = document.querySelector(".is-fullscreen.is-now-playing");
-    if (parent) {
+    if (parent && Date.now() - lastCheck > 400) {
         const fullscreenElement = parent.querySelector('[class^="_fullscreen_"]');
-        const isFullscreenInitialized = fullscreenElement && fullscreenElement.querySelector(".betterFullscreen-player");
+        let isFullscreenInitialized = false;
+        if (fullscreenElement) {
+            isFullscreenInitialized = fullscreenElement.querySelector(".betterFullscreen-player")?.classList.contains("betterFullscreen-player") ?? false;
+        }
         if (!isFullscreenInitialized) {
+            lastCheck = Date.now();
             enterFullscreen();
+        } else {
+            loadCss();
         }
     }
 });
-const observeTarget = document.querySelector(".is-fullscreen.is-now-playing") ?? document.body;
-observer.observe(observeTarget, { childList: true, subtree: true });
 
 let doesIPCWork = false;
 ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {
@@ -58,31 +65,17 @@ ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {
     }
 })
 
-const intreval = setInterval(() => {
+const interval = setInterval(() => {
     if (doesIPCWork) {
-        clearInterval(intreval);
+        clearInterval(interval);
         return;
     }
-    const el = document.querySelector('*[data-test="current-time"]')?.getAttribute("datetime");
-    if (el) {
-        const parsed = el
-            .split(":")
-            .reverse()
-            .map((val) => Number(val))
-            .reduce((previous, current, index) => {
-                return index === 0 ? current : previous + current * Math.pow(60, index);
-            }, 0);
-        if (parsed) {
-            console.log("Parsed current time from element:", parsed);
-            settings.currentTime = parsed;
-        }
-    }
-}, 500);
+    settings.currentTime = getCurrentPlaybackTime();
+}, 100);
 
 unloads.add(() => {
-    clearInterval(intreval);
+    clearInterval(interval);
     styleTag.remove();
-    observer.disconnect();
     unloads.clear();
 })
 
@@ -90,3 +83,39 @@ MediaItem.fromPlaybackContext().then((item) => settings.mediaItem = item || null
 MediaItem.onMediaTransition(unloads, async (item) =>
     settings.mediaItem = item
 );
+
+let currentTime = 0;
+let previousTime = -1;
+let lastUpdated = Date.now();
+const getCurrentPlaybackTime = (): number => {
+    const audioElement = document.querySelector('audio') as HTMLAudioElement;
+    if (audioElement && audioElement.currentTime) {
+        currentTime = audioElement.currentTime;
+        previousTime = -1;
+        return currentTime;
+    }
+
+    const progressBar = document.querySelector('[data-test="progress-bar"]') as HTMLElement;
+    if (progressBar) {
+        const ariaValueNow = progressBar.getAttribute('aria-valuenow');
+        if (ariaValueNow !== null) {
+            const progressTime = Number.parseInt(ariaValueNow);
+            const now = Date.now();
+
+            if (progressTime !== previousTime) {
+                currentTime = progressTime;
+                previousTime = progressTime;
+                lastUpdated = now;
+            } else if (PlayState.playing) {
+                const elapsedSeconds = (now - lastUpdated) / 1000;
+                currentTime = progressTime + elapsedSeconds;
+            }
+            return currentTime;
+        } else {
+            trace.msg.warn("Progress bar not found or aria-valuenow is null");
+            return currentTime;
+        }
+    }
+
+    return currentTime;
+};
