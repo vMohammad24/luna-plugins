@@ -9,7 +9,8 @@ export { Settings } from "./settings";
 export const { trace } = Tracer("[BetterFullscreen]");
 export const unloads = new Set<LunaUnload>();
 const styleTag = new StyleTag("BetterFullscreen", unloads);
-ipcRenderer.on(unloads, "window.enter.fullscreen", () => {
+
+const enterFullscreen = () => {
     import("file://styles.css?minify").then(m => {
         styleTag.css = m.default;
     })
@@ -26,7 +27,27 @@ ipcRenderer.on(unloads, "window.enter.fullscreen", () => {
             }
         }
     }, 100)
+}
+ipcRenderer.on(unloads, "window.enter.fullscreen", () => {
+    enterFullscreen();
 })
+
+const observer = new MutationObserver(() => {
+    if (doesIPCWork) {
+        observer.disconnect();
+        return;
+    }
+    const parent = document.querySelector(".is-fullscreen.is-now-playing");
+    if (parent) {
+        const fullscreenElement = parent.querySelector('[class^="_fullscreen_"]');
+        const isFullscreenInitialized = fullscreenElement && fullscreenElement.querySelector(".betterFullscreen-player");
+        if (!isFullscreenInitialized) {
+            enterFullscreen();
+        }
+    }
+});
+const observeTarget = document.querySelector(".is-fullscreen.is-now-playing") ?? document.body;
+observer.observe(observeTarget, { childList: true, subtree: true });
 
 let doesIPCWork = false;
 ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {
@@ -61,6 +82,7 @@ const intreval = setInterval(() => {
 unloads.add(() => {
     clearInterval(intreval);
     styleTag.remove();
+    observer.disconnect();
     unloads.clear();
 })
 
