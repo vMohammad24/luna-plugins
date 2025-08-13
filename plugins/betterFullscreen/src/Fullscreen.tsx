@@ -1,19 +1,26 @@
-import React, { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { settings } from './settings';
 import { EnhancedSyncedLyric } from './types';
 import { getLyrics } from './util';
 
 export const FullScreen = () => {
     const snapshot = useSyncExternalStore(settings.subscribe, settings.getSnapshot);
-    const { currentTime, mediaItem, syncLevel } = snapshot;
-    const { coverUrl, tidalItem: { title, artists, album, artist } } = mediaItem!;
+    const { currentTime, mediaItem, syncLevel, catJam, playing } = snapshot;
+    const { coverUrl, tidalItem: { title, artists, album, artist, bpm } } = mediaItem!;
     const { releaseDate, vibrantColor } = album!;
 
     const [lyrics, setLyrics] = useState<EnhancedSyncedLyric[]>([]);
     const [loading, setLoading] = useState(false);
     const [albumArt, setAlbumArt] = useState<string>('');
+    const bgVideoRef = useRef<HTMLVideoElement | null>(null);
+    const artVideoRef = useRef<HTMLVideoElement | null>(null);
 
     useEffect(() => {
+        if (catJam) {
+            const src = catJam === 'CatRave' ? 'https://vmohammad.dev/catrave.webm' : 'https://vmohammad.dev/catjam.webm';
+            setAlbumArt(src);
+            return;
+        }
         if (coverUrl) {
             let isCancelled = false;
             coverUrl()
@@ -32,7 +39,30 @@ export const FullScreen = () => {
                 isCancelled = true;
             };
         }
-    }, [coverUrl]);
+    }, [coverUrl, catJam]);
+
+    useEffect(() => {
+        if (!catJam) return;
+        const baselineBpm = 135.48;
+        const trackBpm = typeof bpm === 'number' && bpm > 0 ? bpm : baselineBpm;
+        const rate = Math.max(0.5, Math.min(2, trackBpm / baselineBpm));
+
+        [bgVideoRef.current, artVideoRef.current].forEach(v => {
+            if (!v) return;
+            try {
+                v.playbackRate = rate;
+                if (playing) {
+                    const p = v.play();
+                    if (p && typeof p.then === 'function') {
+                        p.catch(() => { });
+                    }
+                } else {
+                    v.pause();
+                }
+            } catch (_) {
+            }
+        });
+    }, [catJam, bpm, playing]);
 
     useEffect(() => {
         if (mediaItem?.tidalItem?.id) {
@@ -215,14 +245,39 @@ export const FullScreen = () => {
             '--border-radius': `${snapshot.borderRadius}px`
         } as any}>
             <div className="betterFullscreen-background">
-                <img src={albumArt} alt="" className="betterFullscreen-bg-image" />
+                {catJam ? (
+                    <video
+                        ref={bgVideoRef}
+                        src={albumArt}
+                        className="betterFullscreen-bg-image"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        preload="auto"
+                    />
+                ) : (
+                    <img src={albumArt} alt="" className="betterFullscreen-bg-image" />
+                )}
                 <div className="betterFullscreen-overlay"></div>
             </div>
 
             <div className="betterFullscreen-content">
                 <div className="betterFullscreen-header">
                     <div className="betterFullscreen-album-art">
-                        <img src={albumArt} alt={`${album?.title} by ${artists?.map(a => a.name).join(', ')}`} />
+                        {catJam ? (
+                            <video
+                                ref={artVideoRef}
+                                src={albumArt}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                preload="auto"
+                            />
+                        ) : (
+                            <img src={albumArt} alt={`${album?.title} by ${artists?.map(a => a.name).join(', ')}`} />
+                        )}
                         <div className="betterFullscreen-vinyl-effect"></div>
                     </div>
 

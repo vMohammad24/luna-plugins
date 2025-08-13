@@ -140,7 +140,8 @@
     animation-delay: calc(-2s / var(--animation-speed, 1));
 }
 
-.betterFullscreen-album-art img {
+.betterFullscreen-album-art img, 
+.betterFullscreen-album-art video {
     position: relative;
     z-index: 1;
     width: clamp(150px, 25vw, 300px);
@@ -151,9 +152,11 @@
         0 0 0 1px rgba(255, 255, 255, 0.1);
     transition: all calc(0.4s / var(--animation-speed, 1)) cubic-bezier(0.175, 0.885, 0.32, 1.275);
     will-change: transform;
+    object-fit: cover;
 }
 
-.betterFullscreen-album-art:hover img {
+.betterFullscreen-album-art:hover img,
+.betterFullscreen-album-art:hover video {
     transform: scale(1.08) rotateY(5deg) rotateX(2deg);
     box-shadow:
         0 35px 70px rgba(0, 0, 0, 0.6),
