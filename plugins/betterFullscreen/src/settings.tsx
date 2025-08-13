@@ -26,7 +26,7 @@ const syncLevelStore = await ReactiveStore.getPluginStorage("BetterFullScreen", 
 const listeners = new Set<() => void>();
 
 type SyncMode = "Line" | "Word" | "Character";
-type CatJam = "CatJam" | "CatRave" | "None";
+type CatJam = "CatJam" | "CatRave" | "CatRave2" | "None";
 
 let inMemoryState = {
     currentTime: 0,
@@ -305,6 +305,9 @@ export const Settings = () => {
                 </LunaSelectItem>
                 <LunaSelectItem key="CatRave" value="CatRave">
                     Cat Rave
+                </LunaSelectItem>
+                <LunaSelectItem key="CatRave2" value="CatRave2">
+                    Cat Rave 2
                 </LunaSelectItem>
             </LunaSelectSetting>
             <LunaTextSetting title="API URL" desc="The API URL to fetch lyrics from (%s is track id)" value={currentApiUrl} onChange={(event) => {

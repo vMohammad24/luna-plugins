@@ -17,7 +17,14 @@ export const FullScreen = () => {
 
     useEffect(() => {
         if (catJam && catJam !== "None") {
-            const src = catJam === 'CatRave' ? 'https://vmohammad.dev/catrave.webm' : 'https://vmohammad.dev/catjam.webm';
+            const src =
+                catJam === 'CatJam'
+                    ? 'https://vmohammad.dev/catjam.webm'
+                    : catJam === 'CatRave'
+                        ? 'https://vmohammad.dev/catrave.webm'
+                        : catJam === 'CatRave2'
+                            ? 'https://vmohammad.dev/catrave2.webm'
+                            : '';
             setAlbumArt(src);
             return;
         }
