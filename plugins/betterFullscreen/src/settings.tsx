@@ -26,7 +26,7 @@ const syncLevelStore = await ReactiveStore.getPluginStorage("BetterFullScreen", 
 const listeners = new Set<() => void>();
 
 type SyncMode = "Line" | "Word" | "Character";
-type CatJam = "CatJam" | "CatRave";
+type CatJam = "CatJam" | "CatRave" | "None";
 
 let inMemoryState = {
     currentTime: 0,
@@ -297,6 +297,9 @@ export const Settings = () => {
                 settings.catJam = mode;
                 setCatJam(mode);
             }} value={catJam}>
+                <LunaSelectItem key="None" value="None">
+                    None
+                </LunaSelectItem>
                 <LunaSelectItem key="CatJam" value="CatJam">
                     Cat Jam
                 </LunaSelectItem>

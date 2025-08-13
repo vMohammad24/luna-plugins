@@ -16,7 +16,7 @@ export const FullScreen = () => {
     const artVideoRef = useRef<HTMLVideoElement | null>(null);
 
     useEffect(() => {
-        if (catJam) {
+        if (catJam && catJam !== "None") {
             const src = catJam === 'CatRave' ? 'https://vmohammad.dev/catrave.webm' : 'https://vmohammad.dev/catjam.webm';
             setAlbumArt(src);
             return;
@@ -42,7 +42,7 @@ export const FullScreen = () => {
     }, [coverUrl, catJam]);
 
     useEffect(() => {
-        if (!catJam) return;
+        if (!catJam || catJam === "None") return;
         const baselineBpm = 135.48;
         const trackBpm = typeof bpm === 'number' && bpm > 0 ? bpm : baselineBpm;
         const rate = Math.max(0.5, Math.min(2, trackBpm / baselineBpm));
@@ -245,7 +245,7 @@ export const FullScreen = () => {
             '--border-radius': `${snapshot.borderRadius}px`
         } as any}>
             <div className="betterFullscreen-background">
-                {catJam ? (
+                {catJam !== "None" ? (
                     <video
                         ref={bgVideoRef}
                         src={albumArt}
