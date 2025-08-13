@@ -6,6 +6,7 @@ import { trace } from ".";
 const defaultValues = {
     syncLevel: "Word" as SyncMode,
     apiURL: "https://api.vmohammad.dev/lyrics/?tidal_id=%s&filter=enhancedLyrics",
+    fullscreenButton: true,
     backgroundBlur: 25,
     vibrantColorOpacity: 0.2,
     textShadowIntensity: 1.0,
@@ -46,7 +47,8 @@ let cachedSnapshot = {
     paddingScale: syncLevelStore.paddingScale,
     borderRadius: syncLevelStore.borderRadius,
     customVibrantColor: syncLevelStore.customVibrantColor,
-    currentLyricColor: syncLevelStore.currentLyricColor
+    currentLyricColor: syncLevelStore.currentLyricColor,
+    fullscreenButton: syncLevelStore.fullscreenButton
 };
 
 const updateSnapshot = () => {
@@ -66,7 +68,8 @@ const updateSnapshot = () => {
         paddingScale: syncLevelStore.paddingScale,
         borderRadius: syncLevelStore.borderRadius,
         customVibrantColor: syncLevelStore.customVibrantColor,
-        currentLyricColor: syncLevelStore.currentLyricColor
+        currentLyricColor: syncLevelStore.currentLyricColor,
+        fullscreenButton: syncLevelStore.fullscreenButton
     };
 };
 
@@ -203,6 +206,15 @@ export const settings = {
         listeners.forEach(listener => listener());
     },
 
+    get fullscreenButton() {
+        return syncLevelStore.fullscreenButton;
+    },
+    set fullscreenButton(value: boolean) {
+        syncLevelStore.fullscreenButton = value;
+        updateSnapshot();
+        listeners.forEach(listener => listener());
+    },
+
     subscribe: (listener: () => void) => {
         listeners.add(listener);
         return () => {
@@ -235,6 +247,7 @@ export const Settings = () => {
 
     const [customVibrantColor, setCustomVibrantColor] = React.useState<string>(syncLevelStore.customVibrantColor);
     const [currentLyricColor, setCurrentLyricColor] = React.useState<string>(syncLevelStore.currentLyricColor);
+    const [fullscreenButton, setFullscreenButton] = React.useState<boolean>(syncLevelStore.fullscreenButton);
 
     return (
         <LunaSettings>
@@ -261,6 +274,12 @@ export const Settings = () => {
                     return;
                 }
                 syncLevelStore.apiURL = url;
+            }} />
+
+            <LunaSwitchSetting title="Fullscreen Button" desc="Adds a fullscreen button at the bottom player" checked={fullscreenButton} onChange={(event) => {
+                const value = event.target.checked;
+                setFullscreenButton(value);
+                settings.fullscreenButton = value;
             }} />
 
             <LunaTextSetting title="Background Blur" desc="Amount of blur for background image (px)" value={backgroundBlur.toString()} onChange={(event) => {

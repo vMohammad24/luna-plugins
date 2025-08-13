@@ -9,7 +9,8 @@ export { Settings } from "./settings";
 export const { trace } = Tracer("[BetterFullscreen]");
 export const unloads = new Set<LunaUnload>();
 const styleTag = new StyleTag("BetterFullscreen", unloads);
-
+let shouldAddButton = true;
+const buttonClassName = "betterFullscreen-fullscreen-button";
 const loadCss = () => {
     import("file://styles.css?minify").then(m => {
         styleTag.css = m.default;
@@ -17,6 +18,7 @@ const loadCss = () => {
 }
 const enterFullscreen = () => {
     loadCss();
+    removeFullscreenButton();
     setTimeout(() => {
         const parent = document.querySelector(".is-fullscreen.is-now-playing");
         if (parent) {
@@ -119,3 +121,72 @@ const getCurrentPlaybackTime = (): number => {
 
     return currentTime;
 };
+
+const addFullscreenButton = () => {
+    const parent = document.querySelector('[class^="_moreContainer_"]');
+    if (!parent) {
+        return;
+    }
+    const exitFSButton = document.querySelector('[data-test="fullscreen"]') as HTMLButtonElement;
+    const exisits = !!document.querySelector(`.${buttonClassName}`);
+    if (exitFSButton) {
+        if (exisits) removeFullscreenButton();
+        return;
+    }
+    if (exisits) {
+        return;
+    }
+    const fullscreenButton = document.createElement("button");
+    fullscreenButton.className = buttonClassName;
+    fullscreenButton.innerHTML = `<svg class="_icon_77f3f89" viewBox="0 0 24 24"><use href="#player__maximize"></use></svg>`;
+    fullscreenButton.title = "Enter fullscreen";
+    fullscreenButton.onclick = () => {
+        const footer = document.querySelector('[data-test="footer-player"]') as HTMLDivElement;
+        const enterFs = () => {
+            const fs = document.querySelector('[data-test="request-fullscreen"]') as HTMLButtonElement;
+            if (fs) {
+                fs.click();
+                return true;
+            } else {
+                return false;
+            }
+        }
+        if (!enterFs()) {
+            footer.click();
+            setTimeout(() => {
+                if (!enterFs()) {
+                    trace.msg.warn("Failed to enter fullscreen mode");
+                }
+            }, 100);
+        }
+
+    }
+
+    parent.appendChild(fullscreenButton);
+}
+
+const removeFullscreenButton = () => {
+    const button = document.querySelector(`.${buttonClassName}`);
+    if (button) {
+        button.remove();
+    }
+}
+
+const setFSB = (v: boolean) => {
+    if (v) {
+        addFullscreenButton();
+    } else {
+        removeFullscreenButton();
+    }
+}
+settings.subscribe(() => {
+    if (settings.fullscreenButton) {
+        setFSB(true);
+    } else {
+        setFSB(false);
+    }
+});
+
+unloads.add(() => {
+    removeFullscreenButton();
+})
