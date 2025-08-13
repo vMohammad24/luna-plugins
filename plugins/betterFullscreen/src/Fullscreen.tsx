@@ -265,7 +265,7 @@ export const FullScreen = () => {
             <div className="betterFullscreen-content">
                 <div className="betterFullscreen-header">
                     <div className="betterFullscreen-album-art">
-                        {catJam ? (
+                        {catJam !== "None" ? (
                             <video
                                 ref={artVideoRef}
                                 src={albumArt}
