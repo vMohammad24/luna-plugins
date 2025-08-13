@@ -190,3 +190,7 @@ settings.subscribe(() => {
 unloads.add(() => {
     removeFullscreenButton();
 })
+
+PlayState.onState(unloads, () => {
+    settings.playing = PlayState.playing;
+});

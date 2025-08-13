@@ -7,6 +7,7 @@ const defaultValues = {
     syncLevel: "Word" as SyncMode,
     apiURL: "https://api.vmohammad.dev/lyrics/?tidal_id=%s&filter=enhancedLyrics",
     fullscreenButton: true,
+    catJam: 'CatJam' as CatJam,
     backgroundBlur: 25,
     vibrantColorOpacity: 0.2,
     textShadowIntensity: 1.0,
@@ -25,14 +26,17 @@ const syncLevelStore = await ReactiveStore.getPluginStorage("BetterFullScreen", 
 const listeners = new Set<() => void>();
 
 type SyncMode = "Line" | "Word" | "Character";
+type CatJam = "CatJam" | "CatRave";
 
 let inMemoryState = {
     currentTime: 0,
-    mediaItem: null as MediaItem | null
+    mediaItem: null as MediaItem | null,
+    playing: false
 };
 
 let cachedSnapshot = {
     currentTime: inMemoryState.currentTime,
+    playing: inMemoryState.playing,
     mediaItem: inMemoryState.mediaItem,
     syncLevel: syncLevelStore.syncLevel,
     apiURL: syncLevelStore.apiURL,
@@ -48,12 +52,14 @@ let cachedSnapshot = {
     borderRadius: syncLevelStore.borderRadius,
     customVibrantColor: syncLevelStore.customVibrantColor,
     currentLyricColor: syncLevelStore.currentLyricColor,
-    fullscreenButton: syncLevelStore.fullscreenButton
+    fullscreenButton: syncLevelStore.fullscreenButton,
+    catJam: syncLevelStore.catJam
 };
 
 const updateSnapshot = () => {
     cachedSnapshot = {
         currentTime: inMemoryState.currentTime,
+        playing: inMemoryState.playing,
         mediaItem: inMemoryState.mediaItem,
         syncLevel: syncLevelStore.syncLevel,
         apiURL: syncLevelStore.apiURL,
@@ -69,7 +75,8 @@ const updateSnapshot = () => {
         borderRadius: syncLevelStore.borderRadius,
         customVibrantColor: syncLevelStore.customVibrantColor,
         currentLyricColor: syncLevelStore.currentLyricColor,
-        fullscreenButton: syncLevelStore.fullscreenButton
+        fullscreenButton: syncLevelStore.fullscreenButton,
+        catJam: syncLevelStore.catJam
     };
 };
 
@@ -104,6 +111,23 @@ export const settings = {
     },
     set apiURL(value: string) {
         syncLevelStore.apiURL = value;
+        updateSnapshot();
+        listeners.forEach(listener => listener());
+    },
+    get catJam() {
+        return syncLevelStore.catJam;
+    },
+    set catJam(value: CatJam) {
+        syncLevelStore.catJam = value;
+        updateSnapshot();
+        listeners.forEach(listener => listener());
+    },
+
+    get playing() {
+        return inMemoryState.playing;
+    },
+    set playing(value: boolean) {
+        inMemoryState.playing = value;
         updateSnapshot();
         listeners.forEach(listener => listener());
     },
@@ -248,6 +272,7 @@ export const Settings = () => {
     const [customVibrantColor, setCustomVibrantColor] = React.useState<string>(syncLevelStore.customVibrantColor);
     const [currentLyricColor, setCurrentLyricColor] = React.useState<string>(syncLevelStore.currentLyricColor);
     const [fullscreenButton, setFullscreenButton] = React.useState<boolean>(syncLevelStore.fullscreenButton);
+    const [catJam, setCatJam] = React.useState<CatJam>(syncLevelStore.catJam);
 
     return (
         <LunaSettings>
@@ -267,6 +292,18 @@ export const Settings = () => {
                 </LunaSelectItem>
             </LunaSelectSetting>
 
+            <LunaSelectSetting title="Cat Jam Mode" desc="Select the Cat Jam mode for lyrics" onChange={(event) => {
+                const mode = event.target.value as CatJam;
+                settings.catJam = mode;
+                setCatJam(mode);
+            }} value={catJam}>
+                <LunaSelectItem key="CatJam" value="CatJam">
+                    Cat Jam
+                </LunaSelectItem>
+                <LunaSelectItem key="CatRave" value="CatRave">
+                    Cat Rave
+                </LunaSelectItem>
+            </LunaSelectSetting>
             <LunaTextSetting title="API URL" desc="The API URL to fetch lyrics from (%s is track id)" value={currentApiUrl} onChange={(event) => {
                 let url = event.target.value;
                 setCurrentApiUrl(url);
@@ -388,6 +425,8 @@ export const Settings = () => {
                 setBorderRadius(defaultValues.borderRadius);
                 setCustomVibrantColor(defaultValues.customVibrantColor);
                 setCurrentLyricColor(defaultValues.currentLyricColor);
+                setFullscreenButton(defaultValues.fullscreenButton);
+                setCatJam(defaultValues.catJam);
                 trace.msg.log("Settings reset to defaults");
             }} />
         </LunaSettings>
