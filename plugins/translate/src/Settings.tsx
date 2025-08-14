@@ -7,6 +7,7 @@ import { trace } from ".";
 export const settings = await ReactiveStore.getPluginStorage("Translate", {
     targetLanguage: "en",
     alwaysTranslate: false,
+    romanize: false,
 });
 
 
@@ -51,6 +52,7 @@ export const Settings = () => {
 
     const [targetLanguage, setTargetLanguage] = React.useState<string>(settings.targetLanguage);
     const [alwaysTranslate, setAlwaysTranslate] = React.useState<boolean>(settings.alwaysTranslate);
+    const [romanize, setRomanize] = React.useState<boolean>(settings.romanize);
     return (
         <LunaSettings>
             <LunaSelectSetting title="Target Language" desc="Select the target language for translation" onChange={(event) => {
@@ -64,8 +66,8 @@ export const Settings = () => {
                     </LunaSelectItem>
                 ))}
             </LunaSelectSetting>
-            {/* @ts-ignore */}
             <LunaSwitchSetting title="Always Translate" checked={alwaysTranslate} desc="Always translate lyrics" onChange={(_, checked) => setAlwaysTranslate((settings.alwaysTranslate = checked))} />
+            <LunaSwitchSetting title="Romanize" checked={romanize} desc="Romanize lyrics" onChange={(_, checked) => setRomanize((settings.romanize = checked))} />
         </LunaSettings>
     );
 };

@@ -37,12 +37,12 @@ interface GoogleData {
     }[];
 }
 
-async function translate(text: string, targetLang: string = 'en'): Promise<GoogleData> {
+async function translate(text: string, targetLang: string = 'en', romanize = false): Promise<GoogleData> {
     const params = new URLSearchParams({
         client: 'gtx',
         sl: 'auto',
         tl: targetLang,
-        dt: 't',
+        dt: romanize ? 'rm' : 't',
         dj: '1',
         q: text
     });
@@ -72,7 +72,7 @@ async function processLyrics(
     if (!lyrics) return null;
 
     try {
-        const translatedLyricsData = await translate(lyrics.lyrics, targetLang);
+        const translatedLyricsData = await translate(lyrics.lyrics, targetLang, settings.romanize);
         const translatedLyrics = translatedLyricsData.sentences
             .map(sentence => sentence.trans)
             .join('');
