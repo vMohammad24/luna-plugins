@@ -63,7 +63,17 @@ importers:
 
   plugins/api: {}
 
+  plugins/betterFullscreen: {}
+
   plugins/lrclib: {}
+
+  plugins/mpv:
+    dependencies:
+      node-mpv:
+        specifier: github:jeffvli/Node-MPV#32b4d64395289ad710c41d481d2707a7acfc228f
+        version: https://codeload.github.com/jeffvli/Node-MPV/tar.gz/32b4d64395289ad710c41d481d2707a7acfc228f
+
+  plugins/noTrack: {}
 
   plugins/translate: {}
 
@@ -958,6 +968,10 @@ packages:
 
   no-case@3.0.4:
     resolution: {integrity: sha512-fgAN3jGAh+RoxUGZHTSOLJIqUc2wmoBwGR4tbpNAKmmovFoWq0OdRkb0VkldReO2a2iBT/OEulG9XSUc10r3zg==}
+
+  node-mpv@https://codeload.github.com/jeffvli/Node-MPV/tar.gz/32b4d64395289ad710c41d481d2707a7acfc228f:
+    resolution: {tarball: https://codeload.github.com/jeffvli/Node-MPV/tar.gz/32b4d64395289ad710c41d481d2707a7acfc228f}
+    version: 2.0.0-beta.3
 
   normalize-url@6.1.0:
     resolution: {integrity: sha512-DlL+XwOy3NxAQ8xuC0okPgK46iuVNAK01YN7RueYBqqFeGsBjV9XmCAzAdgt+667bCl5kPh9EqKKDwnaPG1I7A==}
@@ -2236,6 +2250,8 @@ snapshots:
     dependencies:
       lower-case: 2.0.2
       tslib: 2.8.1
+
+  node-mpv@https://codeload.github.com/jeffvli/Node-MPV/tar.gz/32b4d64395289ad710c41d481d2707a7acfc228f: {}
 
   normalize-url@6.1.0: {}
 
