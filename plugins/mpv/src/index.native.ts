@@ -20,7 +20,7 @@ let nativeSettings: MPVNativeSettings = {
     mpvPath: undefined,
 };
 
-export function updateNoTrackNativeSettings(partial: Partial<MPVNativeSettings>) {
+export function updateMpvNativeSettings(partial: Partial<MPVNativeSettings>) {
     nativeSettings = { ...nativeSettings, ...partial };
 }
 
@@ -217,6 +217,8 @@ const createMpv = async (data: {
             binary: binaryPath || nativeSettings.mpvPath || undefined,
             socket: socketPath,
             time_update: 1,
+            debug: true,
+            verbose: true
         },
         params,
     );
@@ -555,3 +557,10 @@ const mpvLog = (
     const message = `[AUDIO PLAYER] ${action}`;
     console.error(message);
 };
+
+export {
+    autoNextPlayer, cleanUpPlayer, getPlayerTime, initializePlayer, isPlayerRunning, mutePlayer, nextTrack, pausePlayer, playPlayer, previousTrack, quitPlayer, restartPlayer, seekPlayer,
+    seekPlayerTo, setPlayerProperties, setPlayerQueue,
+    setPlayerQueueNext, setPlayerVolume, stopPlayer
+};
+
