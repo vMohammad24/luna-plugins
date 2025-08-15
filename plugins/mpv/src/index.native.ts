@@ -1,4 +1,3 @@
-import type { PlaybackInfo, redux } from "@luna/lib";
 import { fetchMediaItemStream } from "@luna/lib.native";
 import { app, BrowserWindow } from "electron";
 import { rm } from 'fs/promises';
@@ -7,7 +6,6 @@ import MpvAPI from 'node-mpv';
 import { pid } from "process";
 
 let server: Server | null = null;
-let items: PlaybackItems | null = null;
 
 let mpvInstance: MpvAPI | null = null;
 const isWindows = process.platform === 'win32';
@@ -43,18 +41,6 @@ type NodeMpvError = {
     stackTrace: string;
     verbose: string;
 };
-export type PlaybackItems = {
-    playing: boolean;
-    playTime: number;
-    repeatMode: number;
-    playQueue: any;
-    shuffle: boolean;
-    currentTime?: number;
-    lastPlayStart?: number;
-    volume?: number;
-    mediaItem?: redux.Track;
-    playbackInfo?: PlaybackInfo;
-};
 
 
 
@@ -64,6 +50,7 @@ function sendToRenderer(channel: string, data?: any) {
         console.warn("sendToRenderer: BrowserWindow with id 1 not found.");
         return;
     }
+    tidalWindow.webContents.removeAllListeners("client.playback.playersignal");
     tidalWindow.webContents.send(channel, data);
 }
 
@@ -84,17 +71,8 @@ export function stopServer() {
     }
 }
 
-export function updateItems(newItems: PlaybackItems) {
-    if (items) {
-        items = { ...items, ...newItems };
-    } else {
-        items = newItems;
-    }
-}
-
 const routers = {
     "/stream": handleStream,
-    "/debug": handleDebug,
 }
 
 function handleRequest(req: IncomingMessage, res: ServerResponse) {
@@ -123,63 +101,86 @@ async function handleStream(req: IncomingMessage, res: ServerResponse) {
         res.end("Track ID is required");
         return;
     }
-    if (!items) {
-        res.statusCode = 503;
-        res.end("Server is not ready");
-        return;
-    }
+
     console.log(`Handling stream request for track ID: ${trackId}`);
-    const { mediaItem: item, playbackInfo: info } = items;
-    if (!item || item.id !== trackId) {
-        res.statusCode = 404;
-        console.error(`Track with ID ${trackId} not found in current playback items: ${JSON.stringify(item)}`);
-        res.end("Track not found");
-        return;
-    }
 
-    if (!info) {
-        res.statusCode = 503;
-        console.error("Playback info is not available for the requested track.");
-        res.end("Playback info is not available");
-        return;
+    try {
+        const tidalWindow = BrowserWindow.fromId(1);
+        if (!tidalWindow) {
+            res.statusCode = 503;
+            res.end("Tidal window not found");
+            return;
+        }
+
+        const trackInfo = await tidalWindow.webContents.executeJavaScript(`
+            (async () => {
+                const { MediaItem } = require("@luna/lib");
+                const { PlayState } = require("@luna/lib");
+                const playQueue = PlayState.playQueue;
+                const queueElement = playQueue?.elements?.find(el => el.mediaItemId === ${trackId});
+                
+                if (queueElement) {
+                    const mediaItem = await MediaItem.fromId(${trackId});
+                    if (mediaItem) {
+                        const playbackInfo = await mediaItem.playbackInfo();
+                        return {
+                            mediaItem: mediaItem.tidalItem,
+                            playbackInfo: playbackInfo
+                        };
+                    }
+                }
+                
+                const currentMedia = await MediaItem.fromPlaybackContext();
+                if (currentMedia && currentMedia.tidalItem?.id === ${trackId}) {
+                    const playbackInfo = await currentMedia.playbackInfo();
+                    return {
+                        mediaItem: currentMedia.tidalItem,
+                        playbackInfo: playbackInfo
+                    };
+                }
+                
+                return null;
+            })()
+        `);
+
+        if (!trackInfo || !trackInfo.mediaItem || !trackInfo.playbackInfo) {
+            res.statusCode = 404;
+            console.error(`Track with ID ${trackId} not found or no playback info available`);
+            res.end("Track not found");
+            return;
+        }
+
+        console.log(`Fetching stream for track: ${trackInfo.mediaItem.title} by ${trackInfo.mediaItem.artist?.name}`);
+
+        res.setHeader("Content-Type", "audio/mpeg");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
+        res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+        res.statusCode = 200;
+        res.writeHead(200, { "Content-Type": "audio/mpeg" });
+
+        const stream = await fetchMediaItemStream(trackInfo.playbackInfo);
+        console.log(`Stream fetched for track ID: ${trackId}`);
+        stream.pipe(res);
+
+        res.on('error', (err) => {
+            console.error("Error in stream response:", err);
+        });
+        res.on('close', () => {
+            console.log("Stream closed");
+        });
+        res.on('finish', () => {
+            console.log("Stream finished");
+        });
+        console.log(`Stream started for track ID: ${trackId}`);
+
+    } catch (error) {
+        console.error(`Error handling stream for track ${trackId}:`, error);
+        res.statusCode = 500;
+        res.end("Internal server error");
     }
-    console.log(`Fetching stream for track ID: ${trackId}`);
-    res.setHeader("Content-Type", "audio/mpeg");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Access-Control-Allow-Origin", "*");
-    res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS");
-    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-    res.statusCode = 200;
-    res.writeHead(200, { "Content-Type": "audio/mpeg" });
-    const stream = await fetchMediaItemStream(info)
-    console.log(`Stream fetched for track ID: ${trackId}`);
-    stream.pipe(res);
-    res.on('error', (err) => {
-        console.error("Error in stream response:", err);
-    });
-    res.on('close', () => {
-        console.log("Stream closed");
-        res.end();
-    });
-    res.on('finish', () => {
-        console.log("Stream closed");
-        res.end();
-    });
-    console.log(`Stream started for track ID: ${trackId}`);
 }
-
-function handleDebug(req: IncomingMessage, res: ServerResponse) {
-    if (!items) {
-        res.statusCode = 503;
-        res.end("Server is not ready");
-        return;
-    }
-    res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify(items, null, 2));
-}
-
-
-
 
 const prefetchPlaylistParams = [
     '--prefetch-playlist=no',
@@ -557,6 +558,7 @@ const mpvLog = (
     const message = `[AUDIO PLAYER] ${action}`;
     console.error(message);
 };
+
 
 export {
     autoNextPlayer, cleanUpPlayer, getPlayerTime, initializePlayer, isPlayerRunning, mutePlayer, nextTrack, pausePlayer, playPlayer, previousTrack, quitPlayer, restartPlayer, seekPlayer,

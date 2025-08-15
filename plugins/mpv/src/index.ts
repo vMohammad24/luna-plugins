@@ -1,16 +1,15 @@
 import { LunaUnload, Tracer } from "@luna/core";
-import { MediaItem, PlayState, ipcRenderer, redux } from "@luna/lib";
+import { MediaItem, PlayState, redux } from "@luna/lib";
 import {
-    PlaybackItems,
     initializePlayer, pausePlayer, playPlayer,
     quitPlayer,
     seekPlayerTo,
     setPlayerQueue,
+    setPlayerQueueNext,
     setPlayerVolume,
     startServer,
     stopPlayer,
-    stopServer,
-    updateItems
+    stopServer
 } from "./index.native";
 export const { trace } = Tracer("[MPV]");
 export const unloads = new Set<LunaUnload>();
@@ -18,57 +17,31 @@ export { Settings } from "./settings";
 
 let port = 0;
 let mpvInitialized = false;
+const verbose = true;
+const logger = {
+    log: (message: string) => verbose ? trace.log(message) : null,
+    warn: (message: string) => verbose ? trace.msg.warn(message) : trace.warn(message),
+    err: (message: string) => verbose ? trace.msg.err(message) : trace.err(message)
+}
 
 startServer().then(async (p) => {
     port = p;
-    trace.msg.log(`MPV server started on port ${port}`);
+    logger.log(`MPV server started on port ${port}`);
 
     try {
         await initializePlayer({});
         mpvInitialized = true;
-        trace.msg.log("MPV player initialized successfully");
+        logger.log("MPV player initialized successfully");
     } catch (err) {
-        trace.msg.err(`Failed to initialize MPV player: ${err}`);
+        logger.err(`Failed to initialize MPV player: ${err}`);
         mpvInitialized = false;
     }
 }).catch((err) => {
-    trace.msg.err(`Failed to start MPV server: ${err}`);
+    logger.err(`Failed to start MPV server: ${err}`);
 })
 
-
-let doesIPCWork = false;
-
-
-const update = async () => {
-    const { playing, playTime, repeatMode, lastPlayStart, playQueue, shuffle } = PlayState;
-    const mediaItem = await MediaItem.fromPlaybackContext();
-    const currentTime = getCurrentPlaybackTime();
-    const items: PlaybackItems = { playing, playTime, repeatMode, playQueue, shuffle };
-    if (!Number.isNaN(currentTime) && !doesIPCWork) items.currentTime = currentTime;
-    if (lastPlayStart && !Number.isNaN(lastPlayStart)) items.lastPlayStart = lastPlayStart;
-    const { playbackControls } = redux.store.getState();
-    if (playbackControls.volume) items.volume = playbackControls.volume;
-    if (mediaItem) {
-        items.mediaItem = mediaItem.tidalItem;
-        const playbackInfo = await mediaItem.playbackInfo();
-        if (playbackInfo) {
-            items.playbackInfo = playbackInfo;
-        }
-    }
-    updateItems(items);
-}
-
-const interval = setInterval(() => {
-    update();
-}, 100);
-
-PlayState.onState(unloads, () => {
-    update();
-})
 
 MediaItem.fromPlaybackContext().then(async (media) => {
-    update();
-
     if (media && port) {
         let retries = 0;
         while (!mpvInitialized && retries < 50) {
@@ -78,91 +51,78 @@ MediaItem.fromPlaybackContext().then(async (media) => {
 
         if (mpvInitialized) {
             try {
-                const trackId = media.tidalItem?.id;
-                if (trackId) {
-                    const streamUrl = `http://localhost:${port}/stream/${trackId}`;
-                    trace.msg.log(`Loading initial track into MPV: ${media.tidalItem?.title} by ${media.tidalItem?.artist?.name}`);
-                    setTimeout(async () => {
-                        await setPlayerQueue(streamUrl, undefined, !PlayState.playing);
-                    }, 500);
-                    oldMedia = media;
-                }
+                await loadPlayQueueIntoMPV();
             } catch (err) {
-                trace.msg.err(`Error loading initial media: ${err}`);
+                logger.err(`Error loading initial media: ${err}`);
             }
         } else {
-            trace.msg.warn("MPV failed to initialize, media loading skipped");
+            logger.warn("MPV failed to initialize, media loading skipped");
         }
     }
 })
-MediaItem.onMediaTransition(unloads, () => {
-    update();
-});
 
 
-let currentTime = 0;
-let previousTime = -1;
-let lastUpdated = Date.now();
-const getCurrentPlaybackTime = (): number => {
-    if (doesIPCWork) return currentTime;
-    const audioElement = document.querySelector('audio') as HTMLAudioElement;
-    if (audioElement && audioElement.currentTime) {
-        currentTime = audioElement.currentTime;
-        previousTime = -1;
-        return currentTime;
-    }
-
-    const progressBar = document.querySelector('[data-test="progress-bar"]') as HTMLElement;
-    if (progressBar) {
-        const ariaValueNow = progressBar.getAttribute('aria-valuenow');
-        if (ariaValueNow !== null) {
-            const progressTime = Number.parseInt(ariaValueNow);
-            const now = Date.now();
-
-            if (progressTime !== previousTime) {
-                currentTime = progressTime;
-                previousTime = progressTime;
-                lastUpdated = now;
-            } else if (PlayState.playing) {
-                const elapsedSeconds = (now - lastUpdated) / 1000;
-                currentTime = progressTime + elapsedSeconds;
-            }
-            return currentTime;
-        } else {
-            trace.msg.warn("Progress bar not found or aria-valuenow is null");
-            return currentTime;
-        }
-    }
-
-    return currentTime;
-};
-
-ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {
-    const { time } = payload;
-    if (time && !Number.isNaN(time)) {
-        doesIPCWork = true;
-        currentTime = time;
-    }
-})
 
 
 unloads.add(async () => {
     if (mpvInitialized) {
         try {
-            trace.msg.log("Shutting down MPV player");
+            logger.log("Shutting down MPV player");
             await quitPlayer();
         } catch (err) {
-            trace.msg.err(`Error shutting down MPV: ${err}`);
+            logger.err(`Error shutting down MPV: ${err}`);
         }
     }
     stopServer();
-    clearInterval(interval);
 });
 
 let oldPlayingState: boolean = false;
 let oldPlayTime: number = 0;
 let oldVolume: number = 0;
 let oldMedia: MediaItem | null = null;
+
+async function loadPlayQueueIntoMPV() {
+    if (!mpvInitialized || !port) return;
+
+    try {
+        const playQueue = PlayState.playQueue;
+        if (!playQueue || !playQueue.elements || playQueue.elements.length === 0) {
+            logger.warn("No play queue available");
+            return;
+        }
+
+        const currentIndex = playQueue.currentIndex || 0;
+        const currentElement = playQueue.elements[currentIndex];
+
+        if (!currentElement) {
+            logger.warn("No current element in play queue");
+            return;
+        }
+
+        logger.log(`Loading play queue into MPV: ${playQueue.elements.length} tracks, starting at index ${currentIndex}`);
+
+        const currentUrl = `http://localhost:${port}/stream/${currentElement.mediaItemId}`;
+        await setPlayerQueue(currentUrl, undefined, !PlayState.playing);
+
+        if (currentIndex + 1 < playQueue.elements.length) {
+            const nextElement = playQueue.elements[currentIndex + 1];
+            const nextUrl = `http://localhost:${port}/stream/${nextElement.mediaItemId}`;
+
+            setTimeout(async () => {
+                try {
+                    await setPlayerQueueNext(nextUrl);
+                    logger.log("Next track loaded into MPV queue");
+                } catch (err) {
+                    logger.warn(`Failed to preload next track: ${err}`);
+                }
+            }, 1000);
+        }
+
+        logger.log("Current track loaded into MPV successfully");
+    } catch (err) {
+        logger.err(`Error loading play queue into MPV: ${err}`);
+    }
+}
 
 PlayState.onState(unloads, async () => {
     if (!mpvInitialized) return;
@@ -175,58 +135,59 @@ PlayState.onState(unloads, async () => {
 
         if (oldPlayingState !== currentPlaying) {
             if (currentPlaying) {
-                trace.msg.log("Starting MPV playback");
+                logger.log("Starting MPV playback");
                 await playPlayer();
             } else {
-                trace.msg.log("Pausing MPV playback");
+                logger.log("Pausing MPV playback");
                 await pausePlayer();
             }
             oldPlayingState = currentPlaying;
         }
 
         if (Math.abs(oldVolume - currentVolume) > 0.5) {
-            trace.msg.log(`Setting MPV volume to ${currentVolume}`);
+            logger.log(`Setting MPV volume to ${currentVolume}`);
             await setPlayerVolume(currentVolume);
             oldVolume = currentVolume;
         }
 
         if (Math.abs(currentPlayTime - oldPlayTime) > 2) {
-            trace.msg.log(`Seeking MPV to ${currentPlayTime}s`);
+            logger.log(`Seeking MPV to ${currentPlayTime}s`);
             await seekPlayerTo(currentPlayTime);
         }
         oldPlayTime = currentPlayTime;
 
     } catch (err) {
-        trace.msg.err(`Error in PlayState handler: ${err}`);
+        logger.err(`Error in PlayState handler: ${err}`);
     }
 });
 
 MediaItem.onMediaTransition(unloads, async (media) => {
     if (!mpvInitialized || !port) return;
-
     try {
         if (media && media !== oldMedia) {
-            const trackId = media.tidalItem?.id;
-            if (trackId) {
-                setTimeout(async () => {
-                    const streamUrl = `http://localhost:${port}/stream/${trackId}`;
-                    trace.msg.log(`Loading new track into MPV: ${media.tidalItem?.title} by ${media.tidalItem?.artist?.name} (${streamUrl})`);
+            logger.log(`Media transition: ${media.tidalItem?.title} by ${media.tidalItem?.artist?.name}`);
+            await new Promise(resolve => setTimeout(resolve, 200));
+            await loadPlayQueueIntoMPV();
 
-                    await new Promise(resolve => setTimeout(resolve, 100));
-
-                    await setPlayerQueue(streamUrl, undefined, !PlayState.playing);
-
-                    oldMedia = media;
-                }, 500)
-            } else {
-                trace.msg.warn("No track ID found for media item");
-            }
+            oldMedia = media;
         } else if (!media && oldMedia) {
-            trace.msg.log("Media cleared, stopping MPV playback");
+            logger.log("Media cleared, stopping MPV playback");
             await stopPlayer();
             oldMedia = null;
         }
     } catch (err) {
-        trace.msg.err(`Error in MediaItem handler: ${err}`);
+        logger.err(`Error in MediaItem handler: ${err}`);
     }
 });
+
+
+redux.intercept("playbackControls/SET_VOLUME", unloads, async ({ volume }) => {
+    if (!mpvInitialized || !port) return;
+
+    try {
+        logger.log(`Setting MPV volume to ${volume}`);
+        await setPlayerVolume(volume);
+    } catch (err) {
+        logger.err(`Error setting MPV volume: ${err}`);
+    }
+})
