@@ -63,7 +63,11 @@ importers:
 
   plugins/api: {}
 
+  plugins/betterFullscreen: {}
+
   plugins/lrclib: {}
+
+  plugins/noTrack: {}
 
   plugins/translate: {}
 

@@ -13,7 +13,7 @@ import { trace } from ".";
 
 const defaultValues = {
     syncLevel: "Word" as SyncMode,
-    apiURL: "https://api.vmohammad.dev/lyrics/?tidal_id=%s&filter=enhancedLyrics",
+    apiURL: "https://api.vmohammad.dev/lyrics/?tidal_id=%s&minimal=true",
     fullscreenButton: true,
     catJam: "None" as CatJam,
     backgroundBlur: 25,
@@ -36,7 +36,7 @@ const syncLevelStore = await ReactiveStore.getPluginStorage(
 
 const listeners = new Set<() => void>();
 
-type SyncMode = "Line" | "Word" | "Character";
+type SyncMode = "Line" | "Word";
 type CatJam = "CatJam" | "CatRave" | "CatRave2" | "None";
 
 const inMemoryState = {
@@ -331,9 +331,6 @@ export const Settings = () => {
                 </LunaSelectItem>
                 <LunaSelectItem key="Word" value="Word">
                     Word
-                </LunaSelectItem>
-                <LunaSelectItem key="Character" value="Character">
-                    Character
                 </LunaSelectItem>
             </LunaSelectSetting>
 
