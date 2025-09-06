@@ -1,5 +1,5 @@
 import { LunaUnload, Tracer } from "@luna/core";
-import { MediaItem, PlayState, redux } from "@luna/lib";
+import { MediaItem, observe, PlayState, redux, safeInterval } from "@luna/lib";
 import {
     initializePlayer, pausePlayer, playPlayer,
     quitPlayer,
@@ -30,6 +30,7 @@ startServer().then(async (p) => {
 
     try {
         await initializePlayer({});
+        muteOrignalPlayer();
         mpvInitialized = true;
         logger.log("MPV player initialized successfully");
     } catch (err) {
@@ -83,6 +84,7 @@ let oldMedia: MediaItem | null = null;
 
 async function loadPlayQueueIntoMPV() {
     if (!mpvInitialized || !port) return;
+    muteOrignalPlayer();
 
     try {
         const playQueue = PlayState.playQueue;
@@ -126,7 +128,7 @@ async function loadPlayQueueIntoMPV() {
 
 PlayState.onState(unloads, async () => {
     if (!mpvInitialized) return;
-
+    muteOrignalPlayer();
     try {
         const currentPlaying = PlayState.playing;
         const currentPlayTime = PlayState.playTime;
@@ -191,3 +193,24 @@ redux.intercept("playbackControls/SET_VOLUME", unloads, async ({ volume }) => {
         logger.err(`Error setting MPV volume: ${err}`);
     }
 })
+
+
+observe(unloads, "video", (elem) => {
+    if (elem) (elem as HTMLVideoElement).muted = true;
+})
+
+
+__ipcRenderer.on("player.message", (event, message: string) => {
+    muteOrignalPlayer();
+})
+const muteOrignalPlayer = () => {
+    __ipcRenderer.send("player.message", JSON.stringify({ "command": "media.volume", "volume": 0 }));
+    const videoElem = document.querySelector("video");
+    if (videoElem) (videoElem as HTMLVideoElement).muted = true;
+}
+
+
+safeInterval(unloads, () => {
+    if (!mpvInitialized || !port) return;
+    muteOrignalPlayer();
+}, 5000)

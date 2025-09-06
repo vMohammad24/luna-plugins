@@ -89,7 +89,7 @@ async function processLyrics(
             }
         }
 
-        const translatedSubtitlesText = lyrics.subtitles.split("\n").map(subtitle => {
+        const translatedSubtitlesText = lyrics.subtitles?.split("\n").map(subtitle => {
             const timestampMatch = subtitle.match(/^\[[\d:.]+\]\s*/);
             if (timestampMatch) {
                 const timestamp = timestampMatch[0];

@@ -18,7 +18,7 @@ let nativeSettings: MPVNativeSettings = {
     mpvPath: undefined,
 };
 
-export function updateMpvNativeSettings(partial: Partial<MPVNativeSettings>) {
+function updateMpvNativeSettings(partial: Partial<MPVNativeSettings>) {
     nativeSettings = { ...nativeSettings, ...partial };
 }
 
@@ -55,14 +55,14 @@ function sendToRenderer(channel: string, data?: any) {
 }
 
 
-export async function startServer(port?: number): Promise<number> {
+async function startServer(port?: number): Promise<number> {
     server = createServer(handleRequest);
     server.listen(port ?? 0);
     const addrInfo = server.address();
     return typeof addrInfo === 'object' ? addrInfo?.port || 0 : Number.parseInt(addrInfo.split(':')[1]) || 0;
 }
 
-export function stopServer() {
+function stopServer() {
     if (server) {
         server.close(() => {
             server = null;
@@ -263,7 +263,7 @@ const createMpv = async (data: {
     return mpv;
 };
 
-export const getMpvInstance = () => {
+const getMpvInstance = () => {
     return mpvInstance;
 };
 
@@ -561,8 +561,8 @@ const mpvLog = (
 
 
 export {
-    autoNextPlayer, cleanUpPlayer, getPlayerTime, initializePlayer, isPlayerRunning, mutePlayer, nextTrack, pausePlayer, playPlayer, previousTrack, quitPlayer, restartPlayer, seekPlayer,
+    autoNextPlayer, cleanUpPlayer, getMpvInstance, getPlayerTime, initializePlayer, isPlayerRunning, mutePlayer, nextTrack, pausePlayer, playPlayer, previousTrack, quitPlayer, restartPlayer, seekPlayer,
     seekPlayerTo, setPlayerProperties, setPlayerQueue,
-    setPlayerQueueNext, setPlayerVolume, stopPlayer
+    setPlayerQueueNext, setPlayerVolume, startServer, stopPlayer, stopServer, updateMpvNativeSettings
 };
 
