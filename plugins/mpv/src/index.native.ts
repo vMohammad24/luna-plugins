@@ -1,9 +1,12 @@
 import { fetchMediaItemStream } from "@luna/lib.native";
+import { exec } from 'child_process';
 import { app, BrowserWindow } from "electron";
 import { rm } from 'fs/promises';
 import { createServer, IncomingMessage, Server, ServerResponse } from "http";
 import MpvAPI from 'node-mpv';
 import { pid } from "process";
+import { promisify } from 'util';
+const execAsync = promisify(exec);
 
 let server: Server | null = null;
 
@@ -12,10 +15,14 @@ const isWindows = process.platform === 'win32';
 const socketPath = isWindows ? `\\\\.\\pipe\\mpvserver-${pid}` : `/tmp/node-mpv-${pid}.sock`;
 type MPVNativeSettings = {
     mpvPath?: string;
+    extraParameters?: string[];
+    properties?: Record<string, any>;
 };
 
 let nativeSettings: MPVNativeSettings = {
     mpvPath: undefined,
+    extraParameters: undefined,
+    properties: undefined,
 };
 
 function updateMpvNativeSettings(partial: Partial<MPVNativeSettings>) {
@@ -209,7 +216,13 @@ const createMpv = async (data: {
 }): Promise<MpvAPI> => {
     const { binaryPath, extraParameters, properties } = data;
 
-    const params = uniq([...DEFAULT_MPV_PARAMETERS(extraParameters), ...(extraParameters || [])]);
+    const settingsExtraParams = nativeSettings.extraParameters || [];
+    const allExtraParams = [...settingsExtraParams, ...(extraParameters || [])];
+
+    const params = uniq([...DEFAULT_MPV_PARAMETERS(allExtraParams), ...allExtraParams]);
+
+    const settingsProperties = nativeSettings.properties || {};
+    const allProperties = { ...settingsProperties, ...(properties || {}) };
 
     const mpv = new MpvAPI(
         {
@@ -229,7 +242,9 @@ const createMpv = async (data: {
     } catch (error: any) {
         console.error('mpv failed to start', error);
     } finally {
-        await mpv.setMultipleProperties(properties || {});
+        if (Object.keys(allProperties).length > 0) {
+            await mpv.setMultipleProperties(allProperties);
+        }
     }
 
     mpv.on('status', (status) => {
@@ -317,7 +332,7 @@ async function restartPlayer(data: { extraParameters?: string[]; properties?: Re
         setAudioPlayerFallback(false);
     } catch (err: any | NodeMpvError) {
         mpvLog({ action: 'Failed to restart mpv, falling back to web player' }, err);
-        setAudioPlayerFallback(true);
+        restartPlayer(data);
     }
 }
 
@@ -560,9 +575,61 @@ const mpvLog = (
 };
 
 
+async function updatePlayerProperties(properties: Record<string, any>): Promise<void> {
+    try {
+        const instance = getMpvInstance();
+        if (instance) {
+            await instance.setMultipleProperties(properties);
+            console.log(`Updated MPV properties: ${JSON.stringify(properties)}`);
+        } else {
+            console.warn("MPV instance not available for property updates");
+        }
+    } catch (err: any) {
+        console.error(`Failed to update MPV properties: ${err}`);
+    }
+}
+
+interface AudioDevice {
+    id: string;
+    description: string;
+}
+
+async function getAvailableAudioDevices(mpvPath?: string): Promise<AudioDevice[]> {
+    try {
+        const mpvCommand = mpvPath || 'mpv';
+        const { stdout } = await execAsync(`"${mpvCommand}" --audio-device=help`);
+
+        const devices: AudioDevice[] = [];
+        const lines = stdout.split('\n');
+
+        for (let i = 1; i < lines.length; i++) {
+            const line = lines[i].trim();
+            if (!line) continue;
+
+            const match = line.match(/^\s*'([^']+)'\s*\((.+)\)$/);
+            if (match) {
+                const [, id, description] = match;
+                devices.push({ id, description });
+            }
+        }
+
+        return devices;
+    } catch (err) {
+        console.error(`Failed to get audio devices: ${err}`);
+        return [
+            { id: 'auto', description: 'Autoselect device' },
+            { id: 'alsa', description: 'Default (alsa)' },
+            { id: 'pulse', description: 'Default (pulse)' },
+            { id: 'pipewire', description: 'Default (pipewire)' }
+        ];
+    }
+}
+
 export {
-    autoNextPlayer, cleanUpPlayer, getMpvInstance, getPlayerTime, initializePlayer, isPlayerRunning, mutePlayer, nextTrack, pausePlayer, playPlayer, previousTrack, quitPlayer, restartPlayer, seekPlayer,
+    autoNextPlayer, cleanUpPlayer, getAvailableAudioDevices, getMpvInstance, getPlayerTime, initializePlayer, isPlayerRunning, mutePlayer, nextTrack, pausePlayer, playPlayer, previousTrack, quitPlayer, restartPlayer, seekPlayer,
     seekPlayerTo, setPlayerProperties, setPlayerQueue,
-    setPlayerQueueNext, setPlayerVolume, startServer, stopPlayer, stopServer, updateMpvNativeSettings
+    setPlayerQueueNext, setPlayerVolume, startServer, stopPlayer, stopServer, updateMpvNativeSettings, updatePlayerProperties
 };
+
+export type { AudioDevice };
 

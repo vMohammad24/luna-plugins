@@ -1,6 +1,7 @@
 import { LunaUnload, Tracer } from "@luna/core";
-import { MediaItem, observe, PlayState, redux, safeInterval } from "@luna/lib";
+import { ipcRenderer, MediaItem, observe, PlayState, redux, safeInterval, safeTimeout } from "@luna/lib";
 import {
+    getPlayerTime,
     initializePlayer, pausePlayer, playPlayer,
     quitPlayer,
     seekPlayerTo,
@@ -52,7 +53,7 @@ MediaItem.fromPlaybackContext().then(async (media) => {
 
         if (mpvInitialized) {
             try {
-                await loadPlayQueueIntoMPV();
+                safeTimeout(unloads, loadPlayQueueIntoMPV, 500);
             } catch (err) {
                 logger.err(`Error loading initial media: ${err}`);
             }
@@ -126,8 +127,7 @@ async function loadPlayQueueIntoMPV() {
     }
 }
 
-PlayState.onState(unloads, async () => {
-    if (!mpvInitialized) return;
+const doStuff = async () => {
     muteOrignalPlayer();
     try {
         const currentPlaying = PlayState.playing;
@@ -161,7 +161,22 @@ PlayState.onState(unloads, async () => {
     } catch (err) {
         logger.err(`Error in PlayState handler: ${err}`);
     }
+}
+
+PlayState.onState(unloads, async () => {
+    if (!mpvInitialized) return;
+    await doStuff();
 });
+
+redux.intercept("playbackControls/SET_VOLUME", unloads, async ({ volume }) => {
+    console.log(`Intercepted volume change to ${volume}`);
+    if (!mpvInitialized || !port) return;
+    try {
+        await setPlayerVolume(volume);
+    } catch (err) {
+        logger.err(`Error setting MPV volume: ${err}`);
+    }
+})
 
 MediaItem.onMediaTransition(unloads, async (media) => {
     if (!mpvInitialized || !port) return;
@@ -214,3 +229,24 @@ safeInterval(unloads, () => {
     if (!mpvInitialized || !port) return;
     muteOrignalPlayer();
 }, 5000)
+
+
+redux.intercept("player/ERROR", unloads, ({ errorCode }: any) => {
+    if (errorCode === "NPD04") {
+        return true;
+    }
+})
+const yes = (time?: number) => {
+    if (time) ipcRenderer.send("client.playback.playersignal", { signal: 'media.currenttime', time, url: 'https://lgf.audio.tidal.com/mediatracks/yes' })
+    ipcRenderer.send("client.playback.playersignal", { signal: 'media.state', state: 'active', url: 'https://lgf.audio.tidal.com/mediatracks/yes' });
+}
+ipcRenderer.on(unloads, "renderer-player-current-time", (time) => {
+    yes(time);
+})
+ipcRenderer.on(unloads, "renderer-player-state", async (state) => {
+    yes(await getPlayerTime());
+})
+
+ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {
+    yes(payload?.time);
+})
