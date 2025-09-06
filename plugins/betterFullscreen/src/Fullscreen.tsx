@@ -136,10 +136,6 @@ export const FullScreen = () => {
     }, [lyrics, currentTime]);
 
     const getHighlightedContent = useCallback((lyric: EnhancedSyncedLyric) => {
-        if (syncLevel === 'Line') {
-            return lyric.text;
-        }
-
         if (syncLevel === 'Word' && lyric.words) {
             const activeWordIndex = lyric.words.findIndex(
                 w => w.time <= currentTime && currentTime < w.endTime
@@ -168,58 +164,6 @@ export const FullScreen = () => {
                 );
             });
         }
-
-        if (syncLevel === 'Character' && lyric.words) {
-            const nodes: React.ReactNode[] = [];
-
-            const activeWordIndex = lyric.words.findIndex(
-                w => w.time <= currentTime && currentTime < w.endTime
-            );
-
-            const lastFinishedWordIndex = activeWordIndex === -1
-                ? lyric.words.findIndex((w, i) => w.endTime > currentTime) - 1
-                : -1;
-
-            lyric.words.forEach((word, wordIndex) => {
-                const isActiveWord = word.time <= currentTime && currentTime < word.endTime;
-                const isWordPrevious = activeWordIndex !== -1
-                    ? wordIndex < activeWordIndex
-                    : lastFinishedWordIndex !== -1 && wordIndex <= lastFinishedWordIndex;
-
-                if (isActiveWord && word.characters && word.characters.length > 0) {
-                    word.characters.forEach((char, charIndex) => {
-                        const isActiveChar = char.time <= currentTime && currentTime < char.endTime;
-                        const isCharPrevious = char.endTime <= currentTime;
-                        const className = isActiveChar
-                            ? 'char-active'
-                            : isCharPrevious
-                                ? 'char char-current'
-                                : 'char';
-                        nodes.push(
-                            <span key={`w${wordIndex}-c${charIndex}`} className={className}>
-                                {char.char}
-                            </span>
-                        );
-                    });
-                } else {
-                    const className = isWordPrevious
-                        ? 'word char-current'
-                        : 'word';
-                    nodes.push(
-                        <span key={`w${wordIndex}`} className={className}>
-                            {word.word}
-                        </span>
-                    );
-                }
-
-                if (wordIndex < lyric.words.length - 1) {
-                    nodes.push(<span key={`space-${wordIndex}`}> </span>);
-                }
-            });
-
-            return nodes;
-        }
-
         return lyric.text;
     }, [syncLevel, currentTime]);
 

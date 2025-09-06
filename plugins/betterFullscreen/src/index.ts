@@ -9,7 +9,6 @@ export { Settings } from "./settings";
 export const { trace } = Tracer("[BetterFullscreen]");
 export const unloads = new Set<LunaUnload>();
 const styleTag = new StyleTag("BetterFullscreen", unloads);
-let shouldAddButton = true;
 const buttonClassName = "betterFullscreen-fullscreen-button";
 const loadCss = () => {
     import("file://styles.css?minify").then(m => {
@@ -33,15 +32,8 @@ const enterFullscreen = () => {
         }
     }, 100)
 }
-ipcRenderer.on(unloads, "window.enter.fullscreen", () => {
-    enterFullscreen();
-})
-
 let lastCheck = 0;
 observe(unloads, ".is-fullscreen.is-now-playing", () => {
-    if (doesIPCWork) {
-        return;
-    }
     const parent = document.querySelector(".is-fullscreen.is-now-playing");
     if (parent && Date.now() - lastCheck > 400) {
         const fullscreenElement = parent.querySelector('[class^="_fullscreen_"]');
