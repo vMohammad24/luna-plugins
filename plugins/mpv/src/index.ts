@@ -36,7 +36,7 @@ startServer().then(async (p) => {
         logger.log("MPV player initialized successfully");
     } catch (err) {
         logger.err(`Failed to initialize MPV player: ${err}`);
-        mpvInitialized = false;
+        mpvInitialized = true; // maybe? idk
     }
 }).catch((err) => {
     logger.err(`Failed to start MPV server: ${err}`);
@@ -82,6 +82,9 @@ let oldPlayingState: boolean = false;
 let oldPlayTime: number = 0;
 let oldVolume: number = 0;
 let oldMedia: MediaItem | null = null;
+let mpvCurrentTrackId: number | string | null = null;
+let mpvNextTrackId: number | string | null = null;
+let isAutoNextInProgress = false;
 
 async function loadPlayQueueIntoMPV() {
     if (!mpvInitialized || !port) return;
@@ -102,14 +105,32 @@ async function loadPlayQueueIntoMPV() {
             return;
         }
 
+        const currentTrackId = currentElement.mediaItemId;
+        const nextTrackId = currentIndex + 1 < playQueue.elements.length ?
+            playQueue.elements[currentIndex + 1].mediaItemId : null;
+
+        const currentMatches = mpvCurrentTrackId == currentTrackId;
+        const nextMatches = mpvNextTrackId == nextTrackId;
+        const isSynced = currentMatches && nextMatches;
+
+        if (isSynced && !isAutoNextInProgress) {
+            logger.log(`MPV queue is already synced (current: ${currentTrackId}, next: ${nextTrackId}), skipping queue update`);
+            return;
+        }
+
+        logger.log(`Syncing MPV queue - Current: ${currentTrackId} (was ${mpvCurrentTrackId}), Next: ${nextTrackId} (was ${mpvNextTrackId})`);
         logger.log(`Loading play queue into MPV: ${playQueue.elements.length} tracks, starting at index ${currentIndex}`);
 
         const currentUrl = `http://localhost:${port}/stream/${currentElement.mediaItemId}`;
         await setPlayerQueue(currentUrl, undefined, !PlayState.playing);
 
+        mpvCurrentTrackId = currentTrackId;
+        isAutoNextInProgress = false;
+
         if (currentIndex + 1 < playQueue.elements.length) {
             const nextElement = playQueue.elements[currentIndex + 1];
             const nextUrl = `http://localhost:${port}/stream/${nextElement.mediaItemId}`;
+            mpvNextTrackId = nextElement.mediaItemId;
 
             setTimeout(async () => {
                 try {
@@ -119,6 +140,8 @@ async function loadPlayQueueIntoMPV() {
                     logger.warn(`Failed to preload next track: ${err}`);
                 }
             }, 1000);
+        } else {
+            mpvNextTrackId = null;
         }
 
         logger.log("Current track loaded into MPV successfully");
@@ -166,6 +189,18 @@ const doStuff = async () => {
 PlayState.onState(unloads, async () => {
     if (!mpvInitialized) return;
     await doStuff();
+    if (!isAutoNextInProgress) {
+        const playQueue = PlayState.playQueue;
+        if (playQueue && playQueue.elements && playQueue.elements.length > 0) {
+            const currentIndex = playQueue.currentIndex || 0;
+            const currentElement = playQueue.elements[currentIndex];
+
+            if (currentElement && mpvCurrentTrackId != currentElement.mediaItemId) {
+                logger.log("Play queue changed, resyncing MPV");
+                await loadPlayQueueIntoMPV();
+            }
+        }
+    }
 });
 
 redux.intercept("playbackControls/SET_VOLUME", unloads, async ({ volume }) => {
@@ -183,13 +218,44 @@ MediaItem.onMediaTransition(unloads, async (media) => {
     try {
         if (media && media !== oldMedia) {
             logger.log(`Media transition: ${media.tidalItem?.title} by ${media.tidalItem?.artist?.name}`);
-            await new Promise(resolve => setTimeout(resolve, 200));
-            await loadPlayQueueIntoMPV();
+
+            if (isAutoNextInProgress) {
+                logger.log("updating next track only");
+
+                mpvCurrentTrackId = media.tidalItem?.id || null;
+
+                const playQueue = PlayState.playQueue;
+                if (playQueue && playQueue.elements) {
+                    const currentIndex = playQueue.currentIndex || 0;
+                    if (currentIndex + 1 < playQueue.elements.length) {
+                        const nextElement = playQueue.elements[currentIndex + 1];
+                        const nextUrl = `http://localhost:${port}/stream/${nextElement.mediaItemId}`;
+                        mpvNextTrackId = nextElement.mediaItemId;
+
+                        safeTimeout(unloads, async () => {
+                            try {
+                                await setPlayerQueueNext(nextUrl);
+                                logger.log("Next track updated in MPV queue after auto-next");
+                            } catch (err) {
+                                logger.warn(`Failed to update next track after auto-next: ${err}`);
+                            }
+                        }, 500);
+                    } else {
+                        mpvNextTrackId = null;
+                    }
+                }
+                isAutoNextInProgress = false;
+            } else {
+                await new Promise(resolve => setTimeout(resolve, 200));
+                await loadPlayQueueIntoMPV();
+            }
 
             oldMedia = media;
         } else if (!media && oldMedia) {
             logger.log("Media cleared, stopping MPV playback");
             await stopPlayer();
+            mpvCurrentTrackId = null;
+            mpvNextTrackId = null;
             oldMedia = null;
         }
     } catch (err) {
@@ -256,7 +322,6 @@ ipcRenderer.on(unloads, "renderer-player-current-time", (time) => {
 ipcRenderer.on(unloads, "renderer-player-state", async (state) => {
     yes(await getPlayerTime());
 })
-
 ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {
     yes(payload?.time);
 })
