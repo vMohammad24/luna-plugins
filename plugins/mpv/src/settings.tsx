@@ -8,12 +8,14 @@ export const settings = await ReactiveStore.getPluginStorage<{
     audioDevice?: string;
     audioExclusive?: boolean;
     gaplessAudio?: boolean;
+    crossfadeDuration?: number;
     customArgs?: string;
 }>("mpv", {
     mpvPath: undefined,
     audioDevice: "auto",
     audioExclusive: false,
     gaplessAudio: true,
+    crossfadeDuration: 0,
     customArgs: ""
 });
 
@@ -22,6 +24,7 @@ export const Settings = () => {
     const [audioDevice, setAudioDevice] = React.useState<string>(settings.audioDevice || "auto");
     const [audioExclusive, setAudioExclusive] = React.useState<boolean>(settings.audioExclusive || false);
     const [gaplessAudio, setGaplessAudio] = React.useState<boolean>(settings.gaplessAudio !== false);
+    const [crossfadeDuration, setCrossfadeDuration] = React.useState<number>(settings.crossfadeDuration || 0);
     const [customArgs, setCustomArgs] = React.useState<string>(settings.customArgs || "");
 
     const [audioDevices, setAudioDevices] = React.useState<AudioDevice[]>([]);
@@ -45,9 +48,10 @@ export const Settings = () => {
         settings.mpvPath = mpvPath;
 
         updateMpvNativeSettings({
-            mpvPath
+            mpvPath,
+            crossfadeDuration
         });
-    }, [mpvPath]);
+    }, [mpvPath, crossfadeDuration]);
 
     React.useEffect(() => {
         const properties: Record<string, any> = {};
@@ -82,13 +86,13 @@ export const Settings = () => {
         }
 
         Object.assign(settings, {
-            audioDevice, audioExclusive, gaplessAudio, customArgs
+            audioDevice, audioExclusive, gaplessAudio, crossfadeDuration, customArgs
         });
 
         if (Object.keys(properties).length > 0) {
             updatePlayerProperties(properties);
         }
-    }, [audioDevice, audioExclusive, gaplessAudio, customArgs]);
+    }, [audioDevice, audioExclusive, gaplessAudio, crossfadeDuration, customArgs]);
 
     return (
         <LunaSettings>
@@ -135,6 +139,19 @@ export const Settings = () => {
                     setGaplessAudio((settings.gaplessAudio = checked));
                 }}
             />
+
+            <LunaTextSetting
+                title="Crossfade Duration (seconds)"
+                value={crossfadeDuration.toString()}
+                placeholder="0"
+                onChange={(event) => {
+                    const value = parseFloat(event.target.value) || 0;
+                    setCrossfadeDuration((settings.crossfadeDuration = Math.max(0, Math.min(10, value))));
+                }}
+            />
+            <div style={{ fontSize: '12px', color: '#888', marginTop: '-8px', marginBottom: '16px' }}>
+                0 = disable, max = 10
+            </div>
 
             <LunaTextSetting
                 title="Advanced: Custom Arguments"

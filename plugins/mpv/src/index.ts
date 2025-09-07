@@ -224,6 +224,16 @@ const muteOrignalPlayer = () => {
     if (videoElem) (videoElem as HTMLVideoElement).muted = true;
 }
 
+const unmuteOrignalPlayer = () => {
+    __ipcRenderer.send("player.message", JSON.stringify({ "command": "media.volume", "volume": oldVolume || 50 }));
+    const videoElem = document.querySelector("video");
+    if (videoElem) (videoElem as HTMLVideoElement).muted = false;
+}
+
+unloads.add(() => {
+    unmuteOrignalPlayer();
+})
+
 
 safeInterval(unloads, () => {
     if (!mpvInitialized || !port) return;
