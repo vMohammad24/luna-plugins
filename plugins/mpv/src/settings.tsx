@@ -19,6 +19,49 @@ export const settings = await ReactiveStore.getPluginStorage<{
     customArgs: ""
 });
 
+export const applyMpvSettings = () => {
+    const currentSettings = settings;
+    updateMpvNativeSettings({
+        mpvPath: currentSettings.mpvPath,
+        crossfadeDuration: currentSettings.crossfadeDuration || 0
+    });
+
+    const properties: Record<string, any> = {};
+
+    if (currentSettings.audioDevice && currentSettings.audioDevice !== "auto") {
+        properties['audio-device'] = currentSettings.audioDevice;
+    }
+
+    if (currentSettings.audioExclusive) {
+        properties['audio-exclusive'] = 'yes';
+    } else {
+        properties['audio-exclusive'] = 'no';
+    }
+
+    if (currentSettings.gaplessAudio !== false) {
+        properties['gapless-audio'] = 'yes';
+    } else {
+        properties['gapless-audio'] = 'no';
+    }
+
+    if (currentSettings.customArgs && currentSettings.customArgs.trim()) {
+        const customArgsArray = currentSettings.customArgs.trim().split(/\s+/).filter(arg => arg.length > 0);
+        for (const arg of customArgsArray) {
+            if (arg.startsWith('--')) {
+                const match = arg.match(/^--([^=]+)(?:=(.*))?$/);
+                if (match) {
+                    const [, key, value] = match;
+                    properties[key] = value || 'yes';
+                }
+            }
+        }
+    }
+
+    if (Object.keys(properties).length > 0) {
+        updatePlayerProperties(properties);
+    }
+};
+
 export const Settings = () => {
     const [mpvPath, setMpvPath] = React.useState<string | undefined>(settings.mpvPath);
     const [audioDevice, setAudioDevice] = React.useState<string>(settings.audioDevice || "auto");
@@ -45,54 +88,17 @@ export const Settings = () => {
     }, [mpvPath]);
 
     React.useEffect(() => {
-        settings.mpvPath = mpvPath;
-
-        updateMpvNativeSettings({
-            mpvPath,
-            crossfadeDuration
-        });
-    }, [mpvPath, crossfadeDuration]);
-
-    React.useEffect(() => {
-        const properties: Record<string, any> = {};
-
-        if (audioDevice && audioDevice !== "auto") {
-            properties['audio-device'] = audioDevice;
-        }
-
-        if (audioExclusive) {
-            properties['audio-exclusive'] = 'yes';
-        } else {
-            properties['audio-exclusive'] = 'no';
-        }
-
-        if (gaplessAudio) {
-            properties['gapless-audio'] = 'yes';
-        } else {
-            properties['gapless-audio'] = 'no';
-        }
-
-        if (customArgs.trim()) {
-            const customArgsArray = customArgs.trim().split(/\s+/).filter(arg => arg.length > 0);
-            for (const arg of customArgsArray) {
-                if (arg.startsWith('--')) {
-                    const match = arg.match(/^--([^=]+)(?:=(.*))?$/);
-                    if (match) {
-                        const [, key, value] = match;
-                        properties[key] = value || 'yes';
-                    }
-                }
-            }
-        }
-
         Object.assign(settings, {
-            audioDevice, audioExclusive, gaplessAudio, crossfadeDuration, customArgs
+            mpvPath,
+            audioDevice,
+            audioExclusive,
+            gaplessAudio,
+            crossfadeDuration,
+            customArgs
         });
 
-        if (Object.keys(properties).length > 0) {
-            updatePlayerProperties(properties);
-        }
-    }, [audioDevice, audioExclusive, gaplessAudio, crossfadeDuration, customArgs]);
+        applyMpvSettings();
+    }, [mpvPath, audioDevice, audioExclusive, gaplessAudio, crossfadeDuration, customArgs]);
 
     return (
         <LunaSettings>

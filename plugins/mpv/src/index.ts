@@ -12,9 +12,10 @@ import {
     stopPlayer,
     stopServer
 } from "./index.native";
+import { applyMpvSettings } from "./settings";
 export const { trace } = Tracer("[MPV]");
 export const unloads = new Set<LunaUnload>();
-export { Settings } from "./settings";
+export { applyMpvSettings, Settings, settings } from "./settings";
 
 let port = 0;
 let mpvInitialized = false;
@@ -34,6 +35,7 @@ startServer().then(async (p) => {
         muteOrignalPlayer();
         mpvInitialized = true;
         logger.log("MPV player initialized successfully");
+        applyMpvSettings();
     } catch (err) {
         logger.err(`Failed to initialize MPV player: ${err}`);
         mpvInitialized = true; // maybe? idk
