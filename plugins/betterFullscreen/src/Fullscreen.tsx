@@ -142,20 +142,28 @@ export const FullScreen = () => {
             );
 
             const lastFinishedWordIndex = activeWordIndex === -1
-                ? lyric.words.findIndex((w, i) => w.endTime > currentTime) - 1
+                ? lyric.words.findIndex((w) => w.endTime > currentTime) - 1
                 : -1;
 
-            return lyric.words.map((word, index) => {
-                const isActive = word.time <= currentTime && currentTime < word.endTime;
-                const isPrevious = activeWordIndex !== -1
-                    ? index < activeWordIndex
-                    : lastFinishedWordIndex !== -1 && index <= lastFinishedWordIndex;
+            const allFinished =
+                lyric.words.length > 0 &&
+                currentTime >= lyric.words[lyric.words.length - 1].endTime;
 
-                const className = isActive
-                    ? 'word-active'
-                    : isPrevious
-                        ? 'word word-previous'
-                        : 'word';
+            return lyric.words.map((word, index) => {
+                let className = 'word';
+                if (allFinished) {
+                    className = 'word word-previous';
+                } else {
+                    const isActive = word.time <= currentTime && currentTime < word.endTime;
+                    const isPrevious = activeWordIndex !== -1
+                        ? index < activeWordIndex
+                        : lastFinishedWordIndex !== -1 && index <= lastFinishedWordIndex;
+                    if (isActive) {
+                        className = 'word-active';
+                    } else if (isPrevious) {
+                        className = 'word word-previous';
+                    }
+                }
                 return (
                     <span key={index} className={className}>
                         {word.word}
