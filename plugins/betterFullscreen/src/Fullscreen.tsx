@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { settings } from './settings';
 import { EnhancedSyncedLyric } from './types';
-import { getLyrics } from './util';
+import { getDominantColor, getLyrics } from './util';
 
 export const FullScreen = () => {
     const snapshot = useSyncExternalStore(settings.subscribe, settings.getSnapshot);
@@ -12,6 +12,7 @@ export const FullScreen = () => {
     const [lyrics, setLyrics] = useState<EnhancedSyncedLyric[]>([]);
     const [loading, setLoading] = useState(false);
     const [albumArt, setAlbumArt] = useState<string>('');
+    const [dominantColor, setDominantColor] = useState<string | null>(null);
     const bgVideoRef = useRef<HTMLVideoElement | null>(null);
     const artVideoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -47,6 +48,29 @@ export const FullScreen = () => {
             };
         }
     }, [coverUrl, catJam]);
+
+    useEffect(() => {
+        if (vibrantColor === "#FFFFFF" && !snapshot.customVibrantColor && albumArt && (!catJam || catJam === "None")) {
+            let isCancelled = false;
+            getDominantColor(albumArt)
+                .then(color => {
+                    if (!isCancelled) {
+                        setDominantColor(color);
+                    }
+                })
+                .catch(() => {
+                    if (!isCancelled) {
+                        setDominantColor("#FFFFF1");
+                    }
+                });
+
+            return () => {
+                isCancelled = true;
+            };
+        } else {
+            setDominantColor(null);
+        }
+    }, [vibrantColor, snapshot.customVibrantColor, albumArt, catJam]);
 
     useEffect(() => {
         if (!catJam || catJam === "None") return;
@@ -186,8 +210,9 @@ export const FullScreen = () => {
         return lyrics.slice(currentLyric.index + 2, currentLyric.index + 5);
     }, [currentLyric, lyrics]);
 
-    const effectiveVibrantColor = snapshot.customVibrantColor || vibrantColor;
+    const effectiveVibrantColor = snapshot.customVibrantColor || dominantColor || vibrantColor;
     const effectiveCurrentLyricColor = snapshot.currentLyricColor || effectiveVibrantColor;
+
     return (
         <div className="betterFullscreen-player" style={{
             '--vibrant-color': effectiveVibrantColor,
