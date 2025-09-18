@@ -1,15 +1,27 @@
 import { LunaUnload, Tracer } from "@luna/core";
-import { MediaItem, PlayState, ipcRenderer, redux } from "@luna/lib";
+import { MediaItem, PlayState, ipcRenderer, redux, safeInterval } from "@luna/lib";
 import { startServer, stopServer, updateFields } from "./index.native";
+import { settings } from "./Settings";
 export const { trace } = Tracer("[API]");
 export const unloads = new Set<LunaUnload>();
+export { Settings } from "./Settings";
 
-
-startServer(24123)
+startServer(settings.port || 24123)
 
 unloads.add(() => {
     stopServer();
 });
+
+let oldPort = settings.port;
+safeInterval(unloads, () => {
+    if (settings.port !== oldPort) {
+        oldPort = settings.port;
+        stopServer().then(() => {
+            startServer(settings.port || 24123);
+            trace.msg.log("Restarted server on port", settings.port);
+        })
+    }
+}, 5000);
 
 
 const updateMediaFields = async (item: MediaItem) => {
@@ -61,7 +73,9 @@ unloads.add(() => {
 let currentTime = 0;
 let previousTime = -1;
 let lastUpdated = Date.now();
+let mpvTime = 0;
 const getCurrentPlaybackTime = (): number => {
+    if (window.mpvEnabled()) return mpvTime;
     const audioElement = document.querySelector('audio') as HTMLAudioElement;
     if (audioElement && audioElement.currentTime) {
         currentTime = audioElement.currentTime;
@@ -160,3 +174,8 @@ ipcRenderer.on(unloads, "api.playback.control", async (data) => {
     }
     updateStateFields();
 });
+
+
+ipcRenderer.on(unloads, "api.mpv.time", (time) => {
+    mpvTime = time;
+})
