@@ -398,21 +398,8 @@
 }
 
 .word {
-  transition: color calc(0.3s / var(--animation-speed, 1))
-      cubic-bezier(0.175, 0.885, 0.32, 1.275),
-    text-shadow calc(0.3s / var(--animation-speed, 1))
-      cubic-bezier(0.175, 0.885, 0.32, 1.275),
-    transform calc(0.25s / var(--animation-speed, 1))
-      cubic-bezier(0.175, 0.885, 0.32, 1.275),
-    opacity calc(0.2s / var(--animation-speed, 1)) ease;
   color: inherit;
   will-change: transform, opacity;
-}
-
-.word:hover {
-  transform: translateY(-2px) scale(1.02);
-  opacity: 0.9;
-  transition-duration: 0.15s;
 }
 
 .word-previous {
