@@ -66,6 +66,14 @@ MediaItem.fromPlaybackContext().then(async (media) => {
 })
 
 
+window.mpvEnabled = () => { try { return mpvInitialized && port !== 0 } catch { return false } };
+
+
+declare global {
+    interface Window {
+        mpvEnabled: () => boolean;
+    }
+}
 
 
 unloads.add(async () => {
@@ -78,6 +86,8 @@ unloads.add(async () => {
         }
     }
     stopServer();
+    mpvInitialized = false;
+    port = 0;
 });
 
 let oldPlayingState: boolean = false;
@@ -283,17 +293,17 @@ observe(unloads, "video", (elem) => {
 })
 
 
-__ipcRenderer.on("player.message", (event, message: string) => {
+ipcRenderer.on(unloads, "player.message", (event, message: string) => {
     muteOrignalPlayer();
 })
 const muteOrignalPlayer = () => {
-    __ipcRenderer.send("player.message", JSON.stringify({ "command": "media.volume", "volume": 0 }));
+    ipcRenderer.send("player.message", JSON.stringify({ "command": "media.volume", "volume": 0 }));
     const videoElem = document.querySelector("video");
     if (videoElem) (videoElem as HTMLVideoElement).muted = true;
 }
 
 const unmuteOrignalPlayer = () => {
-    __ipcRenderer.send("player.message", JSON.stringify({ "command": "media.volume", "volume": oldVolume || 50 }));
+    ipcRenderer.send("player.message", JSON.stringify({ "command": "media.volume", "volume": oldVolume || 50 }));
     const videoElem = document.querySelector("video");
     if (videoElem) (videoElem as HTMLVideoElement).muted = false;
 }
@@ -318,10 +328,10 @@ const yes = (time?: number) => {
     if (time) ipcRenderer.send("client.playback.playersignal", { signal: 'media.currenttime', time, url: 'https://lgf.audio.tidal.com/mediatracks/yes' })
     ipcRenderer.send("client.playback.playersignal", { signal: 'media.state', state: 'active', url: 'https://lgf.audio.tidal.com/mediatracks/yes' });
 }
-ipcRenderer.on(unloads, "renderer-player-current-time", (time) => {
+ipcRenderer.on(unloads, "api.mpv.time", (time) => {
     yes(time);
 })
-ipcRenderer.on(unloads, "renderer-player-state", async (state) => {
+ipcRenderer.on(unloads, "api.mpv.status", async () => {
     yes(await getPlayerTime());
 })
 ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {

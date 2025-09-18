@@ -11,7 +11,7 @@ export const settings = await ReactiveStore.getPluginStorage<{
     crossfadeDuration?: number;
     customArgs?: string;
 }>("mpv", {
-    mpvPath: undefined,
+    mpvPath: "",
     audioDevice: "auto",
     audioExclusive: false,
     gaplessAudio: true,

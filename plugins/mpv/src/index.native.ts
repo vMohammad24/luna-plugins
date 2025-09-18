@@ -60,7 +60,7 @@ function sendToRenderer(channel: string, data?: any) {
         return;
     }
     tidalWindow.webContents.removeAllListeners("client.playback.playersignal");
-    tidalWindow.webContents.send(channel, data);
+    tidalWindow.webContents.send(`api.mpv.${channel}`, data);
 }
 
 
@@ -232,7 +232,7 @@ const createMpv = async (data: {
             auto_restart: false,
             binary: binaryPath || nativeSettings.mpvPath || undefined,
             socket: socketPath,
-            time_update: 1,
+            time_update: 0.1,
             debug: true,
             verbose: true
         },
@@ -256,25 +256,26 @@ const createMpv = async (data: {
             }
 
             if (status.value !== 0) {
-                sendToRenderer('renderer-player-auto-next');
+                sendToRenderer('autonext');
             }
         }
+        sendToRenderer('status', status);
     });
 
     mpv.on('resumed', () => {
-        sendToRenderer('renderer-player-play');
+        sendToRenderer('resumed');
     });
 
     mpv.on('stopped', () => {
-        sendToRenderer('renderer-player-stop');
+        sendToRenderer('stopped');
     });
 
     mpv.on('paused', () => {
-        sendToRenderer('renderer-player-pause');
+        sendToRenderer('paused');
     });
 
     mpv.on('timeposition', (time: number) => {
-        sendToRenderer('renderer-player-current-time', time);
+        sendToRenderer('time', time);
     });
 
     return mpv;
@@ -621,7 +622,7 @@ async function updatePlayerProperties(properties: Record<string, any>): Promise<
             console.warn("MPV instance not available for property updates");
         }
     } catch (err: any) {
-        console.error(`Failed to update MPV properties: ${err}`);
+        console.error(`Failed to update MPV properties: ${typeof err === 'object' ? JSON.stringify(err, null, 2) : err}`);
     }
 }
 

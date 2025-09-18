@@ -1,5 +1,5 @@
 import { LunaUnload, Tracer } from "@luna/core";
-import { ipcRenderer, MediaItem, observe, PlayState, StyleTag } from "@luna/lib";
+import { ipcRenderer, MediaItem, observe, PlayState, safeInterval, safeTimeout, StyleTag } from "@luna/lib";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { FullScreen } from "./Fullscreen";
@@ -18,7 +18,7 @@ const loadCss = () => {
 const enterFullscreen = () => {
     loadCss();
     removeFullscreenButton();
-    setTimeout(() => {
+    safeTimeout(unloads, () => {
         const parent = document.querySelector(".is-fullscreen.is-now-playing");
         if (parent) {
             const fullscreenElement = parent.querySelector('[class^="_fullscreen_"]');
@@ -59,16 +59,20 @@ ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {
     }
 })
 
-const interval = setInterval(() => {
-    if (doesIPCWork) {
-        clearInterval(interval);
+ipcRenderer.on(unloads, "api.mpv.time", (time) => {
+    settings.currentTime = settings.currentTime = time;
+    console.log("mpv time", time, settings.currentTime);
+})
+
+const interval = safeInterval(unloads, () => {
+    if (doesIPCWork || window.mpvEnabled()) {
+        interval();
         return;
     }
     settings.currentTime = getCurrentPlaybackTime();
 }, 100);
 
 unloads.add(() => {
-    clearInterval(interval);
     styleTag.remove();
     unloads.clear();
 })
@@ -81,7 +85,9 @@ MediaItem.onMediaTransition(unloads, async (item) =>
 let currentTime = 0;
 let previousTime = -1;
 let lastUpdated = Date.now();
+let mpvTime = 0;
 const getCurrentPlaybackTime = (): number => {
+    if (window.mpvEnabled()) return mpvTime;
     const audioElement = document.querySelector('audio') as HTMLAudioElement;
     if (audioElement && audioElement.currentTime) {
         currentTime = audioElement.currentTime;
@@ -145,11 +151,11 @@ const addFullscreenButton = () => {
         }
         if (!enterFs()) {
             footer.click();
-            setTimeout(() => {
+            safeTimeout(unloads, () => {
                 if (!enterFs()) {
                     trace.msg.warn("Failed to enter fullscreen mode");
                 }
-            }, 100);
+            }, 50);
         }
 
     }
