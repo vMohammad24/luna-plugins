@@ -61,7 +61,6 @@ ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {
 
 ipcRenderer.on(unloads, "api.mpv.time", (time) => {
     settings.currentTime = settings.currentTime = time;
-    console.log("mpv time", time, settings.currentTime);
 })
 
 const interval = safeInterval(unloads, () => {
