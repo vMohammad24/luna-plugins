@@ -8,22 +8,19 @@ export const settings = await ReactiveStore.getPluginStorage<{
     audioDevice?: string;
     audioExclusive?: boolean;
     gaplessAudio?: boolean;
-    crossfadeDuration?: number;
     customArgs?: string;
 }>("mpv", {
     mpvPath: "",
     audioDevice: "auto",
     audioExclusive: false,
     gaplessAudio: true,
-    crossfadeDuration: 0,
     customArgs: ""
 });
 
 export const applyMpvSettings = () => {
     const currentSettings = settings;
     updateMpvNativeSettings({
-        mpvPath: currentSettings.mpvPath,
-        crossfadeDuration: currentSettings.crossfadeDuration || 0
+        mpvPath: currentSettings.mpvPath
     });
 
     const properties: Record<string, any> = {};
@@ -67,7 +64,6 @@ export const Settings = () => {
     const [audioDevice, setAudioDevice] = React.useState<string>(settings.audioDevice || "auto");
     const [audioExclusive, setAudioExclusive] = React.useState<boolean>(settings.audioExclusive || false);
     const [gaplessAudio, setGaplessAudio] = React.useState<boolean>(settings.gaplessAudio !== false);
-    const [crossfadeDuration, setCrossfadeDuration] = React.useState<number>(settings.crossfadeDuration || 0);
     const [customArgs, setCustomArgs] = React.useState<string>(settings.customArgs || "");
 
     const [audioDevices, setAudioDevices] = React.useState<AudioDevice[]>([]);
@@ -85,6 +81,12 @@ export const Settings = () => {
             setLoadingDevices(false);
         }
         loadAudioDevices();
+        applyMpvSettings();
+        setMpvPath(settings.mpvPath);
+        setAudioDevice(settings.audioDevice || "");
+        setAudioExclusive(settings.audioExclusive || false);
+        setGaplessAudio(settings.gaplessAudio !== false);
+        setCustomArgs(settings.customArgs || "");
     }, [mpvPath]);
 
     React.useEffect(() => {
@@ -93,12 +95,16 @@ export const Settings = () => {
             audioDevice,
             audioExclusive,
             gaplessAudio,
-            crossfadeDuration,
             customArgs
         });
 
         applyMpvSettings();
-    }, [mpvPath, audioDevice, audioExclusive, gaplessAudio, crossfadeDuration, customArgs]);
+        setMpvPath(settings.mpvPath);
+        setAudioDevice(settings.audioDevice || "");
+        setAudioExclusive(settings.audioExclusive || false);
+        setGaplessAudio(settings.gaplessAudio !== false);
+        setCustomArgs(settings.customArgs || "");
+    }, [mpvPath, audioDevice, audioExclusive, gaplessAudio, customArgs]);
 
     return (
         <LunaSettings>
@@ -146,18 +152,6 @@ export const Settings = () => {
                 }}
             />
 
-            <LunaTextSetting
-                title="Crossfade Duration (seconds)"
-                value={crossfadeDuration.toString()}
-                placeholder="0"
-                onChange={(event) => {
-                    const value = parseFloat(event.target.value) || 0;
-                    setCrossfadeDuration((settings.crossfadeDuration = Math.max(0, Math.min(10, value))));
-                }}
-            />
-            <div style={{ fontSize: '12px', color: '#888', marginTop: '-8px', marginBottom: '16px' }}>
-                0 = disable, max = 10
-            </div>
 
             <LunaTextSetting
                 title="Advanced: Custom Arguments"

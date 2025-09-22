@@ -55,7 +55,7 @@ MediaItem.fromPlaybackContext().then(async (media) => {
 
         if (mpvInitialized) {
             try {
-                safeTimeout(unloads, loadPlayQueueIntoMPV, 500);
+                safeTimeout(unloads, loadPlayQueueIntoMPV, 1500);
             } catch (err) {
                 logger.err(`Error loading initial media: ${err}`);
             }
@@ -134,9 +134,15 @@ async function loadPlayQueueIntoMPV() {
         logger.log(`Loading play queue into MPV: ${playQueue.elements.length} tracks, starting at index ${currentIndex}`);
 
         const currentUrl = `http://localhost:${port}/stream/${currentElement.mediaItemId}`;
-        await setPlayerQueue(currentUrl, undefined, !PlayState.playing);
+        try {
+            await setPlayerQueue(currentUrl, undefined, !PlayState.playing);
+            mpvCurrentTrackId = currentTrackId;
+        } catch (err) {
+            logger.err(`Failed to load track ${currentTrackId} into MPV: ${err}`);
+            mpvCurrentTrackId = null;
+            return;
+        }
 
-        mpvCurrentTrackId = currentTrackId;
         isAutoNextInProgress = false;
 
         if (currentIndex + 1 < playQueue.elements.length) {
@@ -163,6 +169,8 @@ async function loadPlayQueueIntoMPV() {
 }
 
 const doStuff = async () => {
+    if (!mpvInitialized || !port) return;
+
     muteOrignalPlayer();
     try {
         const currentPlaying = PlayState.playing;
@@ -231,31 +239,29 @@ MediaItem.onMediaTransition(unloads, async (media) => {
             logger.log(`Media transition: ${media.tidalItem?.title} by ${media.tidalItem?.artist?.name}`);
 
             if (isAutoNextInProgress) {
-                logger.log("updating next track only");
-
+                logger.log("Media transition during auto-next, updating tracking variables only");
                 mpvCurrentTrackId = media.tidalItem?.id || null;
-
                 const playQueue = PlayState.playQueue;
                 if (playQueue && playQueue.elements) {
                     const currentIndex = playQueue.currentIndex || 0;
                     if (currentIndex + 1 < playQueue.elements.length) {
                         const nextElement = playQueue.elements[currentIndex + 1];
-                        const nextUrl = `http://localhost:${port}/stream/${nextElement.mediaItemId}`;
                         mpvNextTrackId = nextElement.mediaItemId;
 
+                        const nextUrl = `http://localhost:${port}/stream/${nextElement.mediaItemId}`;
                         safeTimeout(unloads, async () => {
                             try {
                                 await setPlayerQueueNext(nextUrl);
-                                logger.log("Next track updated in MPV queue after auto-next");
+                                logger.log("Next track updated in MPV queue after media transition");
                             } catch (err) {
-                                logger.warn(`Failed to update next track after auto-next: ${err}`);
+                                logger.warn(`Failed to update next track after media transition: ${err}`);
                             }
                         }, 500);
                     } else {
                         mpvNextTrackId = null;
                     }
                 }
-                isAutoNextInProgress = false;
+                logger.log("Auto-next media transition handling completed");
             } else {
                 await new Promise(resolve => setTimeout(resolve, 200));
                 await loadPlayQueueIntoMPV();
@@ -332,7 +338,76 @@ ipcRenderer.on(unloads, "api.mpv.time", (time) => {
     yes(time);
 })
 ipcRenderer.on(unloads, "api.mpv.status", async () => {
-    yes(await getPlayerTime());
+    if (mpvInitialized && port) {
+        try {
+            const time = await getPlayerTime();
+            yes(time);
+        } catch (err) {
+            logger.warn(`Failed to get player time for status: ${err}`);
+            yes(0);
+        }
+    } else {
+        yes(0);
+    }
+})
+ipcRenderer.on(unloads, "api.mpv.autonext", async () => {
+    if (!mpvInitialized || !port) return;
+
+    logger.log("syncing player state");
+    isAutoNextInProgress = true;
+
+    try {
+        const playQueue = PlayState.playQueue;
+        if (!playQueue || !playQueue.elements || playQueue.elements.length === 0) {
+            logger.warn("No play queue available");
+            isAutoNextInProgress = false;
+            return;
+        }
+
+        const currentIndex = playQueue.currentIndex || 0;
+        const nextIndex = currentIndex + 1;
+
+        if (nextIndex >= playQueue.elements.length) {
+            logger.log("Reached end of queue");
+            isAutoNextInProgress = false;
+            return;
+        }
+
+        const nextElement = playQueue.elements[nextIndex];
+        logger.log(`Advancing Tidal queue to track ${nextElement.mediaItemId} (index ${nextIndex})`);
+
+        ipcRenderer.send("client.playback.playersignal", {
+            signal: 'media.next',
+            url: 'https://lgf.audio.tidal.com/mediatracks/trust'
+        });
+
+        mpvCurrentTrackId = nextElement.mediaItemId;
+
+        if (nextIndex + 1 < playQueue.elements.length) {
+            const followingElement = playQueue.elements[nextIndex + 1];
+            mpvNextTrackId = followingElement.mediaItemId;
+
+            setTimeout(async () => {
+                try {
+                    const nextUrl = `http://localhost:${port}/stream/${followingElement.mediaItemId}`;
+                    await setPlayerQueueNext(nextUrl);
+                    logger.log("Next track preloaded after auto-next");
+                } catch (err) {
+                    logger.warn(`Failed to preload next track after auto-next: ${err}`);
+                }
+            }, 500);
+        } else {
+            mpvNextTrackId = null;
+        }
+
+        logger.log("Tidal player state synced with MPV auto-next");
+    } catch (err) {
+        logger.err(`Error handling MPV auto-next: ${err}`);
+    } finally {
+        setTimeout(() => {
+            isAutoNextInProgress = false;
+        }, 1000);
+    }
 })
 ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {
     yes(payload?.time);
