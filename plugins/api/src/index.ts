@@ -1,5 +1,5 @@
-import { LunaUnload, Tracer } from "@luna/core";
-import { MediaItem, PlayState, ipcRenderer, redux, safeInterval } from "@luna/lib";
+import { LunaUnload, reduxStore, Tracer } from "@luna/core";
+import { ipcRenderer, MediaItem, PlayState, redux, safeInterval } from "@luna/lib";
 import { startServer, stopServer, updateFields } from "./index.native";
 import { settings } from "./Settings";
 export const { trace } = Tracer("[API]");
@@ -149,9 +149,17 @@ ipcRenderer.on(unloads, "api.playback.control", async (data) => {
             }
             break;
         case "volume":
-            if (typeof data.volume === "number") {
+            if (typeof data.volume === "string" && /^[-+]\d+$/.test(data.volume)) {
+                const volChange = Number.parseInt(data.volume, 10);
+                const currentVol = reduxStore.getState().playbackControls.volume || 0;
+                let newVol = currentVol + volChange;
+                newVol = Math.max(0, Math.min(100, newVol));
                 redux.actions["playbackControls/SET_VOLUME"]({
-                    volume: Number.parseInt(data.volume),
+                    volume: newVol,
+                });
+            } else if (typeof data.volume === "number" && data.volume >= 0 && data.volume <= 100) {
+                redux.actions["playbackControls/SET_VOLUME"]({
+                    volume: data.volume,
                 });
             }
             break;

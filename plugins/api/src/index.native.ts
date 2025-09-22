@@ -96,7 +96,7 @@ export const startServer = async (port: number) => {
                         }
                         break;
                     case "volume":
-                        if (typeof data.volume === "number") {
+                        if ((typeof data.volume === "string" && /^[-+]\d+$/.test(data.volume)) || (typeof data.volume === "number" && data.volume >= 0 && data.volume <= 100)) {
                             sendToRenderer("api.playback.control", { action: data.action, volume: data.volume });
                             ws.send(JSON.stringify({ type: "ok", action: data.action, volume: data.volume }));
                         } else {
