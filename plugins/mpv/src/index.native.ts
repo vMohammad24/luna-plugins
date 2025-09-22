@@ -111,7 +111,7 @@ async function handleStream(req: IncomingMessage, res: ServerResponse) {
         return;
     }
 
-    console.log(`Handling stream request for track ID: ${trackId}`);
+
 
     try {
         const tidalWindow = BrowserWindow.fromId(1);
@@ -159,7 +159,6 @@ async function handleStream(req: IncomingMessage, res: ServerResponse) {
             return;
         }
 
-        console.log(`Fetching stream for track: ${trackInfo.mediaItem.title} by ${trackInfo.mediaItem.artist?.name}`);
 
         res.setHeader("Content-Type", "audio/mpeg");
         res.setHeader("Cache-Control", "no-cache");
@@ -170,19 +169,11 @@ async function handleStream(req: IncomingMessage, res: ServerResponse) {
         res.writeHead(200, { "Content-Type": "audio/mpeg" });
 
         const stream = await fetchMediaItemStream(trackInfo.playbackInfo);
-        console.log(`Stream fetched for track ID: ${trackId}`);
         stream.pipe(res);
 
         res.on('error', (err) => {
             console.error("Error in stream response:", err);
         });
-        res.on('close', () => {
-            console.log("Stream closed");
-        });
-        res.on('finish', () => {
-            console.log("Stream finished");
-        });
-        console.log(`Stream started for track ID: ${trackId}`);
 
     } catch (error) {
         console.error(`Error handling stream for track ${trackId}:`, error);
@@ -215,8 +206,9 @@ const createMpv = async (data: {
     binaryPath?: string;
     extraParameters?: string[];
     properties?: Record<string, any>;
+    verbose?: boolean;
 }): Promise<MpvAPI> => {
-    const { binaryPath, extraParameters, properties } = data;
+    const { binaryPath, extraParameters, properties, verbose } = data;
 
     const settingsExtraParams = nativeSettings.extraParameters || [];
     const allExtraParams = [...settingsExtraParams, ...(extraParameters || [])];
@@ -233,8 +225,8 @@ const createMpv = async (data: {
             binary: binaryPath || nativeSettings.mpvPath || undefined,
             socket: socketPath,
             time_update: 0.1,
-            debug: true,
-            verbose: true
+            debug: verbose || false,
+            verbose: verbose || false,
         },
         params,
     );
@@ -339,7 +331,7 @@ async function restartPlayer(data: { extraParameters?: string[]; properties?: Re
     }
 }
 
-async function initializePlayer(data: { extraParameters?: string[]; properties?: Record<string, any> }): Promise<void> {
+async function initializePlayer(data: { extraParameters?: string[]; properties?: Record<string, any>, verbose?: boolean }): Promise<void> {
     try {
         mpvLog({
             action: `Attempting to initialize mpv with parameters: ${JSON.stringify(data)}`,

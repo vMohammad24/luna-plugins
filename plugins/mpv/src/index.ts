@@ -19,7 +19,7 @@ export { applyMpvSettings, Settings, settings } from "./settings";
 
 let port = 0;
 let mpvInitialized = false;
-const verbose = true;
+const verbose = false;
 const logger = {
     log: (message: string) => verbose ? trace.log(message) : null,
     warn: (message: string) => verbose ? trace.msg.warn(message) : trace.warn(message),
@@ -31,7 +31,7 @@ startServer().then(async (p) => {
     logger.log(`MPV server started on port ${port}`);
 
     try {
-        await initializePlayer({});
+        await initializePlayer({ verbose });
         muteOrignalPlayer();
         mpvInitialized = true;
         logger.log("MPV player initialized successfully");
@@ -216,7 +216,6 @@ PlayState.onState(unloads, async () => {
 });
 
 redux.intercept("playbackControls/SET_VOLUME", unloads, async ({ volume }) => {
-    console.log(`Intercepted volume change to ${volume}`);
     if (!mpvInitialized || !port) return;
     try {
         await setPlayerVolume(volume);
@@ -316,7 +315,8 @@ unloads.add(() => {
 safeInterval(unloads, () => {
     if (!mpvInitialized || !port) return;
     muteOrignalPlayer();
-}, 5000)
+    doStuff();
+}, 1000);
 
 
 redux.intercept("player/ERROR", unloads, ({ errorCode }: any) => {
