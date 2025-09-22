@@ -535,10 +535,9 @@ async function autoNextPlayer(url?: string): Promise<void> {
 
 async function setPlayerVolume(value: number): Promise<void> {
     try {
-        if (!value || value < 0 || value > 100) {
+        if (Number.isNaN(value) || value < 0 || value > 100) {
             return;
         }
-
         await getMpvInstance()?.volume(value);
     } catch (err: any | NodeMpvError) {
         mpvLog({ action: `Failed to set volume to ${value}` }, err);
