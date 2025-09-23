@@ -17,12 +17,14 @@ type MPVNativeSettings = {
     mpvPath?: string;
     extraParameters?: string[];
     properties?: Record<string, any>;
+    crossfadeDuration?: number;
 };
 
 let nativeSettings: MPVNativeSettings = {
     mpvPath: undefined,
     extraParameters: undefined,
     properties: undefined,
+    crossfadeDuration: 0,
 };
 
 function updateMpvNativeSettings(partial: Partial<MPVNativeSettings>) {
@@ -187,17 +189,7 @@ const prefetchPlaylistParams = [
 ];
 
 const DEFAULT_MPV_PARAMETERS = (extraParameters?: string[]) => {
-    const parameters = [
-        '--idle=yes',
-        '--no-config',
-        '--load-scripts=no',
-        '--no-input-media-keys',
-        '--no-input-default-bindings',
-        '--script-opts=osc-visibility=no',
-        '--no-input-terminal',
-        '--title="MPV (ignore)"',
-        '--force-media-title="MPV (ignore)"'
-    ];
+    const parameters = ['--idle=yes', '--no-config', '--load-scripts=no'];
 
     if (!extraParameters?.some((param) => prefetchPlaylistParams.includes(param))) {
         parameters.push('--prefetch-playlist=yes');
@@ -238,7 +230,6 @@ const createMpv = async (data: {
         },
         params,
     );
-
 
     try {
         await mpv.start();
@@ -430,7 +421,11 @@ async function seekPlayerTo(time: number): Promise<void> {
 }
 
 async function setPlayerQueue(current?: string, next?: string, pause?: boolean): Promise<void> {
-    console.log('Setting player queue:', { current, next, pause });
+    const crossfadeDuration = nativeSettings.crossfadeDuration || 0;
+    return setPlayerQueueWithCrossfade(current, next, pause, crossfadeDuration);
+}
+
+async function setPlayerQueueWithCrossfade(current?: string, next?: string, pause?: boolean, crossfadeDuration?: number): Promise<void> {
     if (!current && !next) {
         try {
             await getMpvInstance()?.clearPlaylist();
@@ -443,18 +438,37 @@ async function setPlayerQueue(current?: string, next?: string, pause?: boolean):
 
     try {
         if (current) {
-            try {
-                await getMpvInstance()?.load(current, 'replace');
-            } catch (error: any | NodeMpvError) {
-                mpvLog({ action: `Failed to load current song` }, error);
-                throw error;
-            }
+            if (next && crossfadeDuration && crossfadeDuration > 0) {
+                try {
+                    const lavfiComplex = `[aid1][aid2]acrossfade=d=${crossfadeDuration}[ao]`;
+                    await getMpvInstance()?.setProperty('lavfi-complex', lavfiComplex);
 
-            if (next) {
-                await getMpvInstance()?.load(next, 'append');
+                    await getMpvInstance()?.load(current, 'replace');
+
+                    await getMpvInstance()?.setProperty('external-files', [next]);
+
+                    mpvLog({ action: `Crossfade enabled with ${crossfadeDuration}s duration` });
+                } catch (crossfadeErr: any | NodeMpvError) {
+                    mpvLog({ action: `Failed to setup crossfade, falling back to normal playback` }, crossfadeErr);
+                    await getMpvInstance()?.setProperty('lavfi-complex', '');
+                    await getMpvInstance()?.load(current, 'replace');
+                    if (next) {
+                        await getMpvInstance()?.load(next, 'append');
+                    }
+                }
+            } else {
+                await getMpvInstance()?.setProperty('lavfi-complex', '');
+                try {
+                    await getMpvInstance()?.load(current, 'replace');
+                } catch (error: any | NodeMpvError) {
+                    mpvLog({ action: `Failed to load current song` }, error);
+                    await getMpvInstance()?.play();
+                }
+
+                if (next) {
+                    await getMpvInstance()?.load(next, 'append');
+                }
             }
-        } else {
-            console.log('No current track provided, only loading next if available');
         }
 
         if (pause) {
@@ -466,7 +480,6 @@ async function setPlayerQueue(current?: string, next?: string, pause?: boolean):
         mpvLog({ action: `Failed to set play queue` }, err);
     }
 }
-
 
 async function setPlayerQueueNext(url?: string): Promise<void> {
     try {
@@ -481,6 +494,10 @@ async function setPlayerQueueNext(url?: string): Promise<void> {
         }
 
         if (url) {
+            const crossfadeDuration = nativeSettings.crossfadeDuration || 0;
+            if (crossfadeDuration > 0) {
+                await getMpvInstance()?.setProperty('lavfi-complex', '');
+            }
             await getMpvInstance()?.load(url, 'append');
         }
     } catch (err: any | NodeMpvError) {
@@ -497,6 +514,10 @@ async function autoNextPlayer(url?: string): Promise<void> {
             });
 
         if (url) {
+            const crossfadeDuration = nativeSettings.crossfadeDuration || 0;
+            if (crossfadeDuration > 0) {
+                await getMpvInstance()?.setProperty('lavfi-complex', '');
+            }
             await getMpvInstance()?.load(url, 'append');
         }
     } catch (err: any | NodeMpvError) {
@@ -525,20 +546,9 @@ async function mutePlayer(mute: boolean): Promise<void> {
 
 async function getPlayerTime(): Promise<number | undefined> {
     try {
-        const instance = getMpvInstance();
-        if (!instance || !instance.isRunning()) {
-            return 0;
-        }
-        const playlistSize = await instance.getPlaylistSize().catch(() => 0);
-        if (!playlistSize || playlistSize === 0) {
-            return 0;
-        }
-
-        return await instance.getTimePosition();
+        return getMpvInstance()?.getTimePosition();
     } catch (err: any | NodeMpvError) {
-        if (err?.errcode !== 3) {
-            mpvLog({ action: `Failed to get current time` }, err);
-        }
+        mpvLog({ action: `Failed to get current time` }, err);
         return 0;
     }
 }
@@ -645,7 +655,7 @@ async function getAvailableAudioDevices(mpvPath?: string): Promise<AudioDevice[]
 
 export {
     autoNextPlayer, cleanUpPlayer, getAvailableAudioDevices, getMpvInstance, getPlayerTime, initializePlayer, isPlayerRunning, mutePlayer, nextTrack, pausePlayer, playPlayer, previousTrack, quitPlayer, restartPlayer, seekPlayer,
-    seekPlayerTo, setPlayerProperties, setPlayerQueue, setPlayerQueueNext, setPlayerVolume, startServer, stopPlayer, stopServer, updateMpvNativeSettings, updatePlayerProperties
+    seekPlayerTo, setPlayerProperties, setPlayerQueue, setPlayerQueueNext, setPlayerQueueWithCrossfade, setPlayerVolume, startServer, stopPlayer, stopServer, updateMpvNativeSettings, updatePlayerProperties
 };
 
 export type { AudioDevice };
