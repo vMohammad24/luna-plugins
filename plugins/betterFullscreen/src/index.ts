@@ -4,6 +4,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { FullScreen } from "./Fullscreen";
 import { settings } from "./settings";
+import { getLyrics } from "./util";
 export { Settings } from "./settings";
 
 export const { trace } = Tracer("[BetterFullscreen]");
@@ -80,6 +81,9 @@ MediaItem.fromPlaybackContext().then((item) => settings.mediaItem = item || null
 MediaItem.onMediaTransition(unloads, async (item) =>
     settings.mediaItem = item
 );
+MediaItem.onPreload(unloads, (item) => {
+    getLyrics(item.id as number)
+})
 
 let currentTime = 0;
 let previousTime = -1;
