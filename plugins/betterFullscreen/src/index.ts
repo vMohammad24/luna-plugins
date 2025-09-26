@@ -65,7 +65,7 @@ ipcRenderer.on(unloads, "api.mpv.time", (time) => {
 })
 
 const interval = safeInterval(unloads, () => {
-    if (doesIPCWork || window.mpvEnabled()) {
+    if (doesIPCWork || ('mpvEnabled' in window && window.mpvEnabled())) {
         interval();
         return;
     }
@@ -90,7 +90,7 @@ let previousTime = -1;
 let lastUpdated = Date.now();
 let mpvTime = 0;
 const getCurrentPlaybackTime = (): number => {
-    if (window.mpvEnabled()) return mpvTime;
+    if ('mpvEnabled' in window && window.mpvEnabled()) return mpvTime;
     const audioElement = document.querySelector('audio') as HTMLAudioElement;
     if (audioElement && audioElement.currentTime) {
         currentTime = audioElement.currentTime;
