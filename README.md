@@ -5,8 +5,8 @@ A collection of plugins for **[Tidal Luna](https://github.com/Inrixia/TidaLuna)*
 ## Plugins
 
 ### @vmohammad/betterFullscreen
-Provides a better fullscreen experience for Tidal with better lyrics and a better UI.
 
+Provides a better fullscreen experience for Tidal with better lyrics and a better UI.
 
 ### @vmohammad/api
 
@@ -23,7 +23,12 @@ Uses [lrclib](https://lrclib.net) to fetch lyrics when Tidal (Musixmatch) fails 
 Uses [Google Translate](https://translate.google.com/) to translate lyrics into your preferred language.
 
 ### @vmohammad/noTrack
+
 Disables Tidal's tracking features, such as Sentry and event-batch requests to enhance user privacy.
+
+### @vmohammad/mpv
+
+Integrates [mpv](https://mpv.io/) as an external player for Tidal, allowing for enhanced audio playback options including audio exclusivity on Linux.
 
 ## Usage
 
