@@ -154,6 +154,9 @@ export const stopServer = async () => {
 
 function notifyWebSocketClients(field: string, value: any) {
     if (!wss) return;
+    const previousValue = fields[field];
+    if (previousValue === value) return;
+
     for (const [ws, sub] of wsSubscriptions.entries()) {
         if (ws.readyState !== ws.OPEN) continue;
         if (sub.all) {
@@ -166,8 +169,8 @@ function notifyWebSocketClients(field: string, value: any) {
 
 const updateField = (field: string, value: any) => {
     if (server) {
-        fields[field] = value;
         notifyWebSocketClients(field, value);
+        fields[field] = value;
     } else {
         console.warn(`Couldn't update field "${field}" to "${value}" because the server is not running.`);
     }
