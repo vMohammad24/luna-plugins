@@ -30,6 +30,10 @@ Disables Tidal's tracking features, such as Sentry and event-batch requests to e
 
 Integrates [mpv](https://mpv.io/) as an external player for Tidal, allowing for enhanced audio playback options including audio exclusivity on Linux.
 
+### @vmohammad/quickExclusiveMode
+
+Adds a button to quickly toggle audio exclusive mode on and off (works with both Tidal's player and mpv).
+
 ## Usage
 
 1. Install Tidal Luna
