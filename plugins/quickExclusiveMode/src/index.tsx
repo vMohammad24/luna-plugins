@@ -42,7 +42,7 @@ function updateIcon() {
     button.setAttribute('title', exclusiveMode ? 'Disable Exclusive Mode' : 'Enable Exclusive Mode');
     button.setAttribute('aria-label', exclusiveMode ? 'Disable Exclusive Mode' : 'Enable Exclusive Mode');
     const root = createRoot(button);
-    root.render(exclusiveMode ? <HeadsetOffIcon /> : <HeadsetIcon />);
+    root.render(exclusiveMode ? <HeadsetIcon /> : <HeadsetOffIcon />);
 }
 function onClick() {
     exclusiveMode = !exclusiveMode;
