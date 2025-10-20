@@ -1,3 +1,7 @@
 {
-	"extends": "luna/tsconfig.json"
+	"extends": "luna/tsconfig.json",
+	"compilerOptions": {
+		"ignoreDeprecations": "6.0",
+		"types": ["node"]
+	}
 }
