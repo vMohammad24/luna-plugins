@@ -1,0 +1,11 @@
+{
+    "name": "@vmohammad/quickExclusiveMode",
+    "description": "Adds a button to the player bar to quickly toggle exclusive mode.",
+    "author": {
+        "name": "vMohammad",
+        "url": "https://vmohammad.dev",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/62218284?v=4"
+    },
+    "main": "./src/index.tsx",
+    "type": "module"
+}

@@ -12,6 +12,7 @@
 		"@emotion/react": "^11.14.0",
 		"@emotion/styled": "^11.14.1",
 		"@inrixia/helpers": "^3.20.3",
+		"@mui/icons-material": "^7.3.4",
 		"@mui/material": "^7.2.0",
 		"@types/node": "^22.15.29",
 		"@types/react": "^19.1.6",
