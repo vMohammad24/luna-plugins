@@ -1,20 +1,22 @@
 import { LunaUnload, reduxStore, Tracer } from "@luna/core";
-import { observe, redux, safeInterval } from "@luna/lib";
+import { ipcRenderer, observe, redux, safeInterval } from "@luna/lib";
 import HeadsetIcon from '@mui/icons-material/Headset';
 import HeadsetOffIcon from '@mui/icons-material/HeadsetOff';
 import React from "react";
 import { createRoot } from "react-dom/client";
+import { registerGlobalKeybind, unregisterGlobalKeybind } from "./index.native";
+import { settings } from "./settings";
 
 export const { trace } = Tracer("[QuickExclusiveMode]");
 export const unloads = new Set<LunaUnload>();
-
+export { Settings } from "./settings";
 
 let exclusiveMode = await getOriginalMode();
 let supportsExclusiveMode = false;
 
 
 async function getOriginalMode() {
-    if ("mpvEnabled" in window && window.mpvEnabled()) {
+    if (window.mpvEnabled?.()) {
         return import("../../mpv/src").then(({ settings }) => {
             supportsExclusiveMode = true;
             return settings.audioExclusive || false;
@@ -44,10 +46,9 @@ function updateIcon() {
     const root = createRoot(button);
     root.render(exclusiveMode ? <HeadsetIcon /> : <HeadsetOffIcon />);
 }
-function onClick() {
+function toggleExclusiveMode() {
     exclusiveMode = !exclusiveMode;
     updateIcon();
-    // trace.msg.log("Toggled exclusive mode:", exclusiveMode ? "ON" : "OFF");
     if ("mpvEnabled" in window && window.mpvEnabled()) {
         import("../../mpv/src").then(({ settings, applyMpvSettings }) => {
             settings.audioExclusive = exclusiveMode;
@@ -68,7 +69,7 @@ observe(unloads, '[class*="_moreContainer_"]', (elem) => {
     button.setAttribute('data-test', 'exclusive');
     button.setAttribute('title', 'exclusive');
     button.setAttribute('role', 'button');
-    button.onclick = onClick;
+    button.onclick = toggleExclusiveMode;
     button.innerHTML = '';
     updateIcon();
     parent.appendChild(button);
@@ -83,3 +84,81 @@ safeInterval(unloads, () => {
         updateIcon();
     });
 }, 1000);
+
+
+ipcRenderer.on(unloads, "qem.toggle", () => {
+    toggleExclusiveMode();
+})
+
+let currentKeybindHandler: ((event: KeyboardEvent) => void) | null = null;
+
+function parseKeybind(keybind: string) {
+    const keys = keybind.split("+").map(k => k.trim().toLowerCase());
+    const modifiers = {
+        ctrl: keys.includes("ctrl"),
+        shift: keys.includes("shift"),
+        alt: keys.includes("alt"),
+        meta: keys.includes("meta")
+    };
+    const nonModifierKeys = keys.filter(k => !["ctrl", "shift", "alt", "meta"].includes(k));
+    return { modifiers, nonModifierKeys };
+}
+
+function matchesKeybind(event: KeyboardEvent, keybind: string): boolean {
+    const { modifiers, nonModifierKeys } = parseKeybind(keybind);
+    if (modifiers.ctrl !== event.ctrlKey) return false;
+    if (modifiers.shift !== event.shiftKey) return false;
+    if (modifiers.alt !== event.altKey) return false;
+    if (modifiers.meta !== event.metaKey) return false;
+
+    const pressedKey = event.key === " " ? "space" : event.key.toLowerCase();
+
+    return nonModifierKeys.includes(pressedKey);
+}
+
+function registerKeybind(keybind: string | null, global = false) {
+    console.log("Registering keybind:", keybind, "global:", global);
+    if (currentKeybindHandler) {
+        window.removeEventListener("keydown", currentKeybindHandler);
+        currentKeybindHandler = null;
+    }
+
+    if (global && keybind) {
+        registerGlobalKeybind(keybind);
+        return;
+    }
+
+    unregisterGlobalKeybind();
+
+    if (keybind) {
+        currentKeybindHandler = (event: KeyboardEvent) => {
+            if (matchesKeybind(event, keybind)) {
+                event.preventDefault();
+                event.stopPropagation();
+                toggleExclusiveMode();
+            }
+        };
+        window.addEventListener("keydown", currentKeybindHandler);
+        unloads.add(() => {
+            if (currentKeybindHandler) {
+                window.removeEventListener("keydown", currentKeybindHandler);
+            }
+        });
+    }
+}
+
+let lastKeybind: string | null = null;
+let lastIsGlobal = false;
+
+safeInterval(unloads, () => {
+    const currentKeybind = settings.keybind;
+    const currentIsGlobal = settings.global ?? false;
+
+    if (currentKeybind !== lastKeybind || currentIsGlobal !== lastIsGlobal) {
+        lastKeybind = currentKeybind;
+        lastIsGlobal = currentIsGlobal;
+        registerKeybind(currentKeybind, currentIsGlobal);
+    }
+}, 1000);
+
+registerKeybind(settings.keybind, settings.global ?? false);
