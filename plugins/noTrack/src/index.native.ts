@@ -3,11 +3,13 @@ import { app, session } from 'electron';
 type NoTrackNativeSettings = {
     disableSentry: boolean;
     disableEventBatch: boolean;
+    disableDataDome: boolean;
 };
 
 let nativeSettings: NoTrackNativeSettings = {
     disableSentry: true,
     disableEventBatch: false,
+    disableDataDome: false,
 };
 
 export function updateNoTrackNativeSettings(partial: Partial<NoTrackNativeSettings>) {
@@ -15,7 +17,7 @@ export function updateNoTrackNativeSettings(partial: Partial<NoTrackNativeSettin
 }
 
 app.whenReady().then(() => {
-    const urls: string[] = ['*://*.sentry.io/*', 'https://desktop.tidal.com/api/event-batch'];
+    const urls: string[] = ['*://*.sentry.io/*', 'https://desktop.tidal.com/api/event-batch', "https://dd.tidal.com/*"];
     const filter = { urls };
 
     session.defaultSession.webRequest.onBeforeRequest(filter, (details, callback) => {
@@ -29,6 +31,15 @@ app.whenReady().then(() => {
         }
         if (details.url.includes('event-batch')) {
             if (nativeSettings.disableEventBatch) {
+                callback({ cancel: true });
+            } else {
+                callback({});
+            }
+            return;
+        }
+
+        if (details.url.includes('dd.tidal.com')) {
+            if (nativeSettings.disableDataDome) {
                 callback({ cancel: true });
             } else {
                 callback({});
