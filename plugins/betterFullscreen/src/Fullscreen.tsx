@@ -1,7 +1,65 @@
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { settings } from './settings';
-import { EnhancedSyncedLyric, SyncedWord } from './types';
-import { getDominantColor, getLyrics } from './util';
+import { Color, EnhancedSyncedLyric, SyncedCharacter, SyncedWord } from './types';
+import { getColors, getDominantColor, getLyrics } from './util';
+
+const Character = memo(({ char, index, status, totalChars, colors }: {
+    char: SyncedCharacter;
+    index: number;
+    status: 'active' | 'word-active' | 'previous' | 'upcoming';
+    totalChars: number;
+    colors: Color[];
+}) => {
+    const CHARS_PER_COLOR = 7;
+    const position = index / CHARS_PER_COLOR;
+
+    const colorIndex = Math.floor(position) % colors.length;
+    const nextColorIndex = (colorIndex + 1) % colors.length;
+
+    const color = colors[colorIndex];
+    const nextColor = colors[nextColorIndex];
+
+    const progress = position % 1;
+
+    const interpolateColor = (color1: string, color2: string, factor: number) => {
+        const hex1 = color1.replace('#', '');
+        const hex2 = color2.replace('#', '');
+
+        const r1 = parseInt(hex1.substring(0, 2), 16);
+        const g1 = parseInt(hex1.substring(2, 4), 16);
+        const b1 = parseInt(hex1.substring(4, 6), 16);
+
+        const r2 = parseInt(hex2.substring(0, 2), 16);
+        const g2 = parseInt(hex2.substring(2, 4), 16);
+        const b2 = parseInt(hex2.substring(4, 6), 16);
+
+        const r = Math.round(r1 + (r2 - r1) * factor);
+        const g = Math.round(g1 + (g2 - g1) * factor);
+        const b = Math.round(b1 + (b2 - b1) * factor);
+
+        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+    };
+
+    const interpolatedColor = interpolateColor(color.readableHex, nextColor.readableHex, progress);
+
+    const style: React.CSSProperties = {
+        color: status === 'active' || status === 'word-active' ? interpolatedColor : 'inherit',
+        ['--char-color' as any]: interpolatedColor
+    };
+
+    let className = 'char';
+    if (status === 'active') className += ' char-active';
+    else if (status === 'word-active') className += ' char-word-active';
+    else if (status === 'previous') className += ' char-previous';
+    else className += ' char-upcoming';
+
+    return (
+        <span className={className} style={style}>
+            {char.char}
+        </span>
+    );
+});
+Character.displayName = 'Character';
 
 const Word = memo(({ word, index, isActive, isPrevious, totalWords }: {
     word: SyncedWord;
@@ -80,6 +138,7 @@ export const FullScreen = memo(() => {
     const [loading, setLoading] = useState(false);
     const [albumArt, setAlbumArt] = useState<string>('');
     const [dominantColor, setDominantColor] = useState<string | null>(null);
+    const [gradientColors, setGradientColors] = useState<Color[]>([]);
     const bgVideoRef = useRef<HTMLVideoElement | null>(null);
     const artVideoRef = useRef<HTMLVideoElement | null>(null);
 
@@ -138,6 +197,29 @@ export const FullScreen = memo(() => {
             setDominantColor(null);
         }
     }, [vibrantColor, snapshot.customVibrantColor, albumArt, catJam]);
+
+    useEffect(() => {
+        if (syncLevel === 'Character' && albumArt && (!catJam || catJam === "None")) {
+            let isCancelled = false;
+            getColors(albumArt)
+                .then(colors => {
+                    if (!isCancelled && colors && colors.length > 0) {
+                        setGradientColors(colors);
+                    }
+                })
+                .catch(() => {
+                    if (!isCancelled) {
+                        setGradientColors([]);
+                    }
+                });
+
+            return () => {
+                isCancelled = true;
+            };
+        } else {
+            setGradientColors([]);
+        }
+    }, [syncLevel, albumArt, catJam]);
 
     useEffect(() => {
         if (!catJam || catJam === "None") return;
@@ -227,6 +309,114 @@ export const FullScreen = memo(() => {
     }, [lyrics, currentTime]);
 
     const getHighlightedContent = useCallback((lyric: EnhancedSyncedLyric) => {
+        if (syncLevel === 'Character' && lyric.words && gradientColors.length > 0) {
+            const allCharacters: (SyncedCharacter & { wordIndex: number })[] = [];
+            lyric.words.forEach((word, wordIdx) => {
+                let chars = word.characters;
+                if (!chars || chars.length === 0) {
+                    const duration = word.endTime - word.time;
+                    const charDuration = duration / word.word.length;
+                    chars = word.word.split('').map((c, i) => ({
+                        char: c,
+                        time: word.time + (i * charDuration),
+                        endTime: word.time + ((i + 1) * charDuration)
+                    }));
+                }
+
+                if (chars.length > 0) {
+                    const charsWithIndex = chars.map(c => ({ ...c, wordIndex: wordIdx }));
+                    allCharacters.push(...charsWithIndex);
+                    if (wordIdx < lyric.words.length - 1) {
+                        allCharacters.push({
+                            char: ' ',
+                            time: word.endTime,
+                            endTime: lyric.words[wordIdx + 1].time,
+                            wordIndex: wordIdx
+                        });
+                    }
+                }
+            });
+
+            if (allCharacters.length === 0) {
+                return lyric.text;
+            }
+
+            const activeWordIndex = lyric.words.findIndex(
+                w => w.time <= currentTime && currentTime < w.endTime
+            );
+
+            const activeCharIndex = allCharacters.findIndex(
+                c => c.time <= currentTime && currentTime < c.endTime
+            );
+
+            const charElements: React.ReactNode[] = [];
+            let currentWordChars: React.ReactNode[] = [];
+
+            allCharacters.forEach((char, index) => {
+                let status: 'active' | 'word-active' | 'previous' | 'upcoming' = 'upcoming';
+
+                if (activeWordIndex !== -1) {
+                    if (char.wordIndex < activeWordIndex) {
+                        status = 'previous';
+                    } else if (char.wordIndex > activeWordIndex) {
+                        status = 'upcoming';
+                    } else {
+
+                        if (index === activeCharIndex) {
+                            status = 'active';
+                        } else if (index < activeCharIndex) {
+                            status = 'word-active';
+                        } else {
+                            status = 'word-active';
+                        }
+                    }
+                } else {
+
+                    const lastFinishedWordIndex = lyric.words.findIndex((w) => w.endTime > currentTime) - 1;
+                    if (char.wordIndex <= lastFinishedWordIndex) {
+                        status = 'previous';
+                    } else {
+                        status = 'upcoming';
+                    }
+                }
+
+                const charComponent = (
+                    <Character
+                        key={index}
+                        char={char}
+                        index={index}
+                        status={status}
+                        totalChars={allCharacters.length}
+                        colors={gradientColors}
+                    />
+                );
+
+                if (char.char === ' ') {
+                    if (currentWordChars.length > 0) {
+                        charElements.push(
+                            <span key={`word-${index}`} style={{ whiteSpace: 'nowrap', display: 'inline-block' }}>
+                                {currentWordChars}
+                            </span>
+                        );
+                        currentWordChars = [];
+                    }
+                    charElements.push(charComponent);
+                } else {
+                    currentWordChars.push(charComponent);
+                }
+            });
+
+            if (currentWordChars.length > 0) {
+                charElements.push(
+                    <span key={`word-last`} style={{ whiteSpace: 'nowrap', display: 'inline-block' }}>
+                        {currentWordChars}
+                    </span>
+                );
+            }
+
+            return charElements;
+        }
+
         if (syncLevel === 'Word' && lyric.words) {
             const activeWordIndex = lyric.words.findIndex(
                 w => w.time <= currentTime && currentTime < w.endTime
@@ -259,7 +449,7 @@ export const FullScreen = memo(() => {
             });
         }
         return lyric.text;
-    }, [syncLevel, currentTime]);
+    }, [syncLevel, currentTime, gradientColors]);
 
     const currentLyric = useMemo(() => getCurrentLyric(), [getCurrentLyric]);
 

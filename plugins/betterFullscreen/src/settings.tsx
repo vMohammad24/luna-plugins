@@ -245,7 +245,7 @@ const syncLevelStore = await ReactiveStore.getPluginStorage(
 
 const listeners = new Set<() => void>();
 
-type SyncMode = "Line" | "Word";
+type SyncMode = "Line" | "Word" | "Character";
 type CatJam = "CatJam" | "CatRave" | "CatRave2" | "None";
 export type StyleTheme = "Modern" | "Minimal" | "Cinematic" | "Neon" | "Glass" | "Retro";
 
@@ -565,6 +565,9 @@ export const Settings = () => {
                 </LunaSelectItem>
                 <LunaSelectItem key="Word" value="Word">
                     Word
+                </LunaSelectItem>
+                <LunaSelectItem key="Character" value="Character">
+                    Character
                 </LunaSelectItem>
             </LunaSelectSetting>
 
