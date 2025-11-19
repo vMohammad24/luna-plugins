@@ -12,6 +12,7 @@ export const unloads = new Set<LunaUnload>();
 const styleTag = new StyleTag("BetterFullscreen", unloads);
 const buttonClassName = "betterFullscreen-fullscreen-button";
 const loadCss = () => {
+    // @ts-expect-error
     import("file://styles.css?minify").then(m => {
         styleTag.css = m.default;
     })
@@ -29,12 +30,14 @@ const enterFullscreen = () => {
                 fullscreenElement.parentNode?.replaceChild(fullscreenContainer, fullscreenElement);
                 const root = createRoot(fullscreenContainer);
                 root.render(React.createElement(FullScreen));
+                unloads.add(root.unmount.bind(root))
             }
         }
     }, 100)
 }
 let lastCheck = 0;
-observe(unloads, ".is-fullscreen.is-now-playing", () => {
+
+const doObserve = () => {
     const parent = document.querySelector(".is-fullscreen.is-now-playing");
     if (parent && Date.now() - lastCheck > 400) {
         const fullscreenElement = parent.querySelector('[class^="_fullscreen_"]');
@@ -49,7 +52,11 @@ observe(unloads, ".is-fullscreen.is-now-playing", () => {
             loadCss();
         }
     }
-});
+}
+observe(unloads, ".is-fullscreen.is-now-playing", doObserve);
+
+// if i dont put it in a timeout, it errors for some reason
+safeTimeout(unloads, doObserve);
 
 let doesIPCWork = false;
 ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {

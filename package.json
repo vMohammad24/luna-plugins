@@ -4,7 +4,7 @@
 	"type": "module",
 	"author": "vMohammad",
 	"scripts": {
-		"watch": "concurrently \"pnpm:build --watch\" pnpm:serve",
+		"watch": "concurrently \"watchexec -e ts,tsx,css -- pnpm build\" \"pnpm serve\"",
 		"build": "rimraf ./dist && tsx esbuild.config.ts",
 		"serve": "http-server ./dist -p 3000 -s --cors -c-1"
 	},
