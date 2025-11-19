@@ -1,11 +1,78 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { settings } from './settings';
-import { EnhancedSyncedLyric } from './types';
+import { EnhancedSyncedLyric, SyncedWord } from './types';
 import { getDominantColor, getLyrics } from './util';
 
-export const FullScreen = () => {
+const Word = memo(({ word, index, isActive, isPrevious, totalWords }: {
+    word: SyncedWord;
+    index: number;
+    isActive: boolean;
+    isPrevious: boolean;
+    totalWords: number;
+}) => {
+    const className = isActive ? 'word-active' : isPrevious ? 'word word-previous' : 'word';
+    return (
+        <span className={className}>
+            {word.word}
+            {index < totalWords - 1 ? ' ' : ''}
+        </span>
+    );
+});
+Word.displayName = 'Word';
+
+const LyricLine = memo(({
+    lyric,
+    type,
+    syncLevel,
+    currentTime,
+    getHighlightedContent,
+    nextLyricTime,
+    showProgress
+}: {
+    lyric: EnhancedSyncedLyric;
+    type: 'previous' | 'current' | 'next' | 'upcoming';
+    syncLevel: string;
+    currentTime: number;
+    getHighlightedContent: (lyric: EnhancedSyncedLyric) => React.ReactNode;
+    nextLyricTime?: number;
+    showProgress?: boolean;
+}) => {
+    const content = useMemo(() => {
+        if (type === 'current') {
+            return getHighlightedContent(lyric);
+        }
+        return lyric.text;
+    }, [lyric, type, getHighlightedContent]);
+
+    const progress = useMemo(() => {
+        if (type !== 'current' || !nextLyricTime) return 0;
+        const duration = nextLyricTime - lyric.time;
+        const elapsed = currentTime - lyric.time;
+        return Math.min(Math.max((elapsed / duration) * 100, 0), 100);
+    }, [type, lyric.time, currentTime, nextLyricTime]);
+
+
+    const shouldShowProgress = showProgress && type === 'current' && lyric.words && lyric.words.length > 0 && nextLyricTime;
+
+    return (
+        <div className={`betterFullscreen-lyric ${type}`}>
+            {content}
+            {shouldShowProgress && (
+                <div className="betterFullscreen-lyric-progress">
+                    <div
+                        className="betterFullscreen-lyric-progress-bar"
+                        style={{ width: `${progress}%` }}
+                    />
+                </div>
+            )}
+        </div>
+    );
+});
+LyricLine.displayName = 'LyricLine';
+
+export const FullScreen = memo(() => {
     const snapshot = useSyncExternalStore(settings.subscribe, settings.getSnapshot);
-    const { currentTime, mediaItem, syncLevel, catJam, playing } = snapshot;
+    const { currentTime, mediaItem, syncLevel, catJam, playing, styleTheme, showLyricProgress } = snapshot;
     const { coverUrl, tidalItem: { title, artists, album, artist, bpm } } = mediaItem!;
     const { releaseDate, vibrantColor } = album!;
 
@@ -174,32 +241,28 @@ export const FullScreen = () => {
                 currentTime >= lyric.words[lyric.words.length - 1].endTime;
 
             return lyric.words.map((word, index) => {
-                let className = 'word';
-                if (allFinished) {
-                    className = 'word word-previous';
-                } else {
-                    const isActive = word.time <= currentTime && currentTime < word.endTime;
-                    const isPrevious = activeWordIndex !== -1
-                        ? index < activeWordIndex
-                        : lastFinishedWordIndex !== -1 && index <= lastFinishedWordIndex;
-                    if (isActive) {
-                        className = 'word-active';
-                    } else if (isPrevious) {
-                        className = 'word word-previous';
-                    }
-                }
+                const isActive = !allFinished && (word.time <= currentTime && currentTime < word.endTime);
+                const isPrevious = allFinished || (activeWordIndex !== -1
+                    ? index < activeWordIndex
+                    : lastFinishedWordIndex !== -1 && index <= lastFinishedWordIndex);
+
                 return (
-                    <span key={index} className={className}>
-                        {word.word}
-                        {index < lyric.words.length - 1 ? ' ' : ''}
-                    </span>
+                    <Word
+                        key={index}
+                        word={word}
+                        index={index}
+                        isActive={isActive}
+                        isPrevious={isPrevious}
+                        totalWords={lyric.words.length}
+                    />
                 );
             });
         }
         return lyric.text;
     }, [syncLevel, currentTime]);
 
-    const currentLyric = getCurrentLyric();
+    const currentLyric = useMemo(() => getCurrentLyric(), [getCurrentLyric]);
+
     const releaseYear = useMemo(() =>
         releaseDate ? new Date(releaseDate).getFullYear() : '',
         [releaseDate]
@@ -210,11 +273,16 @@ export const FullScreen = () => {
         return lyrics.slice(currentLyric.index + 2, currentLyric.index + 5);
     }, [currentLyric, lyrics]);
 
+    const artistNames = useMemo(() =>
+        artists?.map(a => a.name).join(', ') || artist?.name || '',
+        [artists, artist]
+    );
+
     const effectiveVibrantColor = snapshot.customVibrantColor || dominantColor || vibrantColor;
     const effectiveCurrentLyricColor = snapshot.currentLyricColor || effectiveVibrantColor;
 
     return (
-        <div className="betterFullscreen-player" style={{
+        <div className="betterFullscreen-player" data-theme={styleTheme.toLowerCase()} style={{
             '--vibrant-color': effectiveVibrantColor,
             '--current-lyric-color': effectiveCurrentLyricColor,
             '--background-blur': `${snapshot.backgroundBlur}px`,
@@ -268,7 +336,7 @@ export const FullScreen = () => {
                     <div className="betterFullscreen-track-info">
                         <h1 className="betterFullscreen-title">{title}</h1>
                         <h2 className="betterFullscreen-artist">
-                            {artists?.map(a => a.name).join(', ') || artist?.name}
+                            {artistNames}
                         </h2>
                         <h3 className="betterFullscreen-album">
                             {album?.title}
@@ -285,27 +353,49 @@ export const FullScreen = () => {
                             {currentLyric && (
                                 <>
                                     {currentLyric.previous && (
-                                        <div className="betterFullscreen-lyric previous">
-                                            {currentLyric.previous.text}
-                                        </div>
+                                        <LyricLine
+                                            lyric={currentLyric.previous}
+                                            type="previous"
+                                            syncLevel={syncLevel}
+                                            currentTime={currentTime}
+                                            getHighlightedContent={getHighlightedContent}
+                                            showProgress={showLyricProgress}
+                                        />
                                     )}
 
-                                    <div className="betterFullscreen-lyric current">
-                                        {getHighlightedContent(currentLyric.current)}
-                                    </div>
+                                    <LyricLine
+                                        lyric={currentLyric.current}
+                                        type="current"
+                                        syncLevel={syncLevel}
+                                        currentTime={currentTime}
+                                        getHighlightedContent={getHighlightedContent}
+                                        nextLyricTime={currentLyric.next?.time}
+                                        showProgress={showLyricProgress}
+                                    />
 
                                     {currentLyric.next && (
-                                        <div className="betterFullscreen-lyric next">
-                                            {currentLyric.next.text}
-                                        </div>
+                                        <LyricLine
+                                            lyric={currentLyric.next}
+                                            type="next"
+                                            syncLevel={syncLevel}
+                                            currentTime={currentTime}
+                                            getHighlightedContent={getHighlightedContent}
+                                            showProgress={showLyricProgress}
+                                        />
                                     )}
                                 </>
                             )}
 
                             {currentLyric && upcomingLyrics.map((lyric, index) => (
-                                <div key={currentLyric.index + index + 2} className="betterFullscreen-lyric upcoming">
-                                    {lyric.text}
-                                </div>
+                                <LyricLine
+                                    key={currentLyric.index + index + 2}
+                                    lyric={lyric}
+                                    type="upcoming"
+                                    syncLevel={syncLevel}
+                                    currentTime={currentTime}
+                                    getHighlightedContent={getHighlightedContent}
+                                    showProgress={showLyricProgress}
+                                />
                             ))}
                         </div>
                     ) : (
@@ -318,4 +408,5 @@ export const FullScreen = () => {
             </div>
         </div>
     );
-}
+});
+FullScreen.displayName = 'FullScreen';

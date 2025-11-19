@@ -11,11 +11,220 @@ import {
 import React from "react";
 import { trace } from ".";
 
+const THEME_PREVIEWS: Record<StyleTheme, { name: string; gradient: string; accent: string }> = {
+    Modern: {
+        name: "Modern",
+        gradient: "linear-gradient(135deg, rgba(100, 50, 150, 0.3), rgba(50, 100, 200, 0.3))",
+        accent: "#8b5cf6"
+    },
+    Minimal: {
+        name: "Minimal",
+        gradient: "linear-gradient(180deg, rgba(10, 10, 15, 0.5), rgba(0, 0, 0, 0.7))",
+        accent: "#9ca3af"
+    },
+    Cinematic: {
+        name: "Cinematic",
+        gradient: "linear-gradient(180deg, rgba(0, 0, 0, 0.9), rgba(20, 20, 20, 0.9))",
+        accent: "#ffffff"
+    },
+    Neon: {
+        name: "Neon",
+        gradient: "linear-gradient(135deg, rgba(138, 0, 138, 0.4), rgba(0, 138, 138, 0.4))",
+        accent: "#ff00ff"
+    },
+    Glass: {
+        name: "Glass",
+        gradient: "linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05))",
+        accent: "#60a5fa"
+    },
+    Retro: {
+        name: "Retro",
+        gradient: "linear-gradient(135deg, rgba(80, 60, 40, 0.5), rgba(40, 30, 20, 0.7))",
+        accent: "#fbbf24"
+    }
+};
+
+const ThemePreviewCard = ({
+    theme,
+    isSelected,
+    onClick
+}: {
+    theme: StyleTheme;
+    isSelected: boolean;
+    onClick: () => void;
+}) => {
+    const preview = THEME_PREVIEWS[theme];
+
+    return (
+        <div
+            onClick={onClick}
+            style={{
+                position: 'relative',
+                cursor: 'pointer',
+                borderRadius: '12px',
+                overflow: 'hidden',
+                background: preview.gradient,
+                border: isSelected ? `3px solid ${preview.accent}` : '2px solid rgba(255, 255, 255, 0.1)',
+                transition: 'all 0.3s ease',
+                aspectRatio: '16/9',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'flex-end',
+                padding: '16px',
+                boxShadow: isSelected
+                    ? `0 8px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px ${preview.accent}, 0 0 20px ${preview.accent}40`
+                    : '0 4px 12px rgba(0, 0, 0, 0.2)',
+                transform: isSelected ? 'scale(1.02)' : 'scale(1)',
+                backdropFilter: theme === 'Glass' ? 'blur(10px)' : 'none'
+            }}
+            onMouseEnter={(e) => {
+                if (!isSelected) {
+                    e.currentTarget.style.transform = 'scale(1.05)';
+                    e.currentTarget.style.borderColor = preview.accent;
+                }
+            }}
+            onMouseLeave={(e) => {
+                if (!isSelected) {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                }
+            }}
+        >
+            { }
+            <div style={{
+                position: 'absolute',
+                top: '20%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '40px',
+                height: '40px',
+                borderRadius: theme === 'Retro' ? '50%' : '8px',
+                background: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                boxShadow: theme === 'Neon'
+                    ? `0 0 20px ${preview.accent}`
+                    : '0 4px 8px rgba(0, 0, 0, 0.2)'
+            }} />
+
+            { }
+            <div style={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '80%',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px',
+                alignItems: 'center'
+            }}>
+                <div style={{
+                    height: '4px',
+                    width: '60%',
+                    background: 'rgba(255, 255, 255, 0.3)',
+                    borderRadius: '2px'
+                }} />
+                <div style={{
+                    height: '6px',
+                    width: '80%',
+                    background: preview.accent,
+                    borderRadius: '3px',
+                    boxShadow: theme === 'Neon' || theme === 'Modern'
+                        ? `0 0 10px ${preview.accent}`
+                        : 'none'
+                }} />
+                <div style={{
+                    height: '4px',
+                    width: '50%',
+                    background: 'rgba(255, 255, 255, 0.2)',
+                    borderRadius: '2px'
+                }} />
+            </div>
+
+            { }
+            <div style={{
+                position: 'relative',
+                zIndex: 1,
+                background: 'rgba(0, 0, 0, 0.6)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '8px',
+                padding: '10px 12px',
+                border: '1px solid rgba(255, 255, 255, 0.1)'
+            }}>
+                <div style={{
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    color: isSelected ? preview.accent : '#fff',
+                    textShadow: theme === 'Neon' ? `0 0 8px ${preview.accent}` : 'none',
+                    textAlign: 'center'
+                }}>
+                    {preview.name}
+                </div>
+            </div>
+
+            { }
+            {isSelected && (
+                <div style={{
+                    position: 'absolute',
+                    top: '8px',
+                    right: '8px',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: preview.accent,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: `0 0 12px ${preview.accent}`,
+                    color: theme === 'Minimal' || theme === 'Glass' || theme === 'Cinematic' ? '#000' : '#fff',
+                    fontSize: '14px',
+                    fontWeight: 'bold'
+                }}>
+                    ✓
+                </div>
+            )}
+        </div>
+    );
+};
+
+const ThemePreviewGrid = ({
+    currentTheme,
+    onThemeSelect
+}: {
+    currentTheme: StyleTheme;
+    onThemeSelect: (theme: StyleTheme) => void;
+}) => {
+    const themes: StyleTheme[] = ['Modern', 'Minimal', 'Cinematic', 'Neon', 'Glass', 'Retro'];
+
+    return (
+        <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '16px',
+            padding: '16px',
+            background: 'rgba(0, 0, 0, 0.2)',
+            borderRadius: '12px',
+            border: '1px solid rgba(255, 255, 255, 0.1)'
+        }}>
+            {themes.map(theme => (
+                <ThemePreviewCard
+                    key={theme}
+                    theme={theme}
+                    isSelected={currentTheme === theme}
+                    onClick={() => onThemeSelect(theme)}
+                />
+            ))}
+        </div>
+    );
+};
+
 const defaultValues = {
     syncLevel: "Word" as SyncMode,
     apiURL: "https://api.vmohammad.dev/lyrics/?tidal_id=%s&minimal=true",
     fullscreenButton: true,
     catJam: "None" as CatJam,
+    styleTheme: "Modern" as StyleTheme,
+    showLyricProgress: true,
     backgroundBlur: 25,
     vibrantColorOpacity: 0.2,
     textShadowIntensity: 1.0,
@@ -38,6 +247,7 @@ const listeners = new Set<() => void>();
 
 type SyncMode = "Line" | "Word";
 type CatJam = "CatJam" | "CatRave" | "CatRave2" | "None";
+export type StyleTheme = "Modern" | "Minimal" | "Cinematic" | "Neon" | "Glass" | "Retro";
 
 const inMemoryState = {
     currentTime: 0,
@@ -51,6 +261,8 @@ let cachedSnapshot = {
     mediaItem: inMemoryState.mediaItem,
     syncLevel: syncLevelStore.syncLevel,
     apiURL: syncLevelStore.apiURL,
+    styleTheme: syncLevelStore.styleTheme,
+    showLyricProgress: syncLevelStore.showLyricProgress,
     backgroundBlur: syncLevelStore.backgroundBlur,
     vibrantColorOpacity: syncLevelStore.vibrantColorOpacity,
     textShadowIntensity: syncLevelStore.textShadowIntensity,
@@ -74,6 +286,8 @@ const updateSnapshot = () => {
         mediaItem: inMemoryState.mediaItem,
         syncLevel: syncLevelStore.syncLevel,
         apiURL: syncLevelStore.apiURL,
+        styleTheme: syncLevelStore.styleTheme,
+        showLyricProgress: syncLevelStore.showLyricProgress,
         backgroundBlur: syncLevelStore.backgroundBlur,
         vibrantColorOpacity: syncLevelStore.vibrantColorOpacity,
         textShadowIntensity: syncLevelStore.textShadowIntensity,
@@ -130,6 +344,22 @@ export const settings = {
     },
     set catJam(value: CatJam) {
         syncLevelStore.catJam = value;
+        updateSnapshot();
+        listeners.forEach((listener) => listener());
+    },
+    get styleTheme() {
+        return syncLevelStore.styleTheme;
+    },
+    set styleTheme(value: StyleTheme) {
+        syncLevelStore.styleTheme = value;
+        updateSnapshot();
+        listeners.forEach((listener) => listener());
+    },
+    get showLyricProgress() {
+        return syncLevelStore.showLyricProgress;
+    },
+    set showLyricProgress(value: boolean) {
+        syncLevelStore.showLyricProgress = value;
         updateSnapshot();
         listeners.forEach((listener) => listener());
     },
@@ -313,6 +543,10 @@ export const Settings = () => {
         syncLevelStore.fullscreenButton,
     );
     const [catJam, setCatJam] = React.useState<CatJam>(syncLevelStore.catJam);
+    const [styleTheme, setStyleTheme] = React.useState<StyleTheme>(syncLevelStore.styleTheme);
+    const [showLyricProgress, setShowLyricProgress] = React.useState<boolean>(
+        syncLevelStore.showLyricProgress,
+    );
 
     return (
         <LunaSettings>
@@ -357,6 +591,33 @@ export const Settings = () => {
                     Cat Rave 2
                 </LunaSelectItem>
             </LunaSelectSetting>
+
+            { }
+            <div style={{ marginTop: '8px', marginBottom: '16px' }}>
+                <div style={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    marginBottom: '8px',
+                    color: 'rgba(255, 255, 255, 0.9)'
+                }}>
+                    Style Theme
+                </div>
+                <div style={{
+                    fontSize: '12px',
+                    marginBottom: '12px',
+                    color: 'rgba(255, 255, 255, 0.6)'
+                }}>
+                    Choose the visual style of the fullscreen player
+                </div>
+                <ThemePreviewGrid
+                    currentTheme={styleTheme}
+                    onThemeSelect={(theme) => {
+                        settings.styleTheme = theme;
+                        setStyleTheme(theme);
+                    }}
+                />
+            </div>
+
             <LunaTextSetting
                 title="API URL"
                 desc="The API URL to fetch lyrics from (%s is track id)"
@@ -379,6 +640,17 @@ export const Settings = () => {
                     const value = event.target.checked;
                     setFullscreenButton(value);
                     settings.fullscreenButton = value;
+                }}
+            />
+
+            <LunaSwitchSetting
+                title="Show Lyric Progress Bar"
+                desc="Display a progress bar below the current lyric (only visible with word-level sync)"
+                checked={showLyricProgress}
+                onChange={(event) => {
+                    const value = event.target.checked;
+                    setShowLyricProgress(value);
+                    settings.showLyricProgress = value;
                 }}
             />
 
@@ -539,6 +811,8 @@ export const Settings = () => {
                     });
                     setCurrentMode(defaultValues.syncLevel);
                     setCurrentApiUrl(defaultValues.apiURL);
+                    setStyleTheme(defaultValues.styleTheme);
+                    setShowLyricProgress(defaultValues.showLyricProgress);
                     setBackgroundBlur(defaultValues.backgroundBlur);
                     setVibrantColorOpacity(defaultValues.vibrantColorOpacity);
                     setTextShadowIntensity(defaultValues.textShadowIntensity);
