@@ -168,8 +168,8 @@ function notifyWebSocketClients(field: string, value: any) {
 
 const updateField = (field: string, value: any) => {
     if (server) {
-        fields[field] = value;
         notifyWebSocketClients(field, value);
+        fields[field] = value;
     } else {
         console.warn(`Couldn't update field "${field}" to "${value}" because the server is not running.`);
     }

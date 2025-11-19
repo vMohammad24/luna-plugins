@@ -53,7 +53,7 @@ const updateStateFields = () => {
     const { playing, playTime, repeatMode, lastPlayStart, playQueue, shuffle } = PlayState;
     const currentTime = getCurrentPlaybackTime();
     const items: any = { playing, playTime, repeatMode, playQueue, shuffle };
-    if (!Number.isNaN(currentTime) && !doesIPCWork) items.currentTime = currentTime;
+    if (!Number.isNaN(currentTime)) items.currentTime = currentTime;
     if (lastPlayStart && !Number.isNaN(lastPlayStart)) items.lastPlayStart = lastPlayStart;
     const { playbackControls } = redux.store.getState();
     if (playbackControls.volume) items.volume = playbackControls.volume;
@@ -75,7 +75,7 @@ let previousTime = -1;
 let lastUpdated = Date.now();
 let mpvTime = 0;
 const getCurrentPlaybackTime = (): number => {
-    if ('mpvEnabled' in window && window.mpvEnabled()) return mpvTime;
+    if (window?.mpvEnabled?.()) return mpvTime;
     const audioElement = document.querySelector('audio') as HTMLAudioElement;
     if (audioElement && audioElement.currentTime) {
         currentTime = audioElement.currentTime;
