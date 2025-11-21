@@ -6,7 +6,7 @@ import { FullScreen } from "./components/Fullscreen";
 import { settings } from "./settings";
 import { getLyrics } from "./util";
 export { Settings } from "./settings";
-
+export { getLyrics };
 export const { trace } = Tracer("[BetterFullscreen]");
 export const unloads = new Set<LunaUnload>();
 const styleTag = new StyleTag("BetterFullscreen", unloads);
