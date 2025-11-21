@@ -2,7 +2,7 @@ import { LunaUnload, Tracer } from "@luna/core";
 import { ipcRenderer, MediaItem, observe, PlayState, safeInterval, safeTimeout, StyleTag } from "@luna/lib";
 import React from "react";
 import { createRoot } from "react-dom/client";
-import { FullScreen } from "./Fullscreen";
+import { FullScreen } from "./components/Fullscreen";
 import { settings } from "./settings";
 import { getLyrics } from "./util";
 export { Settings } from "./settings";
