@@ -621,6 +621,38 @@
   transform: translateZ(0);
 }
 
+.betterFullscreen-no-lyrics-icon {
+  font-size: calc(5rem * var(--font-size-scale, 1));
+  opacity: calc(0.6 * var(--text-opacity, 1));
+  text-shadow: 0 0 40px var(--vibrant-color, rgba(255, 255, 255, 0.3));
+  animation: gentleFloat calc(6s / var(--animation-speed, 1)) ease-in-out
+    infinite;
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+.betterFullscreen-retry-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+}
+
+.betterFullscreen-retry-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.betterFullscreen-retry-button:active {
+  transform: scale(0.95);
+}
+
 @keyframes spin {
   0% {
     transform: rotate(0deg) scale(1) translateZ(0);
@@ -783,6 +815,28 @@
     infinite;
   will-change: transform;
   transform: translateZ(0);
+}
+
+.betterFullscreen-retry-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  backdrop-filter: blur(5px);
+}
+
+.betterFullscreen-retry-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.05);
+}
+
+.betterFullscreen-retry-button:active {
+  transform: scale(0.95);
 }
 
 @keyframes gentleFloat {

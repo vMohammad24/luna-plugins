@@ -133,6 +133,8 @@ interface LyricsProps {
     loading: boolean;
     showLyricProgress: boolean;
     gradientColors: Color[];
+    onRetry?: () => void;
+    errorStatus?: number | null;
 }
 
 export const Lyrics = memo(({
@@ -141,7 +143,9 @@ export const Lyrics = memo(({
     syncLevel,
     loading,
     showLyricProgress,
-    gradientColors
+    gradientColors,
+    onRetry,
+    errorStatus
 }: LyricsProps) => {
     const getCurrentLyric = useCallback(() => {
         if (!lyrics.length) return null;
@@ -385,6 +389,11 @@ export const Lyrics = memo(({
                 <div className="betterFullscreen-no-lyrics">
                     <div className="betterFullscreen-no-lyrics-icon">♪</div>
                     <div>No lyrics available</div>
+                    {onRetry && errorStatus !== 404 && (
+                        <button className="betterFullscreen-retry-button" onClick={onRetry}>
+                            Retry
+                        </button>
+                    )}
                 </div>
             )}
         </div>

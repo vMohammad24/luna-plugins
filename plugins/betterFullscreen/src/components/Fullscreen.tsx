@@ -1,4 +1,4 @@
-import React, { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import React, { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
 import { settings } from '../settings';
 import { Color, EnhancedSyncedLyric } from '../types';
 import { getColors, getDominantColor, getLyrics } from '../util';
@@ -14,11 +14,17 @@ export const FullScreen = memo(() => {
 
     const [lyrics, setLyrics] = useState<EnhancedSyncedLyric[]>([]);
     const [loading, setLoading] = useState(false);
+    const [errorStatus, setErrorStatus] = useState<number | null>(null);
     const [albumArt, setAlbumArt] = useState<string>('');
     const [dominantColor, setDominantColor] = useState<string | null>(null);
     const [gradientColors, setGradientColors] = useState<Color[]>([]);
     const bgVideoRef = useRef<HTMLVideoElement | null>(null);
     const artVideoRef = useRef<HTMLVideoElement | null>(null);
+    const currentTrackIdRef = useRef<string | null>(null);
+
+    if (mediaItem?.tidalItem?.id) {
+        currentTrackIdRef.current = mediaItem.tidalItem.id as string;
+    }
 
     useEffect(() => {
         if (catJam && catJam !== "None") {
@@ -125,6 +131,7 @@ export const FullScreen = memo(() => {
     useEffect(() => {
         if (mediaItem?.tidalItem?.id) {
             setLoading(true);
+            setErrorStatus(null);
             let isCancelled = false;
             const trackId = parseInt(mediaItem.tidalItem.id as string, 10);
 
@@ -137,6 +144,7 @@ export const FullScreen = memo(() => {
                 .catch((e) => {
                     if (!isCancelled) {
                         setLyrics([]);
+                        setErrorStatus(e?.status || 500);
                         console.error('Failed to fetch lyrics for track ID:', trackId, e);
                     }
                 })
@@ -161,6 +169,33 @@ export const FullScreen = memo(() => {
         artists?.map(a => a.name).join(', ') || artist?.name || '',
         [artists, artist]
     );
+
+    const handleRetry = useCallback(() => {
+        if (mediaItem?.tidalItem?.id) {
+            setLoading(true);
+            setErrorStatus(null);
+            const trackId = parseInt(mediaItem.tidalItem.id as string, 10);
+
+            getLyrics(trackId)
+                .then(lyricsData => {
+                    if (currentTrackIdRef.current === String(trackId)) {
+                        setLyrics(lyricsData);
+                    }
+                })
+                .catch((e) => {
+                    if (currentTrackIdRef.current === String(trackId)) {
+                        setLyrics([]);
+                        setErrorStatus(e?.status || 500);
+                        console.error('Failed to fetch lyrics for track ID:', trackId, e);
+                    }
+                })
+                .finally(() => {
+                    if (currentTrackIdRef.current === String(trackId)) {
+                        setLoading(false);
+                    }
+                });
+        }
+    }, [mediaItem?.tidalItem?.id]);
 
     const effectiveVibrantColor = snapshot.customVibrantColor || dominantColor || vibrantColor;
     const effectiveCurrentLyricColor = snapshot.currentLyricColor || effectiveVibrantColor;
@@ -236,6 +271,8 @@ export const FullScreen = memo(() => {
                     loading={loading}
                     showLyricProgress={showLyricProgress}
                     gradientColors={gradientColors}
+                    onRetry={handleRetry}
+                    errorStatus={errorStatus}
                 />
             </div>
         </div>
