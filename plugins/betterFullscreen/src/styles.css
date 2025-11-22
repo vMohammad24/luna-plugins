@@ -556,6 +556,15 @@
     text-shadow calc(0.5s / var(--animation-speed, 1)) ease-out;
 }
 
+.char.char-connected {
+  display: inline;
+  will-change: color, opacity, text-shadow;
+  white-space: normal;
+  transform: none;
+  margin: 0;
+  padding: 0;
+}
+
 .char-previous {
   opacity: calc(0.3 * var(--text-opacity, 1));
   transform: scale(1);

@@ -40,12 +40,16 @@ const Character = memo(({ char, index, status, totalChars, colors }: {
 
     const interpolatedColor = interpolateColor(color.readableHex, nextColor.readableHex, progress);
 
+    const isComplex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char.char);
+
     const style: React.CSSProperties = {
         color: status === 'active' || status === 'word-active' ? interpolatedColor : 'inherit',
         ['--char-color' as any]: interpolatedColor
     };
 
     let className = 'char';
+    if (isComplex) className += ' char-connected';
+
     if (status === 'active') className += ' char-active';
     else if (status === 'word-active') className += ' char-word-active';
     else if (status === 'previous') className += ' char-previous';
@@ -107,11 +111,14 @@ const LyricLine = memo(({
         return Math.min(Math.max((elapsed / duration) * 100, 0), 100);
     }, [type, lyric.time, currentTime, nextLyricTime]);
 
+    const isRtl = useMemo(() => {
+        return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(lyric.text);
+    }, [lyric.text]);
 
     const shouldShowProgress = showProgress && type === 'current' && lyric.words && lyric.words.length > 0 && nextLyricTime;
 
     return (
-        <div className={`betterFullscreen-lyric ${type}`}>
+        <div className={`betterFullscreen-lyric ${type}`} style={{ direction: isRtl ? 'rtl' : 'ltr' }}>
             {content}
             {shouldShowProgress && (
                 <div className="betterFullscreen-lyric-progress">
@@ -224,9 +231,15 @@ export const Lyrics = memo(({
 
             const charElements: React.ReactNode[] = [];
             let currentWordChars: React.ReactNode[] = [];
+            let currentWordHasComplexChar = false;
 
             allCharacters.forEach((char, index) => {
                 let status: 'active' | 'word-active' | 'previous' | 'upcoming' = 'upcoming';
+
+                const isComplex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char.char);
+                if (isComplex) {
+                    currentWordHasComplexChar = true;
+                }
 
                 if (activeWordIndex !== -1) {
                     if (char.wordIndex < activeWordIndex) {
@@ -267,11 +280,16 @@ export const Lyrics = memo(({
                 if (char.char === ' ') {
                     if (currentWordChars.length > 0) {
                         charElements.push(
-                            <span key={`word-${index}`} style={{ whiteSpace: 'nowrap', display: 'inline-block' }}>
+                            <span key={`word-${index}`} style={{
+                                whiteSpace: 'nowrap',
+                                display: 'inline-block',
+                                direction: currentWordHasComplexChar ? 'rtl' : 'ltr'
+                            }}>
                                 {currentWordChars}
                             </span>
                         );
                         currentWordChars = [];
+                        currentWordHasComplexChar = false;
                     }
                     charElements.push(charComponent);
                 } else {
@@ -281,7 +299,11 @@ export const Lyrics = memo(({
 
             if (currentWordChars.length > 0) {
                 charElements.push(
-                    <span key={`word-last`} style={{ whiteSpace: 'nowrap', display: 'inline-block' }}>
+                    <span key={`word-last`} style={{
+                        whiteSpace: 'nowrap',
+                        display: 'inline-block',
+                        direction: currentWordHasComplexChar ? 'rtl' : 'ltr'
+                    }}>
                         {currentWordChars}
                     </span>
                 );
