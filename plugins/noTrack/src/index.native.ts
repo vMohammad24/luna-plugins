@@ -17,7 +17,7 @@ export function updateNoTrackNativeSettings(partial: Partial<NoTrackNativeSettin
 }
 
 app.whenReady().then(() => {
-    const urls: string[] = ['*://*.sentry.io/*', 'https://desktop.tidal.com/api/event-batch', "https://dd.tidal.com/*"];
+    const urls: string[] = ['*://*.sentry.io/*', 'https://desktop.tidal.com/api/event-batch', "https://dd.tidal.com/*", "https://browser-intake-datadoghq.com/*"];
     const filter = { urls };
 
     session.defaultSession.webRequest.onBeforeRequest(filter, (details, callback) => {
@@ -38,7 +38,7 @@ app.whenReady().then(() => {
             return;
         }
 
-        if (details.url.includes('dd.tidal.com')) {
+        if (details.url.includes('dd.tidal.com') || details.url.includes('browser-intake-datadoghq.com')) {
             if (nativeSettings.disableDataDome) {
                 callback({ cancel: true });
             } else {
