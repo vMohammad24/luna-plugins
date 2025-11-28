@@ -52,7 +52,7 @@ app.whenReady().then(() => {
     session.defaultSession.webRequest.onBeforeSendHeaders(filter, (details, callback) => {
         const headers = details.requestHeaders;
         delete headers['sentry-trace'];
-        delete headers['baggage'];
+        delete headers.baggage;
         callback({ requestHeaders: headers });
     });
 });
