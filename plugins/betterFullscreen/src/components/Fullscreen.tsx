@@ -1,21 +1,42 @@
-import React, { memo, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { settings } from '../settings';
-import { Color, EnhancedSyncedLyric } from '../types';
-import { getColors, getDominantColor, getLyrics } from '../util';
-import { Lyrics } from './Lyrics';
-
-
+import React, {
+    memo,
+    useCallback,
+    useEffect,
+    useMemo,
+    useRef,
+    useState,
+    useSyncExternalStore,
+} from "react";
+import { settings } from "../settings";
+import type { Color, EnhancedSyncedLyric } from "../types";
+import { getColors, getDominantColor, getLyrics } from "../util";
+import { Lyrics } from "./Lyrics";
 
 export const FullScreen = memo(() => {
-    const snapshot = useSyncExternalStore(settings.subscribe, settings.getSnapshot);
-    const { currentTime, mediaItem, syncLevel, catJam, playing, styleTheme, showLyricProgress } = snapshot;
-    const { coverUrl, tidalItem: { title, artists, album, artist, bpm } } = mediaItem!;
-    const { releaseDate, vibrantColor } = album!;
+    const snapshot = useSyncExternalStore(
+        settings.subscribe,
+        settings.getSnapshot,
+    );
+    const {
+        currentTime,
+        mediaItem,
+        syncLevel,
+        catJam,
+        playing,
+        styleTheme,
+        showLyricProgress,
+        lyricsOffset,
+    } = snapshot;
+    const {
+        coverUrl,
+        tidalItem: { title, artists, album, artist, bpm },
+    } = mediaItem!;
+    const { releaseDate, vibrantColor } = album ?? {};
 
     const [lyrics, setLyrics] = useState<EnhancedSyncedLyric[]>([]);
     const [loading, setLoading] = useState(false);
     const [errorStatus, setErrorStatus] = useState<number | null>(null);
-    const [albumArt, setAlbumArt] = useState<string>('');
+    const [albumArt, setAlbumArt] = useState<string>("");
     const [dominantColor, setDominantColor] = useState<string | null>(null);
     const [gradientColors, setGradientColors] = useState<Color[]>([]);
     const bgVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -29,27 +50,28 @@ export const FullScreen = memo(() => {
     useEffect(() => {
         if (catJam && catJam !== "None") {
             const src =
-                catJam === 'CatJam'
-                    ? 'https://vmohammad.dev/catjam.webm'
-                    : catJam === 'CatRave'
-                        ? 'https://vmohammad.dev/catrave.webm'
-                        : catJam === 'CatRave2'
-                            ? 'https://vmohammad.dev/catrave2.webm'
-                            : '';
+                catJam === "CatJam"
+                    ? "https://vmohammad.dev/catjam.webm"
+                    : catJam === "CatRave"
+                        ? "https://vmohammad.dev/catrave.webm"
+                        : catJam === "CatRave2"
+                            ? "https://vmohammad.dev/catrave2.webm"
+                            : "";
             setAlbumArt(src);
             return;
         }
         if (coverUrl) {
             let isCancelled = false;
             coverUrl()
-                .then(url => {
+                .then((url) => {
                     if (!isCancelled) {
-                        setAlbumArt(url || '');
+                        setAlbumArt(url || "");
+                        console.log("Fetched album art URL:", url);
                     }
                 })
                 .catch(() => {
                     if (!isCancelled) {
-                        setAlbumArt('');
+                        setAlbumArt("");
                     }
                 });
 
@@ -60,10 +82,15 @@ export const FullScreen = memo(() => {
     }, [coverUrl, catJam]);
 
     useEffect(() => {
-        if (vibrantColor === "#FFFFFF" && !snapshot.customVibrantColor && albumArt && (!catJam || catJam === "None")) {
+        if (
+            vibrantColor === "#FFFFFF" &&
+            !snapshot.customVibrantColor &&
+            albumArt &&
+            (!catJam || catJam === "None")
+        ) {
             let isCancelled = false;
             getDominantColor(albumArt)
-                .then(color => {
+                .then((color) => {
                     if (!isCancelled) {
                         setDominantColor(color);
                     }
@@ -83,10 +110,14 @@ export const FullScreen = memo(() => {
     }, [vibrantColor, snapshot.customVibrantColor, albumArt, catJam]);
 
     useEffect(() => {
-        if (syncLevel === 'Character' && albumArt && (!catJam || catJam === "None")) {
+        if (
+            syncLevel === "Character" &&
+            albumArt &&
+            (!catJam || catJam === "None")
+        ) {
             let isCancelled = false;
             getColors(albumArt)
-                .then(colors => {
+                .then((colors) => {
                     if (!isCancelled && colors && colors.length > 0) {
                         setGradientColors(colors);
                     }
@@ -108,23 +139,22 @@ export const FullScreen = memo(() => {
     useEffect(() => {
         if (!catJam || catJam === "None") return;
         const baselineBpm = 135.48;
-        const trackBpm = typeof bpm === 'number' && bpm > 0 ? bpm : baselineBpm;
+        const trackBpm = typeof bpm === "number" && bpm > 0 ? bpm : baselineBpm;
         const rate = Math.max(0.5, Math.min(2, trackBpm / baselineBpm));
 
-        [bgVideoRef.current, artVideoRef.current].forEach(v => {
+        [bgVideoRef.current, artVideoRef.current].forEach((v) => {
             if (!v) return;
             try {
                 v.playbackRate = rate;
                 if (playing) {
                     const p = v.play();
-                    if (p && typeof p.then === 'function') {
+                    if (p && typeof p.then === "function") {
                         p.catch(() => { });
                     }
                 } else {
                     v.pause();
                 }
-            } catch (_) {
-            }
+            } catch (_) { }
         });
     }, [catJam, bpm, playing]);
 
@@ -136,7 +166,7 @@ export const FullScreen = memo(() => {
             const trackId = parseInt(mediaItem.tidalItem.id as string, 10);
 
             getLyrics(trackId)
-                .then(lyricsData => {
+                .then((lyricsData) => {
                     if (!isCancelled) {
                         setLyrics(lyricsData);
                     }
@@ -145,7 +175,7 @@ export const FullScreen = memo(() => {
                     if (!isCancelled) {
                         setLyrics([]);
                         setErrorStatus(e?.status || 500);
-                        console.error('Failed to fetch lyrics for track ID:', trackId, e);
+                        console.error("Failed to fetch lyrics for track ID:", trackId, e);
                     }
                 })
                 .finally(() => {
@@ -160,14 +190,14 @@ export const FullScreen = memo(() => {
         }
     }, [mediaItem?.tidalItem?.id]);
 
-    const releaseYear = useMemo(() =>
-        releaseDate ? new Date(releaseDate).getFullYear() : '',
-        [releaseDate]
+    const releaseYear = useMemo(
+        () => (releaseDate ? new Date(releaseDate).getFullYear() : ""),
+        [releaseDate],
     );
 
-    const artistNames = useMemo(() =>
-        artists?.map(a => a.name).join(', ') || artist?.name || '',
-        [artists, artist]
+    const artistNames = useMemo(
+        () => artists?.map((a) => a.name).join(", ") || artist?.name || "",
+        [artists, artist],
     );
 
     const handleRetry = useCallback(() => {
@@ -177,7 +207,7 @@ export const FullScreen = memo(() => {
             const trackId = parseInt(mediaItem.tidalItem.id as string, 10);
 
             getLyrics(trackId)
-                .then(lyricsData => {
+                .then((lyricsData) => {
                     if (currentTrackIdRef.current === String(trackId)) {
                         setLyrics(lyricsData);
                     }
@@ -186,7 +216,7 @@ export const FullScreen = memo(() => {
                     if (currentTrackIdRef.current === String(trackId)) {
                         setLyrics([]);
                         setErrorStatus(e?.status || 500);
-                        console.error('Failed to fetch lyrics for track ID:', trackId, e);
+                        console.error("Failed to fetch lyrics for track ID:", trackId, e);
                     }
                 })
                 .finally(() => {
@@ -197,24 +227,32 @@ export const FullScreen = memo(() => {
         }
     }, [mediaItem?.tidalItem?.id]);
 
-    const effectiveVibrantColor = snapshot.customVibrantColor || dominantColor || vibrantColor;
-    const effectiveCurrentLyricColor = snapshot.currentLyricColor || effectiveVibrantColor;
+    const effectiveVibrantColor =
+        snapshot.customVibrantColor || dominantColor || vibrantColor;
+    const effectiveCurrentLyricColor =
+        snapshot.currentLyricColor || effectiveVibrantColor;
 
     return (
-        <div className="betterFullscreen-player" data-theme={styleTheme.toLowerCase()} style={{
-            '--vibrant-color': effectiveVibrantColor,
-            '--current-lyric-color': effectiveCurrentLyricColor,
-            '--background-blur': `${snapshot.backgroundBlur}px`,
-            '--vibrant-color-opacity': snapshot.vibrantColorOpacity,
-            '--text-shadow-intensity': snapshot.textShadowIntensity,
-            '--animation-speed': snapshot.animationSpeed,
-            '--enable-floating': snapshot.enableFloatingAnimation ? '1' : '0',
-            '--enable-pulse': snapshot.enablePulseEffects ? '1' : '0',
-            '--font-size-scale': snapshot.fontSizeScale,
-            '--text-opacity': snapshot.textOpacity,
-            '--padding-scale': snapshot.paddingScale,
-            '--border-radius': `${snapshot.borderRadius}px`
-        } as any}>
+        <div
+            className="betterFullscreen-player"
+            data-theme={styleTheme.toLowerCase()}
+            style={
+                {
+                    "--vibrant-color": effectiveVibrantColor,
+                    "--current-lyric-color": effectiveCurrentLyricColor,
+                    "--background-blur": `${snapshot.backgroundBlur}px`,
+                    "--vibrant-color-opacity": snapshot.vibrantColorOpacity,
+                    "--text-shadow-intensity": snapshot.textShadowIntensity,
+                    "--animation-speed": snapshot.animationSpeed,
+                    "--enable-floating": snapshot.enableFloatingAnimation ? "1" : "0",
+                    "--enable-pulse": snapshot.enablePulseEffects ? "1" : "0",
+                    "--font-size-scale": snapshot.fontSizeScale,
+                    "--text-opacity": snapshot.textOpacity,
+                    "--padding-scale": snapshot.paddingScale,
+                    "--border-radius": `${snapshot.borderRadius}px`,
+                } as any
+            }
+        >
             <div className="betterFullscreen-background">
                 {catJam !== "None" ? (
                     <video
@@ -247,26 +285,29 @@ export const FullScreen = memo(() => {
                                 preload="auto"
                             />
                         ) : (
-                            <img src={albumArt} alt={`${album?.title} by ${artists?.map(a => a.name).join(', ')}`} />
+                            <img
+                                src={albumArt}
+                                alt={`${album?.title} by ${artists?.map((a) => a.name).join(", ")}`}
+                            />
                         )}
                         <div className="betterFullscreen-vinyl-effect"></div>
                     </div>
 
                     <div className="betterFullscreen-track-info">
                         <h1 className="betterFullscreen-title">{title}</h1>
-                        <h2 className="betterFullscreen-artist">
-                            {artistNames}
-                        </h2>
+                        <h2 className="betterFullscreen-artist">{artistNames}</h2>
                         <h3 className="betterFullscreen-album">
                             {album?.title}
-                            {releaseYear && <span className="betterFullscreen-year"> • {releaseYear}</span>}
+                            {releaseYear && (
+                                <span className="betterFullscreen-year"> • {releaseYear}</span>
+                            )}
                         </h3>
                     </div>
                 </div>
 
                 <Lyrics
                     lyrics={lyrics}
-                    currentTime={currentTime}
+                    currentTime={currentTime + lyricsOffset}
                     syncLevel={syncLevel}
                     loading={loading}
                     showLyricProgress={showLyricProgress}
@@ -278,4 +319,4 @@ export const FullScreen = memo(() => {
         </div>
     );
 });
-FullScreen.displayName = 'FullScreen';
+FullScreen.displayName = "FullScreen";

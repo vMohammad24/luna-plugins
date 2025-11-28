@@ -225,6 +225,7 @@ const defaultValues = {
     catJam: "None" as CatJam,
     styleTheme: "Modern" as StyleTheme,
     showLyricProgress: false,
+    lyricsOffset: 0,
     backgroundBlur: 25,
     vibrantColorOpacity: 0.4,
     textShadowIntensity: 1.0,
@@ -263,6 +264,7 @@ let cachedSnapshot = {
     apiURL: syncLevelStore.apiURL,
     styleTheme: syncLevelStore.styleTheme,
     showLyricProgress: syncLevelStore.showLyricProgress,
+    lyricsOffset: syncLevelStore.lyricsOffset,
     backgroundBlur: syncLevelStore.backgroundBlur,
     vibrantColorOpacity: syncLevelStore.vibrantColorOpacity,
     textShadowIntensity: syncLevelStore.textShadowIntensity,
@@ -288,6 +290,7 @@ const updateSnapshot = () => {
         apiURL: syncLevelStore.apiURL,
         styleTheme: syncLevelStore.styleTheme,
         showLyricProgress: syncLevelStore.showLyricProgress,
+        lyricsOffset: syncLevelStore.lyricsOffset,
         backgroundBlur: syncLevelStore.backgroundBlur,
         vibrantColorOpacity: syncLevelStore.vibrantColorOpacity,
         textShadowIntensity: syncLevelStore.textShadowIntensity,
@@ -360,6 +363,15 @@ export const settings = {
     },
     set showLyricProgress(value: boolean) {
         syncLevelStore.showLyricProgress = value;
+        updateSnapshot();
+        listeners.forEach((listener) => listener());
+    },
+
+    get lyricsOffset() {
+        return syncLevelStore.lyricsOffset;
+    },
+    set lyricsOffset(value: number) {
+        syncLevelStore.lyricsOffset = value;
         updateSnapshot();
         listeners.forEach((listener) => listener());
     },
@@ -547,6 +559,9 @@ export const Settings = () => {
     const [showLyricProgress, setShowLyricProgress] = React.useState<boolean>(
         syncLevelStore.showLyricProgress,
     );
+    const [lyricsOffset, setLyricsOffset] = React.useState<number>(
+        syncLevelStore.lyricsOffset,
+    );
 
     return (
         <LunaSettings>
@@ -654,6 +669,19 @@ export const Settings = () => {
                     const value = event.target.checked;
                     setShowLyricProgress(value);
                     settings.showLyricProgress = value;
+                }}
+            />
+
+            <LunaTextSetting
+                title="Lyrics Offset"
+                desc="Offset for lyrics timing in seconds (positive = lyrics appear earlier, negative = lyrics appear later)"
+                value={lyricsOffset.toString()}
+                onChange={(event) => {
+                    const value = parseFloat(event.target.value);
+                    if (!isNaN(value)) {
+                        setLyricsOffset(value);
+                        settings.lyricsOffset = value;
+                    }
                 }}
             />
 
@@ -816,6 +844,7 @@ export const Settings = () => {
                     setCurrentApiUrl(defaultValues.apiURL);
                     setStyleTheme(defaultValues.styleTheme);
                     setShowLyricProgress(defaultValues.showLyricProgress);
+                    setLyricsOffset(defaultValues.lyricsOffset);
                     setBackgroundBlur(defaultValues.backgroundBlur);
                     setVibrantColorOpacity(defaultValues.vibrantColorOpacity);
                     setTextShadowIntensity(defaultValues.textShadowIntensity);
