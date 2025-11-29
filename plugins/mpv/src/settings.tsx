@@ -1,5 +1,6 @@
 import { ReactiveStore } from "@luna/core";
-import { LunaSelectItem, LunaSelectSetting, LunaSettings, LunaSwitchSetting, LunaTextSetting } from "@luna/ui";
+import { LunaSelectSetting, LunaSettings, LunaSwitchSetting, LunaTextSetting } from "@luna/ui";
+import { Divider, MenuItem } from "@mui/material";
 import React from "react";
 import { AudioDevice, getAvailableAudioDevices, updateMpvNativeSettings, updatePlayerProperties } from "./index.native";
 
@@ -120,13 +121,26 @@ export const Settings = () => {
                 }}
             >
                 {loadingDevices ? (
-                    <LunaSelectItem value="auto">Loading devices...</LunaSelectItem>
+                    <MenuItem value="auto">Loading devices...</MenuItem>
                 ) : (
-                    audioDevices.map(device => (
-                        <LunaSelectItem key={device.id} value={device.id}>
-                            {device.description}
-                        </LunaSelectItem>
-                    ))
+                    audioDevices.flatMap((device, index) => {
+                        const items = [];
+                        const isDefault = device.id === 'auto' || device.id === 'alsa' ||
+                            device.id === 'pulse' || device.id === 'pipewire' ||
+                            device.id === 'openal';
+                        const nextDevice = audioDevices[index + 1];
+                        const nextIsNotDefault = nextDevice && !['auto', 'alsa', 'pulse', 'pipewire', 'openal'].includes(nextDevice.id);
+
+                        if (isDefault && nextIsNotDefault) {
+                            items.push(<Divider key={`divider-${device.id}`} color="#FFF" />);
+                        }
+                        items.push(
+                            <MenuItem key={device.id} value={device.id}>
+                                {device.description}
+                            </MenuItem>
+                        )
+                        return items;
+                    })
                 )}
             </LunaSelectSetting>
 

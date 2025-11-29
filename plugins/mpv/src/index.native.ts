@@ -627,7 +627,7 @@ async function getAvailableAudioDevices(mpvPath?: string): Promise<AudioDevice[]
         const mpvCommand = mpvPath || 'mpv';
         const { stdout } = await execAsync(`"${mpvCommand}" --audio-device=help`);
 
-        const devices: AudioDevice[] = [];
+        const allDevices: AudioDevice[] = [];
         const lines = stdout.split('\n');
 
         for (let i = 1; i < lines.length; i++) {
@@ -637,11 +637,12 @@ async function getAvailableAudioDevices(mpvPath?: string): Promise<AudioDevice[]
             const match = line.match(/^\s*'([^']+)'\s*\((.+)\)$/);
             if (match) {
                 const [, id, description] = match;
-                devices.push({ id, description });
+                allDevices.push({ id, description });
             }
         }
 
-        return devices;
+        const filtered = allDevices.length > 10 ? filterAudioDevices(allDevices) : allDevices;
+        return filtered;
     } catch (err) {
         console.error(`Failed to get audio devices: ${err}`);
         return [
@@ -651,6 +652,82 @@ async function getAvailableAudioDevices(mpvPath?: string): Promise<AudioDevice[]
             { id: 'pipewire', description: 'Default (pipewire)' }
         ];
     }
+}
+
+function filterAudioDevices(devices: AudioDevice[]): AudioDevice[] {
+    const filtered: AudioDevice[] = [];
+    const seenCards = new Set<string>();
+
+    const extractCardId = (id: string): string | null => {
+        const pipeMatch = id.match(/(?:pipewire|pulse)\/alsa_output\.([^.]+\.[^.]+\.[^.]+)/);
+        if (pipeMatch) return pipeMatch[1];
+
+        const alsaMatch = id.match(/alsa\/[^:]*:CARD=([^,]+)/);
+        if (alsaMatch) return alsaMatch[1].toLowerCase();
+
+        return null;
+    };
+
+    for (const device of devices) {
+        const id = device.id;
+
+        if (id === 'auto' || id === 'alsa' || id === 'pulse' || id === 'pipewire' || id === 'openal') {
+            filtered.push(device);
+            continue;
+        }
+
+        if (id.includes('surround21') || id.includes('surround40') || id.includes('surround41') ||
+            id.includes('surround50') || id.includes('surround51') || id.includes('surround71')) {
+            continue;
+        }
+
+        if (id.startsWith('alsa/front:') || id.startsWith('alsa/iec958:')) {
+            continue;
+        }
+
+        const cardId = extractCardId(id);
+        if (cardId) {
+            if (id.startsWith('alsa/')) {
+                if (id.startsWith('alsa/sysdefault:') || id.startsWith('alsa/hdmi:')) {
+                    if (!seenCards.has(cardId)) {
+                        seenCards.add(cardId);
+                        filtered.push(device);
+                    }
+                }
+                continue;
+            }
+
+            if (id.startsWith('pipewire/') || id.startsWith('pulse/')) {
+                const hasAlsaBackend = devices.some(d =>
+                    d.id.startsWith('alsa/') && extractCardId(d.id) === cardId
+                );
+                if (hasAlsaBackend) continue;
+
+                if (id.startsWith('pulse/')) {
+                    const hasPipewire = devices.some(d =>
+                        d.id.startsWith('pipewire/') && extractCardId(d.id) === cardId
+                    );
+                    if (hasPipewire) continue;
+                }
+
+                if (!seenCards.has(cardId)) {
+                    seenCards.add(cardId);
+                    filtered.push(device);
+                }
+                continue;
+            }
+        }
+
+        if (id === 'alsa/sysdefault' || id === 'alsa/pipewire') {
+            filtered.push(device);
+            continue;
+        }
+        if (id.startsWith('alsa/')) {
+            filtered.push(device);
+        }
+    }
+
+    return filtered;
 }
 
 export {
