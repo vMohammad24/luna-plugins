@@ -42,7 +42,7 @@ const Character = memo(({ char, index, status, totalChars, colors }: {
 
     const isComplex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char.char);
 
-    const style: React.CSSProperties = {
+    const style = {
         color: status === 'active' || status === 'word-active' ? interpolatedColor : 'inherit',
         ['--char-color' as any]: interpolatedColor
     };

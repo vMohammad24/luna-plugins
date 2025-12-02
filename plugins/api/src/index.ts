@@ -50,8 +50,7 @@ const interval = setInterval(() => {
 }, 250);
 
 const updateStateFields = () => {
-    const { playing, playTime, repeatMode, lastPlayStart, playQueue, shuffle } = PlayState;
-    const currentTime = getCurrentPlaybackTime();
+    const { playing, playTime, repeatMode, lastPlayStart, playQueue, shuffle, currentTime } = PlayState;
     const items: any = { playing, playTime, repeatMode, playQueue, shuffle };
     if (!Number.isNaN(currentTime)) items.currentTime = currentTime;
     if (lastPlayStart && !Number.isNaN(lastPlayStart)) items.lastPlayStart = lastPlayStart;
@@ -59,54 +58,9 @@ const updateStateFields = () => {
     if (playbackControls.volume) items.volume = playbackControls.volume;
     updateFields(items);
 }
-ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {
-    const { time: currentTime } = payload;
-    if (currentTime && !Number.isNaN(currentTime)) {
-        updateFields({ currentTime });
-        doesIPCWork = true;
-    }
-})
 unloads.add(() => {
     clearInterval(interval);
 });
-
-let currentTime = 0;
-let previousTime = -1;
-let lastUpdated = Date.now();
-let mpvTime = 0;
-const getCurrentPlaybackTime = (): number => {
-    if (window?.mpvEnabled?.()) return mpvTime;
-    const audioElement = document.querySelector('audio') as HTMLAudioElement;
-    if (audioElement && audioElement.currentTime) {
-        currentTime = audioElement.currentTime;
-        previousTime = -1;
-        return currentTime;
-    }
-
-    const progressBar = document.querySelector('[data-test="progress-bar"]') as HTMLElement;
-    if (progressBar) {
-        const ariaValueNow = progressBar.getAttribute('aria-valuenow');
-        if (ariaValueNow !== null) {
-            const progressTime = Number.parseInt(ariaValueNow);
-            const now = Date.now();
-
-            if (progressTime !== previousTime) {
-                currentTime = progressTime;
-                previousTime = progressTime;
-                lastUpdated = now;
-            } else if (PlayState.playing) {
-                const elapsedSeconds = (now - lastUpdated) / 1000;
-                currentTime = progressTime + elapsedSeconds;
-            }
-            return currentTime;
-        } else {
-            trace.msg.warn("Progress bar not found or aria-valuenow is null");
-            return currentTime;
-        }
-    }
-
-    return currentTime;
-};
 
 ipcRenderer.on(unloads, "api.playback.control", async (data) => {
     switch (data.action) {
@@ -182,8 +136,3 @@ ipcRenderer.on(unloads, "api.playback.control", async (data) => {
     }
     updateStateFields();
 });
-
-
-ipcRenderer.on(unloads, "api.mpv.time", (time) => {
-    mpvTime = time;
-})

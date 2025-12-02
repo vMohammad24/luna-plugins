@@ -1,5 +1,5 @@
 import { LunaUnload, Tracer } from "@luna/core";
-import { ipcRenderer, MediaItem, observe, PlayState, safeInterval, safeTimeout, StyleTag } from "@luna/lib";
+import { ipcRenderer, MediaItem, observe, PlayState, redux, safeInterval, safeTimeout, StyleTag } from "@luna/lib";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { FullScreen } from "./components/Fullscreen";
@@ -19,7 +19,7 @@ const loadCss = () => {
 }
 const enterFullscreen = () => {
     loadCss();
-    removeFullscreenButton();
+    removeFullscreenButton?.();
     safeTimeout(unloads, () => {
         const parent = document.querySelector(".is-fullscreen.is-now-playing");
         if (parent) {
@@ -54,35 +54,26 @@ const doObserve = () => {
     }
 }
 observe(unloads, ".is-fullscreen.is-now-playing", doObserve);
-
-// if i dont put it in a timeout, it errors for some reason
 safeTimeout(unloads, doObserve);
-
-let doesIPCWork = false;
-ipcRenderer.on(unloads, "client.playback.playersignal", (payload) => {
-    const { time: currentTime } = payload;
-    if (currentTime && !Number.isNaN(currentTime)) {
-        settings.currentTime = currentTime;
-        doesIPCWork = true;
-    }
-})
 
 ipcRenderer.on(unloads, "api.mpv.time", (time) => {
     settings.currentTime = settings.currentTime = time;
 })
 
+let lastUpdateTime = 0;
 const interval = safeInterval(unloads, () => {
-    if (doesIPCWork || ('mpvEnabled' in window && window.mpvEnabled())) {
+    if (window.mpvEnabled?.()) {
         interval();
         return;
     }
-    settings.currentTime = getCurrentPlaybackTime();
+    const now = PlayState.currentTime;
+    if (Math.abs(now - lastUpdateTime) >= 0.05) {
+        lastUpdateTime = now;
+        settings.currentTime = now;
+    }
 }, 100);
 
-unloads.add(() => {
-    styleTag.remove();
-    unloads.clear();
-})
+unloads.add(styleTag.remove.bind(styleTag))
 
 MediaItem.fromPlaybackContext().then((item) => settings.mediaItem = item || null);
 MediaItem.onMediaTransition(unloads, async (item) =>
@@ -92,43 +83,6 @@ MediaItem.onPreload(unloads, (item) => {
     getLyrics(item.id as number)
 })
 
-let currentTime = 0;
-let previousTime = -1;
-let lastUpdated = Date.now();
-let mpvTime = 0;
-const getCurrentPlaybackTime = (): number => {
-    if ('mpvEnabled' in window && window.mpvEnabled()) return mpvTime;
-    const audioElement = document.querySelector('audio') as HTMLAudioElement;
-    if (audioElement && audioElement.currentTime) {
-        currentTime = audioElement.currentTime;
-        previousTime = -1;
-        return currentTime;
-    }
-
-    const progressBar = document.querySelector('[data-test="progress-bar"]') as HTMLElement;
-    if (progressBar) {
-        const ariaValueNow = progressBar.getAttribute('aria-valuenow');
-        if (ariaValueNow !== null) {
-            const progressTime = Number.parseInt(ariaValueNow);
-            const now = Date.now();
-
-            if (progressTime !== previousTime) {
-                currentTime = progressTime;
-                previousTime = progressTime;
-                lastUpdated = now;
-            } else if (PlayState.playing) {
-                const elapsedSeconds = (now - lastUpdated) / 1000;
-                currentTime = progressTime + elapsedSeconds;
-            }
-            return currentTime;
-        } else {
-            trace.msg.warn("Progress bar not found or aria-valuenow is null");
-            return currentTime;
-        }
-    }
-
-    return currentTime;
-};
 
 const addFullscreenButton = () => {
     const parent = document.querySelector('[class^="_moreContainer_"]');
@@ -138,7 +92,7 @@ const addFullscreenButton = () => {
     const exitFSButton = document.querySelector('[data-test="fullscreen"]') as HTMLButtonElement;
     const exisits = !!document.querySelector(`.${buttonClassName}`);
     if (exitFSButton) {
-        if (exisits) removeFullscreenButton();
+        if (exisits) removeFullscreenButton?.();
         return;
     }
     if (exisits) {
@@ -148,43 +102,17 @@ const addFullscreenButton = () => {
     fullscreenButton.className = buttonClassName;
     fullscreenButton.innerHTML = `<svg class="_icon_77f3f89" viewBox="0 0 24 24"><use href="#player__maximize"></use></svg>`;
     fullscreenButton.title = "Enter fullscreen";
-    fullscreenButton.onclick = () => {
-        const footer = document.querySelector('[data-test="footer-player"]') as HTMLDivElement;
-        const enterFs = () => {
-            const fs = document.querySelector('[data-test="request-fullscreen"]') as HTMLButtonElement;
-            if (fs) {
-                fs.click();
-                return true;
-            } else {
-                return false;
-            }
-        }
-        if (!enterFs()) {
-            footer.click();
-            safeTimeout(unloads, () => {
-                if (!enterFs()) {
-                    trace.msg.warn("Failed to enter fullscreen mode");
-                }
-            }, 50);
-        }
-
-    }
-
+    fullscreenButton.onclick = () => redux.actions["view/REQUEST_FULLSCREEN"]();
     parent.appendChild(fullscreenButton);
 }
 
-const removeFullscreenButton = () => {
-    const button = document.querySelector(`.${buttonClassName}`);
-    if (button) {
-        button.remove();
-    }
-}
+const removeFullscreenButton = document.querySelector(`.${buttonClassName}`)?.remove
 
 const setFSB = (v: boolean) => {
     if (v) {
         addFullscreenButton();
     } else {
-        removeFullscreenButton();
+        removeFullscreenButton?.();
     }
 }
 settings.subscribe(() => {
@@ -196,7 +124,7 @@ settings.subscribe(() => {
 });
 
 unloads.add(() => {
-    removeFullscreenButton();
+    removeFullscreenButton?.();
 })
 
 PlayState.onState(unloads, () => {
