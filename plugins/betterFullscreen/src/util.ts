@@ -1,9 +1,9 @@
+import { memoize } from "@inrixia/helpers";
 import { ftch } from "@luna/core";
 import { settings } from "./settings";
 import { Color, EnhancedSyncedLyric } from "./types";
 
-
-export async function getLyrics(trackId: number, retries = 3): Promise<EnhancedSyncedLyric[]> {
+export const getLyrics = memoize(async (trackId: number, retries = 3): Promise<EnhancedSyncedLyric[]> => {
     const url = settings.apiURL.replace("%s", trackId.toString());
     for (let attempt = 0; attempt < retries; attempt++) {
         try {
@@ -32,7 +32,7 @@ export async function getLyrics(trackId: number, retries = 3): Promise<EnhancedS
         }
     }
     return [];
-}
+})
 
 
 
