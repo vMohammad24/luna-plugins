@@ -1,5 +1,4 @@
 import { ReactiveStore } from "@luna/core";
-import type { MediaItem } from "@luna/lib";
 import {
     LunaButtonSetting,
     LunaSelectItem,
@@ -239,328 +238,74 @@ const defaultValues = {
     customVibrantColor: "",
     currentLyricColor: "",
 };
-const syncLevelStore = await ReactiveStore.getPluginStorage(
+export const settings = await ReactiveStore.getPluginStorage(
     "BetterFullScreen",
     defaultValues,
 );
-
-const listeners = new Set<() => void>();
 
 type SyncMode = "Line" | "Word" | "Character";
 type CatJam = "CatJam" | "CatRave" | "CatRave2" | "None";
 export type StyleTheme = "Modern" | "Minimal" | "Cinematic" | "Neon" | "Glass" | "Retro";
 
-const inMemoryState = {
-    currentTime: 0,
-    mediaItem: null as MediaItem | null,
-    playing: false,
-};
 
-let cachedSnapshot = {
-    currentTime: inMemoryState.currentTime,
-    playing: inMemoryState.playing,
-    mediaItem: inMemoryState.mediaItem,
-    syncLevel: syncLevelStore.syncLevel,
-    apiURL: syncLevelStore.apiURL,
-    styleTheme: syncLevelStore.styleTheme,
-    showLyricProgress: syncLevelStore.showLyricProgress,
-    lyricsOffset: syncLevelStore.lyricsOffset,
-    backgroundBlur: syncLevelStore.backgroundBlur,
-    vibrantColorOpacity: syncLevelStore.vibrantColorOpacity,
-    textShadowIntensity: syncLevelStore.textShadowIntensity,
-    animationSpeed: syncLevelStore.animationSpeed,
-    enableFloatingAnimation: syncLevelStore.enableFloatingAnimation,
-    enablePulseEffects: syncLevelStore.enablePulseEffects,
-    fontSizeScale: syncLevelStore.fontSizeScale,
-    textOpacity: syncLevelStore.textOpacity,
-    paddingScale: syncLevelStore.paddingScale,
-    borderRadius: syncLevelStore.borderRadius,
-    customVibrantColor: syncLevelStore.customVibrantColor,
-    currentLyricColor: syncLevelStore.currentLyricColor,
-    fullscreenButton: syncLevelStore.fullscreenButton,
-    catJam: syncLevelStore.catJam,
-};
-
-const updateSnapshot = () => {
-    cachedSnapshot = {
-        currentTime: inMemoryState.currentTime,
-        playing: inMemoryState.playing,
-        mediaItem: inMemoryState.mediaItem,
-        syncLevel: syncLevelStore.syncLevel,
-        apiURL: syncLevelStore.apiURL,
-        styleTheme: syncLevelStore.styleTheme,
-        showLyricProgress: syncLevelStore.showLyricProgress,
-        lyricsOffset: syncLevelStore.lyricsOffset,
-        backgroundBlur: syncLevelStore.backgroundBlur,
-        vibrantColorOpacity: syncLevelStore.vibrantColorOpacity,
-        textShadowIntensity: syncLevelStore.textShadowIntensity,
-        animationSpeed: syncLevelStore.animationSpeed,
-        enableFloatingAnimation: syncLevelStore.enableFloatingAnimation,
-        enablePulseEffects: syncLevelStore.enablePulseEffects,
-        fontSizeScale: syncLevelStore.fontSizeScale,
-        textOpacity: syncLevelStore.textOpacity,
-        paddingScale: syncLevelStore.paddingScale,
-        borderRadius: syncLevelStore.borderRadius,
-        customVibrantColor: syncLevelStore.customVibrantColor,
-        currentLyricColor: syncLevelStore.currentLyricColor,
-        fullscreenButton: syncLevelStore.fullscreenButton,
-        catJam: syncLevelStore.catJam,
-    };
-};
-
-export const settings = {
-    get currentTime() {
-        return inMemoryState.currentTime;
-    },
-    set currentTime(value: number) {
-        inMemoryState.currentTime = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-
-    get mediaItem() {
-        return inMemoryState.mediaItem;
-    },
-    set mediaItem(value: MediaItem | null) {
-        inMemoryState.mediaItem = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get syncLevel() {
-        return syncLevelStore.syncLevel;
-    },
-    set syncLevel(value: SyncMode) {
-        syncLevelStore.syncLevel = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get apiURL() {
-        return syncLevelStore.apiURL;
-    },
-    set apiURL(value: string) {
-        syncLevelStore.apiURL = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get catJam() {
-        return syncLevelStore.catJam;
-    },
-    set catJam(value: CatJam) {
-        syncLevelStore.catJam = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get styleTheme() {
-        return syncLevelStore.styleTheme;
-    },
-    set styleTheme(value: StyleTheme) {
-        syncLevelStore.styleTheme = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get showLyricProgress() {
-        return syncLevelStore.showLyricProgress;
-    },
-    set showLyricProgress(value: boolean) {
-        syncLevelStore.showLyricProgress = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-
-    get lyricsOffset() {
-        return syncLevelStore.lyricsOffset;
-    },
-    set lyricsOffset(value: number) {
-        syncLevelStore.lyricsOffset = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-
-    get playing() {
-        return inMemoryState.playing;
-    },
-    set playing(value: boolean) {
-        inMemoryState.playing = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-
-    get backgroundBlur() {
-        return syncLevelStore.backgroundBlur;
-    },
-    set backgroundBlur(value: number) {
-        syncLevelStore.backgroundBlur = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get vibrantColorOpacity() {
-        return syncLevelStore.vibrantColorOpacity;
-    },
-    set vibrantColorOpacity(value: number) {
-        syncLevelStore.vibrantColorOpacity = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get textShadowIntensity() {
-        return syncLevelStore.textShadowIntensity;
-    },
-    set textShadowIntensity(value: number) {
-        syncLevelStore.textShadowIntensity = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-
-    get animationSpeed() {
-        return syncLevelStore.animationSpeed;
-    },
-    set animationSpeed(value: number) {
-        syncLevelStore.animationSpeed = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get enableFloatingAnimation() {
-        return syncLevelStore.enableFloatingAnimation;
-    },
-    set enableFloatingAnimation(value: boolean) {
-        syncLevelStore.enableFloatingAnimation = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get enablePulseEffects() {
-        return syncLevelStore.enablePulseEffects;
-    },
-    set enablePulseEffects(value: boolean) {
-        syncLevelStore.enablePulseEffects = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get fontSizeScale() {
-        return syncLevelStore.fontSizeScale;
-    },
-    set fontSizeScale(value: number) {
-        syncLevelStore.fontSizeScale = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get textOpacity() {
-        return syncLevelStore.textOpacity;
-    },
-    set textOpacity(value: number) {
-        syncLevelStore.textOpacity = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get paddingScale() {
-        return syncLevelStore.paddingScale;
-    },
-    set paddingScale(value: number) {
-        syncLevelStore.paddingScale = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get borderRadius() {
-        return syncLevelStore.borderRadius;
-    },
-    set borderRadius(value: number) {
-        syncLevelStore.borderRadius = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get customVibrantColor() {
-        return syncLevelStore.customVibrantColor;
-    },
-    set customVibrantColor(value: string) {
-        syncLevelStore.customVibrantColor = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-    get currentLyricColor() {
-        return syncLevelStore.currentLyricColor;
-    },
-    set currentLyricColor(value: string) {
-        syncLevelStore.currentLyricColor = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-
-    get fullscreenButton() {
-        return syncLevelStore.fullscreenButton;
-    },
-    set fullscreenButton(value: boolean) {
-        syncLevelStore.fullscreenButton = value;
-        updateSnapshot();
-        listeners.forEach((listener) => listener());
-    },
-
-    subscribe: (listener: () => void) => {
-        listeners.add(listener);
-        return () => {
-            listeners.delete(listener);
-        };
-    },
-
-    getSnapshot: () => {
-        return cachedSnapshot;
-    },
-};
 
 export const Settings = () => {
     const [currentMode, setCurrentMode] = React.useState<SyncMode>(
-        syncLevelStore.syncLevel,
+        settings.syncLevel,
     );
     const [currentApiUrl, setCurrentApiUrl] = React.useState<string>(
-        syncLevelStore.apiURL,
+        settings.apiURL,
     );
 
     const [backgroundBlur, setBackgroundBlur] = React.useState<number>(
-        syncLevelStore.backgroundBlur,
+        settings.backgroundBlur,
     );
     const [vibrantColorOpacity, setVibrantColorOpacity] = React.useState<number>(
-        syncLevelStore.vibrantColorOpacity,
+        settings.vibrantColorOpacity,
     );
     const [textShadowIntensity, setTextShadowIntensity] = React.useState<number>(
-        syncLevelStore.textShadowIntensity,
+        settings.textShadowIntensity,
     );
 
     const [animationSpeed, setAnimationSpeed] = React.useState<number>(
-        syncLevelStore.animationSpeed,
+        settings.animationSpeed,
     );
     const [enableFloatingAnimation, setEnableFloatingAnimation] =
-        React.useState<boolean>(syncLevelStore.enableFloatingAnimation);
+        React.useState<boolean>(settings.enableFloatingAnimation);
     const [enablePulseEffects, setEnablePulseEffects] = React.useState<boolean>(
-        syncLevelStore.enablePulseEffects,
+        settings.enablePulseEffects,
     );
 
     const [fontSizeScale, setFontSizeScale] = React.useState<number>(
-        syncLevelStore.fontSizeScale,
+        settings.fontSizeScale,
     );
     const [textOpacity, setTextOpacity] = React.useState<number>(
-        syncLevelStore.textOpacity,
+        settings.textOpacity,
     );
 
     const [paddingScale, setPaddingScale] = React.useState<number>(
-        syncLevelStore.paddingScale,
+        settings.paddingScale,
     );
     const [borderRadius, setBorderRadius] = React.useState<number>(
-        syncLevelStore.borderRadius,
+        settings.borderRadius,
     );
 
     const [customVibrantColor, setCustomVibrantColor] = React.useState<string>(
-        syncLevelStore.customVibrantColor,
+        settings.customVibrantColor,
     );
     const [currentLyricColor, setCurrentLyricColor] = React.useState<string>(
-        syncLevelStore.currentLyricColor,
+        settings.currentLyricColor,
     );
     const [fullscreenButton, setFullscreenButton] = React.useState<boolean>(
-        syncLevelStore.fullscreenButton,
+        settings.fullscreenButton,
     );
-    const [catJam, setCatJam] = React.useState<CatJam>(syncLevelStore.catJam);
-    const [styleTheme, setStyleTheme] = React.useState<StyleTheme>(syncLevelStore.styleTheme);
+    const [catJam, setCatJam] = React.useState<CatJam>(settings.catJam);
+    const [styleTheme, setStyleTheme] = React.useState<StyleTheme>(settings.styleTheme);
     const [showLyricProgress, setShowLyricProgress] = React.useState<boolean>(
-        syncLevelStore.showLyricProgress,
+        settings.showLyricProgress,
     );
     const [lyricsOffset, setLyricsOffset] = React.useState<number>(
-        syncLevelStore.lyricsOffset,
+        settings.lyricsOffset,
     );
 
     return (
@@ -646,7 +391,7 @@ export const Settings = () => {
                     if (!URL.canParse(url)) {
                         return;
                     }
-                    syncLevelStore.apiURL = url;
+                    settings.apiURL = url;
                 }}
             />
 
@@ -838,7 +583,7 @@ export const Settings = () => {
                 onClick={() => {
                     Object.keys(defaultValues).forEach((key) => {
                         // @ts-expect-error: dynamic
-                        syncLevelStore[key] = defaultValues[key];
+                        settings[key] = defaultValues[key];
                     });
                     setCurrentMode(defaultValues.syncLevel);
                     setCurrentApiUrl(defaultValues.apiURL);

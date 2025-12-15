@@ -1,38 +1,96 @@
+import { MediaItem, PlayState } from "@luna/lib";
 import React, {
     memo,
     useCallback,
     useEffect,
     useMemo,
     useRef,
-    useState,
-    useSyncExternalStore,
+    useState
 } from "react";
+import { unloads } from "..";
 import { settings } from "../settings";
 import type { Color, EnhancedSyncedLyric } from "../types";
 import { getColors, getDominantColor, getLyrics } from "../util";
 import { Lyrics } from "./Lyrics";
 
+function useCurrentTime() {
+    const [currentTime, setCurrentTime] = useState(PlayState.currentTime);
+    const lastTimeRef = useRef(PlayState.currentTime);
+    const lastUpdateRef = useRef(performance.now());
+
+    useEffect(() => {
+        let animationFrameId: number;
+
+        const update = () => {
+            const now = performance.now();
+            const stateTime = PlayState.currentTime;
+            const isPlaying = PlayState.playing;
+
+            if (stateTime !== lastTimeRef.current) {
+                lastTimeRef.current = stateTime;
+                lastUpdateRef.current = now;
+            }
+
+            if (isPlaying) {
+                const elapsed = (now - lastUpdateRef.current) / 1000;
+                setCurrentTime(lastTimeRef.current + elapsed);
+            } else {
+                setCurrentTime(stateTime);
+            }
+
+            animationFrameId = requestAnimationFrame(update);
+        };
+
+        update();
+        return () => cancelAnimationFrame(animationFrameId);
+    }, []);
+    return currentTime;
+}
+
+function useMediaItem() {
+    const [mediaItem, setMediaItem] = useState<MediaItem | null>(null);
+    useEffect(() => {
+        let isCancelled = false;
+        MediaItem.fromPlaybackContext().then((item) => {
+            if (!isCancelled && item) setMediaItem(item);
+        });
+        const unsub = MediaItem.onMediaTransition(unloads, async (item) => {
+            if (!isCancelled) setMediaItem(item);
+        });
+        return () => {
+            isCancelled = true;
+            unsub();
+        };
+    }, []);
+    return mediaItem;
+}
+
+function usePlaying() {
+    const [isPlaying, setIsPlaying] = useState<boolean>(PlayState.playing);
+    useEffect(() => {
+        let isCancelled = false;
+        const unsub = PlayState.onState(unloads, async (item) => {
+            if (!isCancelled) setIsPlaying(PlayState.playing);
+        });
+        return () => {
+            isCancelled = true;
+            unsub();
+        };
+    }, []);
+    return isPlaying;
+}
+
 export const FullScreen = memo(() => {
-    const snapshot = useSyncExternalStore(
-        settings.subscribe,
-        settings.getSnapshot,
-    );
     const {
-        currentTime,
-        mediaItem,
         syncLevel,
         catJam,
-        playing,
         styleTheme,
         showLyricProgress,
         lyricsOffset,
-    } = snapshot;
-    const {
-        coverUrl,
-        tidalItem: { title, artists, album, artist, bpm },
-    } = mediaItem!;
-    const { releaseDate, vibrantColor } = album ?? {};
-
+    } = settings;
+    const currentTime = useCurrentTime();
+    const mediaItem = useMediaItem();
+    const playing = usePlaying();
     const [lyrics, setLyrics] = useState<EnhancedSyncedLyric[]>([]);
     const [loading, setLoading] = useState(false);
     const [errorStatus, setErrorStatus] = useState<number | null>(null);
@@ -43,8 +101,18 @@ export const FullScreen = memo(() => {
     const artVideoRef = useRef<HTMLVideoElement | null>(null);
     const currentTrackIdRef = useRef<string | null>(null);
 
-    if (mediaItem?.tidalItem?.id) {
-        currentTrackIdRef.current = mediaItem.tidalItem.id as string;
+    const coverUrl = mediaItem?.coverUrl;
+    const tidalItem = mediaItem?.tidalItem;
+    const title = tidalItem?.title;
+    const artists = tidalItem?.artists;
+    const album = tidalItem?.album;
+    const artist = tidalItem?.artist;
+    const bpm = tidalItem?.bpm;
+    const releaseDate = album?.releaseDate;
+    const vibrantColor = album?.vibrantColor;
+
+    if (tidalItem?.id) {
+        currentTrackIdRef.current = tidalItem.id as string;
     }
 
     useEffect(() => {
@@ -84,7 +152,7 @@ export const FullScreen = memo(() => {
     useEffect(() => {
         if (
             vibrantColor === "#FFFFFF" &&
-            !snapshot.customVibrantColor &&
+            !settings.customVibrantColor &&
             albumArt &&
             (!catJam || catJam === "None")
         ) {
@@ -107,7 +175,7 @@ export const FullScreen = memo(() => {
         } else {
             setDominantColor(null);
         }
-    }, [vibrantColor, snapshot.customVibrantColor, albumArt, catJam]);
+    }, [vibrantColor, settings.customVibrantColor, albumArt, catJam]);
 
     useEffect(() => {
         if (
@@ -159,11 +227,11 @@ export const FullScreen = memo(() => {
     }, [catJam, bpm, playing]);
 
     useEffect(() => {
-        if (mediaItem?.tidalItem?.id) {
+        if (tidalItem?.id) {
             setLoading(true);
             setErrorStatus(null);
             let isCancelled = false;
-            const trackId = parseInt(mediaItem.tidalItem.id as string, 10);
+            const trackId = parseInt(tidalItem.id as string, 10);
 
             getLyrics(trackId)
                 .then((lyricsData) => {
@@ -188,7 +256,7 @@ export const FullScreen = memo(() => {
                 isCancelled = true;
             };
         }
-    }, [mediaItem?.tidalItem?.id]);
+    }, [tidalItem?.id]);
 
     const releaseYear = useMemo(
         () => (releaseDate ? new Date(releaseDate).getFullYear() : ""),
@@ -201,10 +269,10 @@ export const FullScreen = memo(() => {
     );
 
     const handleRetry = useCallback(() => {
-        if (mediaItem?.tidalItem?.id) {
+        if (tidalItem?.id) {
             setLoading(true);
             setErrorStatus(null);
-            const trackId = parseInt(mediaItem.tidalItem.id as string, 10);
+            const trackId = parseInt(tidalItem.id as string, 10);
 
             getLyrics(trackId)
                 .then((lyricsData) => {
@@ -225,12 +293,19 @@ export const FullScreen = memo(() => {
                     }
                 });
         }
-    }, [mediaItem?.tidalItem?.id]);
+    }, [tidalItem?.id]);
 
     const effectiveVibrantColor =
-        snapshot.customVibrantColor || dominantColor || vibrantColor;
+        settings.customVibrantColor || dominantColor || vibrantColor;
     const effectiveCurrentLyricColor =
-        snapshot.currentLyricColor || effectiveVibrantColor;
+        settings.currentLyricColor || effectiveVibrantColor;
+    if (!mediaItem) {
+        return (
+            <div className="betterFullscreen-player" data-theme={styleTheme.toLowerCase()}>
+                <div className="betterFullscreen-loading">Loading...</div>
+            </div>
+        );
+    }
 
     return (
         <div
@@ -240,16 +315,16 @@ export const FullScreen = memo(() => {
                 {
                     "--vibrant-color": effectiveVibrantColor,
                     "--current-lyric-color": effectiveCurrentLyricColor,
-                    "--background-blur": `${snapshot.backgroundBlur}px`,
-                    "--vibrant-color-opacity": snapshot.vibrantColorOpacity,
-                    "--text-shadow-intensity": snapshot.textShadowIntensity,
-                    "--animation-speed": snapshot.animationSpeed,
-                    "--enable-floating": snapshot.enableFloatingAnimation ? "1" : "0",
-                    "--enable-pulse": snapshot.enablePulseEffects ? "1" : "0",
-                    "--font-size-scale": snapshot.fontSizeScale,
-                    "--text-opacity": snapshot.textOpacity,
-                    "--padding-scale": snapshot.paddingScale,
-                    "--border-radius": `${snapshot.borderRadius}px`,
+                    "--background-blur": `${settings.backgroundBlur}px`,
+                    "--vibrant-color-opacity": settings.vibrantColorOpacity,
+                    "--text-shadow-intensity": settings.textShadowIntensity,
+                    "--animation-speed": settings.animationSpeed,
+                    "--enable-floating": settings.enableFloatingAnimation ? "1" : "0",
+                    "--enable-pulse": settings.enablePulseEffects ? "1" : "0",
+                    "--font-size-scale": settings.fontSizeScale,
+                    "--text-opacity": settings.textOpacity,
+                    "--padding-scale": settings.paddingScale,
+                    "--border-radius": `${settings.borderRadius}px`,
                 } as any
             }
         >

@@ -1,5 +1,5 @@
 import { LunaUnload, Tracer } from "@luna/core";
-import { ipcRenderer, MediaItem, observe, PlayState, redux, safeInterval, safeTimeout, StyleTag } from "@luna/lib";
+import { MediaItem, observe, redux, safeInterval, safeTimeout, StyleTag } from "@luna/lib";
 import React from "react";
 import { createRoot } from "react-dom/client";
 import { FullScreen } from "./components/Fullscreen";
@@ -17,10 +17,13 @@ const loadCss = () => {
         styleTag.css = m.default;
     })
 }
+
+const removeFullscreenButton = () => document.querySelector(`.${buttonClassName}`)?.remove();
+
 const enterFullscreen = () => {
     loadCss();
     removeFullscreenButton?.();
-    safeTimeout(unloads, () => {
+    safeTimeout(unloads, async () => {
         const parent = document.querySelector(".is-fullscreen.is-now-playing");
         if (parent) {
             const fullscreenElement = parent.querySelector('[class^="_fullscreen_"]');
@@ -56,29 +59,8 @@ const doObserve = () => {
 observe(unloads, ".is-fullscreen.is-now-playing", doObserve);
 safeTimeout(unloads, doObserve);
 
-ipcRenderer.on(unloads, "api.mpv.time", (time) => {
-    settings.currentTime = settings.currentTime = time;
-})
-
-let lastUpdateTime = 0;
-const interval = safeInterval(unloads, () => {
-    if (window.mpvEnabled?.()) {
-        interval();
-        return;
-    }
-    const now = PlayState.currentTime;
-    if (Math.abs(now - lastUpdateTime) >= 0.05) {
-        lastUpdateTime = now;
-        settings.currentTime = now;
-    }
-}, 100);
-
 unloads.add(styleTag.remove.bind(styleTag))
 
-MediaItem.fromPlaybackContext().then((item) => settings.mediaItem = item || null);
-MediaItem.onMediaTransition(unloads, async (item) =>
-    settings.mediaItem = item
-);
 MediaItem.onPreload(unloads, (item) => {
     getLyrics(item.id as number)
 })
@@ -106,7 +88,7 @@ const addFullscreenButton = () => {
     parent.appendChild(fullscreenButton);
 }
 
-const removeFullscreenButton = document.querySelector(`.${buttonClassName}`)?.remove
+safeInterval(unloads, () => setFSB(settings.fullscreenButton), 2000);
 
 const setFSB = (v: boolean) => {
     if (v) {
@@ -115,18 +97,8 @@ const setFSB = (v: boolean) => {
         removeFullscreenButton?.();
     }
 }
-settings.subscribe(() => {
-    if (settings.fullscreenButton) {
-        setFSB(true);
-    } else {
-        setFSB(false);
-    }
-});
+
 
 unloads.add(() => {
     removeFullscreenButton?.();
 })
-
-PlayState.onState(unloads, () => {
-    settings.playing = PlayState.playing;
-});

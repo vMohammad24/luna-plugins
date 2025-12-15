@@ -1,6 +1,41 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { Color, EnhancedSyncedLyric, SyncedCharacter, SyncedWord } from '../types';
 
+const CHARS_PER_COLOR = 7;
+const colorCache = new Map<string, string>();
+
+const interpolateColor = (color1: string, color2: string, factor: number): string => {
+    const roundedFactor = Math.round(factor * 100) / 100;
+    const cacheKey = `${color1}${color2}${roundedFactor}`;
+
+    let result = colorCache.get(cacheKey);
+    if (result) return result;
+
+    const hex1 = color1.replace('#', '');
+    const hex2 = color2.replace('#', '');
+
+    const r1 = parseInt(hex1.substring(0, 2), 16);
+    const g1 = parseInt(hex1.substring(2, 4), 16);
+    const b1 = parseInt(hex1.substring(4, 6), 16);
+
+    const r2 = parseInt(hex2.substring(0, 2), 16);
+    const g2 = parseInt(hex2.substring(2, 4), 16);
+    const b2 = parseInt(hex2.substring(4, 6), 16);
+
+    const r = Math.round(r1 + (r2 - r1) * roundedFactor);
+    const g = Math.round(g1 + (g2 - g1) * roundedFactor);
+    const b = Math.round(b1 + (b2 - b1) * roundedFactor);
+
+    result = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+
+    if (colorCache.size > 1000) colorCache.clear();
+    colorCache.set(cacheKey, result);
+
+    return result;
+};
+
+const RTL_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+
 const Character = memo(({ char, index, status, totalChars, colors }: {
     char: SyncedCharacter;
     index: number;
@@ -8,39 +43,16 @@ const Character = memo(({ char, index, status, totalChars, colors }: {
     totalChars: number;
     colors: Color[];
 }) => {
-    const CHARS_PER_COLOR = 7;
     const position = index / CHARS_PER_COLOR;
-
     const colorIndex = Math.floor(position) % colors.length;
     const nextColorIndex = (colorIndex + 1) % colors.length;
 
     const color = colors[colorIndex];
     const nextColor = colors[nextColorIndex];
-
     const progress = position % 1;
 
-    const interpolateColor = (color1: string, color2: string, factor: number) => {
-        const hex1 = color1.replace('#', '');
-        const hex2 = color2.replace('#', '');
-
-        const r1 = parseInt(hex1.substring(0, 2), 16);
-        const g1 = parseInt(hex1.substring(2, 4), 16);
-        const b1 = parseInt(hex1.substring(4, 6), 16);
-
-        const r2 = parseInt(hex2.substring(0, 2), 16);
-        const g2 = parseInt(hex2.substring(2, 4), 16);
-        const b2 = parseInt(hex2.substring(4, 6), 16);
-
-        const r = Math.round(r1 + (r2 - r1) * factor);
-        const g = Math.round(g1 + (g2 - g1) * factor);
-        const b = Math.round(b1 + (b2 - b1) * factor);
-
-        return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-    };
-
     const interpolatedColor = interpolateColor(color.readableHex, nextColor.readableHex, progress);
-
-    const isComplex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char.char);
+    const isComplex = RTL_REGEX.test(char.char);
 
     const style = {
         color: status === 'active' || status === 'word-active' ? interpolatedColor : 'inherit',
@@ -60,7 +72,11 @@ const Character = memo(({ char, index, status, totalChars, colors }: {
             {char.char}
         </span>
     );
-});
+}, (prev, next) =>
+    prev.status === next.status &&
+    prev.index === next.index &&
+    prev.char.char === next.char.char
+);
 Character.displayName = 'Character';
 
 const Word = memo(({ word, index, isActive, isPrevious, totalWords }: {
@@ -77,7 +93,11 @@ const Word = memo(({ word, index, isActive, isPrevious, totalWords }: {
             {index < totalWords - 1 ? ' ' : ''}
         </span>
     );
-});
+}, (prev, next) =>
+    prev.isActive === next.isActive &&
+    prev.isPrevious === next.isPrevious &&
+    prev.word.word === next.word.word
+);
 Word.displayName = 'Word';
 
 const LyricLine = memo(({
@@ -112,7 +132,7 @@ const LyricLine = memo(({
     }, [type, lyric.time, currentTime, nextLyricTime]);
 
     const isRtl = useMemo(() => {
-        return /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(lyric.text);
+        return RTL_REGEX.test(lyric.text);
     }, [lyric.text]);
 
     const shouldShowProgress = showProgress && type === 'current' && lyric.words && lyric.words.length > 0 && nextLyricTime;
@@ -236,7 +256,7 @@ export const Lyrics = memo(({
             allCharacters.forEach((char, index) => {
                 let status: 'active' | 'word-active' | 'previous' | 'upcoming' = 'upcoming';
 
-                const isComplex = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char.char);
+                const isComplex = RTL_REGEX.test(char.char);
                 if (isComplex) {
                     currentWordHasComplexChar = true;
                 }
