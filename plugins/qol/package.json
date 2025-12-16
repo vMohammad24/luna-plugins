@@ -1,0 +1,11 @@
+{
+    "name": "@vmohammad/QoL",
+    "description": "Various quality of life improvements",
+    "author": {
+        "name": "vMohammad",
+        "url": "https://vmohammad.dev",
+        "avatarUrl": "https://avatars.githubusercontent.com/u/62218284?v=4"
+    },
+    "main": "./src/index.ts",
+    "type": "module"
+}
