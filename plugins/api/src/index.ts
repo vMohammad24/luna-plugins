@@ -2,6 +2,13 @@ import { LunaUnload, reduxStore, Tracer } from "@luna/core";
 import { ipcRenderer, MediaItem, PlayState, redux, safeInterval } from "@luna/lib";
 import { startServer, stopServer, updateFields } from "./index.native";
 import { settings } from "./Settings";
+import type { ActionData, ActionHandler } from "./types";
+
+declare global {
+    interface Window {
+        __apiInvokeAction?: (data: ActionData & { action: string }) => Promise<unknown>;
+    }
+}
 
 const stateUpdateInt = 250;
 const portCheckInt = 5000;
@@ -65,18 +72,22 @@ const addToQueue = (itemId: string) => {
     });
 };
 
-const playbackActions: Record<string, (data: any) => void> = {
+const rendererActions: Record<string, (data: ActionData) => unknown> = {
     pause: PlayState.pause,
-    resume: PlayState.play,
+    resume: () => PlayState.play(),
     toggle: () => (PlayState.playing ? PlayState.pause() : PlayState.play()),
     next: PlayState.next,
     previous: PlayState.previous,
     setRepeatMode: (data) => typeof data.mode === "number" && PlayState.setRepeatMode(data.mode),
-    setShuffleMode: (data) => typeof data.shuffle === "boolean" && PlayState.setShuffle(data.shuffle, true),
+    setShuffleMode: (data) => {
+        if (typeof data.shuffle === "boolean") {
+            data.shuffle ? PlayState.setShuffle(true, true) : PlayState.setShuffle(false, true);
+        }
+    },
     seek: (data) => typeof data.time === "number" && PlayState.seek(data.time),
-    volume: (data) => handleVolumeChange(data.volume),
-    playNext: (data) => data.itemId && PlayState.playNext(data.itemId),
-    addToQueue: (data) => data.itemId && addToQueue(data.itemId),
+    volume: (data) => handleVolumeChange(data.volume as string | number),
+    playNext: (data) => data.itemId && PlayState.playNext(data.itemId as string),
+    addToQueue: (data) => data.itemId && addToQueue(data.itemId as string),
 };
 
 startServer(settings.port);
@@ -98,8 +109,56 @@ MediaItem.onMediaTransition(unloads, updateMediaFields);
 PlayState.onState(unloads, updateStateFields);
 safeInterval(unloads, updateStateFields, stateUpdateInt);
 
+window.__apiInvokeAction = async (data: ActionData & { action: string }) => {
+    const handler = rendererActions[data.action];
+    if (handler) {
+        const result = await handler(data);
+        updateStateFields();
+        return result;
+    }
+    return undefined;
+};
+unloads.add(() => {
+    delete window.__apiInvokeAction;
+});
+
 ipcRenderer.on(unloads, "api.playback.control", async (data) => {
-    playbackActions[data.action]?.(data);
+    rendererActions[data.action]?.(data);
     updateStateFields();
 });
+
+
+
+
+/**
+ * Register a new action handler for the API.
+ * @param unloadsFn - Your plugin unloads set
+ * @param name - The action name (used in HTTP/WebSocket requests)
+ * @param handler - The function to execute when the action is triggered
+ * @returns A function to unregister the action (same one is added to unloadsFn so do NOT call it manually unless you want to remove it early)
+ */
+export const registerAction = (
+    unloadsFn: Set<LunaUnload>,
+    name: string,
+    handler: ActionHandler
+) => {
+    if (rendererActions[name]) {
+        trace.msg.warn(`Action "${name}" already exists, overwriting`);
+    }
+    let registered = true;
+    rendererActions[name] = handler;
+    const unregister = () => {
+        if (registered) {
+            registered = false;
+            delete rendererActions[name];
+        }
+    };
+    unloadsFn.add(unregister);
+    unloads.add(unregister);
+    return unregister;
+};
+
+
+export type { ActionData, ActionHandler } from "./types";
+export { updateFields as updateAPIFields };
 

@@ -1,44 +1,11 @@
 import { BrowserWindow } from "electron";
 import { createServer, IncomingMessage, Server, ServerResponse } from "http";
 import { WebSocket, WebSocketServer } from "ws";
+import type { ActionResult, ActionSchema, WsMessage, WsSubscription } from "./types";
 
-declare global {
-    interface Window {
-        tidalWindow?: BrowserWindow;
-    }
-}
-
-interface WsSubscription {
-    fields: Set<string>;
-    all: boolean;
-}
-
-interface WsMessage {
-    action: string;
-    fields?: string[];
-    all?: boolean;
-    mode?: number;
-    shuffle?: boolean;
-    time?: number;
-    volume?: string | number;
-    itemId?: string;
-}
-
-interface ActionResult {
-    success: boolean;
-    response?: Record<string, unknown>;
-}
-
-interface ActionSchema {
-    param?: string;
-    validate: (value: unknown) => boolean;
-}
-
-type ActionHandler = (data: WsMessage) => ActionResult;
+type NativeActionHandler = (data: WsMessage) => ActionResult;
 
 const ipcChannel = "api.playback.control";
-
-const sActions = ["pause", "resume", "toggle", "next", "previous"] as const;
 
 const schemas: Record<string, ActionSchema> = {
     setRepeatMode: {
@@ -75,12 +42,29 @@ const fields: Record<string, unknown> = {};
 const wsSubscriptions = new Map<WebSocket, WsSubscription>();
 
 const sendToRenderer = (data: Record<string, unknown>) => {
-    const tidalWindow = globalThis.window.tidalWindow;
+    const tidalWindow = BrowserWindow.fromId(1);
     if (!tidalWindow) {
         console.warn("sendToRenderer: No tidalWindow available");
         return;
     }
     tidalWindow.webContents.send(ipcChannel, data);
+};
+
+const invokeRenderer = async (data: Record<string, unknown>): Promise<{ success: boolean; response?: unknown }> => {
+    const tidalWindow = BrowserWindow.fromId(1);
+    if (!tidalWindow) {
+        console.warn("invokeRenderer: No tidalWindow available");
+        return { success: false };
+    }
+    try {
+        const response = await tidalWindow.webContents.executeJavaScript(
+            `window.__apiInvokeAction?.(${JSON.stringify(data)})`
+        );
+        return { success: true, response };
+    } catch (e) {
+        console.error("invokeRenderer error:", e);
+        return { success: false };
+    }
 };
 
 
@@ -91,10 +75,7 @@ const sendWsError = (ws: WebSocket, error: string) =>
     sendWsResponse(ws, { type: "error", error });
 
 
-const isSimpleAction = (action: string): action is (typeof sActions)[number] =>
-    sActions.includes(action as (typeof sActions)[number]);
-
-const createActionHandler = (schema: ActionSchema): ActionHandler => {
+const createActionHandler = (schema: ActionSchema): NativeActionHandler => {
     return (data) => {
         const paramValue = data[schema.param as keyof WsMessage];
         if (!schema.validate(paramValue)) {
@@ -106,7 +87,7 @@ const createActionHandler = (schema: ActionSchema): ActionHandler => {
     };
 };
 
-const actionHandlers: Record<string, ActionHandler> = Object.fromEntries(
+const actionHandlers: Record<string, NativeActionHandler> = Object.fromEntries(
     Object.entries(schemas).map(([action, schema]) => [action, createActionHandler(schema)])
 );
 
@@ -133,7 +114,7 @@ const handleWsUnsubscribe = (ws: WebSocket): void => {
 };
 
 
-const handleWsMessage = (ws: WebSocket, data: WsMessage) => {
+const handleWsMessage = async (ws: WebSocket, data: WsMessage) => {
     const { action } = data;
 
     if (action === "subscribe") {
@@ -159,13 +140,12 @@ const handleWsMessage = (ws: WebSocket, data: WsMessage) => {
         return;
     }
 
-    if (isSimpleAction(action)) {
-        sendToRenderer({ action });
-        sendWsResponse(ws, { type: "ok", action });
-        return;
+    const result = await invokeRenderer({ ...data });
+    if (result.success) {
+        sendWsResponse(ws, { type: "ok", action, data: result.response });
+    } else {
+        sendWsError(ws, `Action "${action}" failed or not found`);
     }
-
-    sendWsError(ws, `Unknown action: ${action}`);
 };
 
 const sendHttpResponse = (res: ServerResponse, status: number, data: Record<string, unknown>) => {
@@ -209,13 +189,12 @@ const handleHttpAction = async (req: IncomingMessage, res: ServerResponse) => {
             }
             return;
         }
-        if (isSimpleAction(action)) {
-            sendToRenderer({ action });
-            sendHttpResponse(res, 200, { type: "ok", action });
-            return;
+        const result = await invokeRenderer({ ...data });
+        if (result.success) {
+            sendHttpResponse(res, 200, { type: "ok", action, data: result.response });
+        } else {
+            sendHttpResponse(res, 400, { type: "error", error: `Action "${action}" failed or not found` });
         }
-
-        sendHttpResponse(res, 400, { type: "error", error: `Unknown action: ${action}` });
     } catch (e) {
         const message = e instanceof Error ? e.message : "Invalid request";
         sendHttpResponse(res, 400, { type: "error", error: message });
@@ -288,7 +267,7 @@ const updateField = (field: string, value: unknown) => {
 };
 
 
-export const startServer = async (port: number) => {
+const startServer = async (port: number) => {
     if (server) {
         await stopServer();
     }
@@ -300,7 +279,7 @@ export const startServer = async (port: number) => {
     wss.on("connection", handleWsConnection);
 };
 
-export const stopServer = async () => {
+const stopServer = async () => {
     if (wss) {
         wss.clients.forEach((ws) => ws.close());
         wss.close();
@@ -315,6 +294,9 @@ export const stopServer = async () => {
     }
 };
 
-export const updateFields = (recordedFields: Record<string, unknown>) => {
+const updateFields = (recordedFields: Record<string, unknown>) => {
     Object.entries(recordedFields).forEach(([key, value]) => updateField(key, value));
 };
+
+export { startServer, stopServer, updateFields };
+
