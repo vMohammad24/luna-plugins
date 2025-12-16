@@ -19,7 +19,32 @@ Exposes TIDAL playback and queue state via HTTP and WebSocket for external contr
 
 ### HTTP API
 
-- `GET /` returns current state as JSON
+#### GET /
+
+Returns current playback state as JSON.
+
+#### POST Actions
+
+Send POST requests to control playback. The action is specified in the URL path, with parameters in the JSON body.
+
+| Endpoint               | Body                  | Description                                     |
+| ---------------------- | --------------------- | ----------------------------------------------- |
+| `POST /pause`          | -                     | Pause playback                                  |
+| `POST /resume`         | -                     | Resume playback                                 |
+| `POST /toggle`         | -                     | Toggle play/pause                               |
+| `POST /next`           | -                     | Skip to next track                              |
+| `POST /previous`       | -                     | Go to previous track                            |
+| `POST /seek`           | `{ "time": 120 }`     | Seek to position (seconds)                      |
+| `POST /volume`         | `{ "volume": 50 }`    | Set volume (0-100, or "+10"/"-10" for relative) |
+| `POST /setRepeatMode`  | `{ "mode": 0 }`       | Set repeat mode (0=Off, 1=All, 2=One)           |
+| `POST /setShuffleMode` | `{ "shuffle": true }` | Enable/disable shuffle                          |
+| `POST /playNext`       | `{ "itemId": "..." }` | Add item to play next                           |
+| `POST /addToQueue`     | `{ "itemId": "..." }` | Add item to queue                               |
+
+**Response format:**
+
+- Success: `{ "type": "ok", "action": "...", ... }`
+- Error: `{ "type": "error", "error": "..." }`
 
 ### WebSocket API
 
@@ -33,6 +58,7 @@ Exposes TIDAL playback and queue state via HTTP and WebSocket for external contr
 #### Control Actions
 
 Send JSON messages with these actions:
+
 - `"pause"`, `"resume"`, `"toggle"`, `"next"`, `"previous"`
 - `{ "action": "seek", "time": 120 }` (seek to 120s)
 - `{ "action": "volume", "volume": 50 }` (set volume to 50%)
