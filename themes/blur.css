@@ -29,8 +29,7 @@
 }
 
 /* Padding adjustments */
-[class^="_sidebarWrapper"],
-[class^="_contentArea"],
+[class^="_sidebarWrapper"],[class^="_contentArea"],[class="_sidebar_4927556 _newSidebar_f871cc1"]
 #main {
     padding-top: 30px;
 }
@@ -50,11 +49,8 @@
     width: 100%;
 }
 
-/* Remove double spacing */
-[class^="_contentArea"] > *:last-child,
-#main > *:last-child {
-    margin-bottom: 0 !important;
-    padding-bottom: 0 !important;
+.mainContent {
+    padding-top: 45px;
 }
 
 table:last-child,
