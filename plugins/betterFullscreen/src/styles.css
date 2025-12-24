@@ -1,6 +1,231 @@
+:root {
+  --bf-animation-speed: var(--animation-speed, 1);
+  --bf-transition-fast: calc(0.2s / var(--bf-animation-speed));
+  --bf-transition-normal: calc(0.4s / var(--bf-animation-speed));
+  --bf-transition-slow: calc(0.6s / var(--bf-animation-speed));
+
+  --bf-vibrant: var(--vibrant-color, rgba(255, 255, 255, 0.5));
+  --bf-vibrant-opacity: var(--vibrant-color-opacity, 1);
+  --bf-lyric-color: var(--current-lyric-color, var(--bf-vibrant));
+  --bf-text-opacity: var(--text-opacity, 1);
+  --bf-shadow-intensity: var(--text-shadow-intensity, 1);
+
+  --bf-border-radius: var(--border-radius, 12px);
+  --bf-padding-scale: var(--padding-scale, 1);
+  --bf-font-scale: var(--font-size-scale, 1);
+  --bf-blur: var(--background-blur, 25px);
+
+  --bf-album-size: clamp(150px, 25vw, 300px);
+  --bf-content-padding: calc(
+    clamp(1.5rem, 5vw, 3rem) * var(--bf-padding-scale)
+  );
+}
+
 * {
   -webkit-font-smoothing: antialiased !important;
   -moz-osx-font-smoothing: grayscale;
+}
+
+@keyframes bf-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(20px);
+    filter: blur(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes bf-shimmer {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes bf-breathe {
+  0%,
+  100% {
+    transform: scale(1) translateY(0);
+    opacity: calc(0.2 * var(--bf-vibrant-opacity));
+  }
+  50% {
+    transform: scale(1.02) translateY(-2px);
+    opacity: calc(0.3 * var(--bf-vibrant-opacity));
+  }
+}
+
+@keyframes bf-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  33% {
+    transform: translateY(-8px) rotate(0.5deg);
+  }
+  66% {
+    transform: translateY(4px) rotate(-0.3deg);
+  }
+}
+
+@keyframes bf-gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes bf-spin {
+  0% {
+    transform: rotate(0deg) scale(1);
+  }
+  50% {
+    transform: rotate(180deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(360deg) scale(1);
+  }
+}
+
+@keyframes bf-gentle-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes bf-lyric-slide-in {
+  0% {
+    opacity: 0;
+    transform: translateY(40px) translateZ(-200px) rotateX(20deg) scale(0.8);
+    filter: blur(8px);
+  }
+  60% {
+    transform: translateY(-5px) translateZ(-20px) rotateX(2deg) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) translateZ(0) rotateX(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes bf-lyric-fade-out {
+  from {
+    opacity: 1;
+    transform: translateY(0) translateZ(0) rotateX(0) scale(1);
+  }
+  to {
+    opacity: 0.6;
+    transform: translateY(-20px) translateZ(-100px) rotateX(10deg) scale(0.95);
+  }
+}
+
+@keyframes bf-current-entrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(30px) translateZ(-50px) rotateX(15deg);
+    filter: blur(5px);
+  }
+  50% {
+    transform: scale(1.1) translateY(-10px) translateZ(10px) rotateX(-2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.05) translateZ(0) rotateX(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes bf-pulse-current {
+  0% {
+    text-shadow: 0 0 calc(6px * var(--bf-shadow-intensity))
+        var(--bf-lyric-color),
+      0 0 calc(12px * var(--bf-shadow-intensity)) var(--bf-lyric-color),
+      0 0 calc(24px * var(--bf-shadow-intensity)) var(--bf-lyric-color);
+    transform: scale(1.05) translateZ(0);
+  }
+  100% {
+    text-shadow: 0 0 calc(10px * var(--bf-shadow-intensity))
+        var(--bf-lyric-color),
+      0 0 calc(20px * var(--bf-shadow-intensity)) var(--bf-lyric-color),
+      0 0 calc(40px * var(--bf-shadow-intensity)) var(--bf-lyric-color),
+      0 0 calc(60px * var(--bf-shadow-intensity)) var(--bf-lyric-color);
+    transform: scale(1.08) translateY(-2px) translateZ(5px);
+  }
+}
+
+@keyframes bf-progress-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+@keyframes bf-word-highlight {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: calc(0.6 * var(--bf-text-opacity));
+  }
+  30% {
+    transform: scale(1.12) translateY(-4px);
+    opacity: var(--bf-text-opacity);
+  }
+  100% {
+    transform: scale(1.02) translateY(-1px);
+    opacity: calc(0.85 * var(--bf-text-opacity));
+  }
+}
+
+@keyframes bf-word-pulse {
+  0% {
+    transform: scale(1) translateY(0);
+    opacity: calc(0.7 * var(--bf-text-opacity));
+  }
+  20% {
+    transform: scale(1.15) translateY(-5px);
+    opacity: var(--bf-text-opacity);
+  }
+  100% {
+    transform: scale(1.08) translateY(-3px);
+    opacity: var(--bf-text-opacity);
+  }
+}
+
+@keyframes bf-neon-pulse {
+  0%,
+  100% {
+    opacity: calc(0.35 * var(--bf-vibrant-opacity));
+  }
+  50% {
+    opacity: calc(0.55 * var(--bf-vibrant-opacity));
+  }
+}
+
+@keyframes bf-neon-text-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 10px var(--bf-vibrant), 0 0 20px var(--bf-vibrant),
+      0 0 40px var(--bf-vibrant), 0 4px 20px rgba(0, 0, 0, 0.6);
+  }
+  50% {
+    text-shadow: 0 0 15px var(--bf-vibrant), 0 0 30px var(--bf-vibrant),
+      0 0 60px var(--bf-vibrant), 0 4px 20px rgba(0, 0, 0, 0.6);
+  }
 }
 
 .betterFullscreen-player {
@@ -19,7 +244,7 @@
       rgba(0, 0, 0, 0.98)
     ),
     var(--user-profile-linear-gradient);
-  animation: fadeIn calc(0.5s / var(--animation-speed, 1)) ease-out;
+  animation: bf-fade-in calc(0.5s / var(--bf-animation-speed)) ease-out;
 }
 
 .betterFullscreen-player::before {
@@ -38,76 +263,15 @@
     );
   pointer-events: none;
   z-index: 0;
-  animation: subtleShimmer calc(15s / var(--animation-speed, 1)) ease-in-out
+  animation: bf-shimmer calc(15s / var(--bf-animation-speed)) ease-in-out
     infinite;
-}
-
-@keyframes subtleShimmer {
-  0%,
-  100% {
-    opacity: 0.5;
-  }
-  50% {
-    opacity: 0.8;
-  }
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.95) translateY(20px);
-    filter: blur(10px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0px);
-  }
-}
-
-@keyframes breathe {
-  0%,
-  100% {
-    transform: scale(1) translateY(0);
-    opacity: calc(0.2 * var(--vibrant-color-opacity, 1));
-  }
-  50% {
-    transform: scale(1.02) translateY(-2px);
-    opacity: calc(0.3 * var(--vibrant-color-opacity, 1));
-  }
-}
-
-@keyframes floating {
-  0%,
-  100% {
-    transform: translateY(0) rotate(0deg);
-  }
-  33% {
-    transform: translateY(-8px) rotate(0.5deg);
-  }
-  66% {
-    transform: translateY(4px) rotate(-0.3deg);
-  }
-}
-
-@keyframes gradientShift {
-  0%,
-  100% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
 }
 
 .betterFullscreen-background {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   z-index: var(--z-index-low, -1);
-  animation: floating calc(20s / var(--animation-speed, 1)) ease-in-out infinite;
+  animation: bf-float calc(20s / var(--bf-animation-speed)) ease-in-out infinite;
   will-change: transform;
   transform: translateZ(0);
 }
@@ -119,12 +283,13 @@
   pointer-events: none;
   background: radial-gradient(
     60% 60% at 25% 35%,
-    var(--vibrant-color) 0%,
+    var(--bf-vibrant) 0%,
     transparent 70%
   );
-  opacity: calc(0.2 * var(--vibrant-color-opacity, 1));
+  opacity: calc(0.2 * var(--bf-vibrant-opacity));
   mix-blend-mode: screen;
-  animation: breathe calc(8s / var(--animation-speed, 1)) ease-in-out infinite;
+  animation: bf-breathe calc(8s / var(--bf-animation-speed)) ease-in-out
+    infinite;
   will-change: transform, opacity;
   transform: translateZ(0);
 }
@@ -133,16 +298,13 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  filter: blur(var(--background-blur, 25px)) brightness(0.4);
+  filter: blur(var(--bf-blur)) brightness(0.4);
   transform: scale(1.1);
 }
 
 .betterFullscreen-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: linear-gradient(
     135deg,
     rgba(0, 0, 0, 0.6) 0%,
@@ -158,10 +320,10 @@
   inset: 0;
   background: radial-gradient(
     ellipse at 50% 55%,
-    var(--vibrant-color) 0%,
+    var(--bf-vibrant) 0%,
     transparent 70%
   );
-  opacity: calc(0.2 * var(--vibrant-color-opacity, 1));
+  opacity: calc(0.2 * var(--bf-vibrant-opacity));
   filter: blur(50px);
   mix-blend-mode: screen;
   pointer-events: none;
@@ -172,21 +334,21 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: calc(clamp(1.5rem, 5vw, 3rem) * var(--padding-scale, 1));
-  gap: calc(clamp(1.5rem, 5vw, 3rem) * var(--padding-scale, 1));
+  padding: var(--bf-content-padding);
+  gap: var(--bf-content-padding);
   z-index: var(--z-index-high);
 }
 
 .betterFullscreen-header {
   display: flex;
-  gap: calc(clamp(1.5rem, 4vw, 3rem) * var(--padding-scale, 1));
+  gap: calc(clamp(1.5rem, 4vw, 3rem) * var(--bf-padding-scale));
   align-items: center;
 }
 
 .betterFullscreen-album-art {
   position: relative;
-  animation: floating calc(15s / var(--animation-speed, 1)) ease-in-out infinite;
-  animation-delay: calc(-2s / var(--animation-speed, 1));
+  animation: bf-float calc(15s / var(--bf-animation-speed)) ease-in-out infinite;
+  animation-delay: calc(-2s / var(--bf-animation-speed));
   will-change: transform;
   transform: translateZ(0);
 }
@@ -197,12 +359,13 @@
   inset: -20px;
   background: radial-gradient(
     circle at center,
-    var(--vibrant-color, rgba(255, 255, 255, 0.2)) 0%,
+    var(--bf-vibrant) 0%,
     transparent 70%
   );
-  opacity: calc(0.4 * var(--vibrant-color-opacity, 1));
+  opacity: calc(0.4 * var(--bf-vibrant-opacity));
   filter: blur(40px);
-  animation: breathe calc(4s / var(--animation-speed, 1)) ease-in-out infinite;
+  animation: bf-breathe calc(4s / var(--bf-animation-speed)) ease-in-out
+    infinite;
   z-index: 0;
   will-change: transform, opacity;
   transform: translateZ(0);
@@ -212,30 +375,27 @@
 .betterFullscreen-album-art video {
   position: relative;
   z-index: 1;
-  width: clamp(150px, 25vw, 300px);
-  height: clamp(150px, 25vw, 300px);
-  border-radius: var(--border-radius, 12px);
+  width: var(--bf-album-size);
+  height: var(--bf-album-size);
+  border-radius: var(--bf-border-radius);
+  object-fit: cover;
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6), 0 10px 30px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    0 0 60px var(--vibrant-color, rgba(255, 255, 255, 0.15));
-  transition: transform calc(0.4s / var(--animation-speed, 1))
+    0 0 0 1px rgba(255, 255, 255, 0.1), 0 0 60px var(--bf-vibrant);
+  transition: transform var(--bf-transition-normal)
       cubic-bezier(0.175, 0.885, 0.32, 1.275),
-    box-shadow calc(0.4s / var(--animation-speed, 1))
+    box-shadow var(--bf-transition-normal)
       cubic-bezier(0.175, 0.885, 0.32, 1.275);
   will-change: transform;
-  object-fit: cover;
   transform: translateZ(0);
   backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
 }
 
 .betterFullscreen-album-art:hover img,
 .betterFullscreen-album-art:hover video {
   transform: scale(1.08) rotateY(5deg) rotateX(2deg);
   box-shadow: 0 40px 80px rgba(0, 0, 0, 0.7), 0 20px 40px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.2),
-    0 0 80px var(--vibrant-color, rgba(255, 255, 255, 0.4)),
-    0 0 120px var(--vibrant-color, rgba(255, 255, 255, 0.2));
+    0 0 0 1px rgba(255, 255, 255, 0.2), 0 0 80px var(--bf-vibrant),
+    0 0 120px var(--bf-vibrant);
 }
 
 .betterFullscreen-track-info {
@@ -247,35 +407,34 @@
 }
 
 .betterFullscreen-title {
-  font-size: calc(clamp(2rem, 5vw, 3.5rem) * var(--font-size-scale, 1));
+  font-size: calc(clamp(2rem, 5vw, 3.5rem) * var(--bf-font-scale));
   font-weight: var(--wave-font-weight--bold);
   margin: 0;
   line-height: 1.2;
-  color: rgba(255, 255, 255, var(--text-opacity, 1));
+  letter-spacing: -0.02em;
+  color: rgba(255, 255, 255, var(--bf-text-opacity));
   text-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 2px 10px rgba(0, 0, 0, 0.4),
-    0 0 40px var(--vibrant-color, rgba(255, 255, 255, 0.1));
+    0 0 40px var(--bf-vibrant);
   word-wrap: break-word;
   overflow-wrap: break-word;
-  letter-spacing: -0.02em;
 }
 
 .betterFullscreen-artist {
-  font-size: calc(clamp(1.25rem, 3vw, 2rem) * var(--font-size-scale, 1));
+  font-size: calc(clamp(1.25rem, 3vw, 2rem) * var(--bf-font-scale));
   font-weight: var(--wave-font-weight--demi);
   margin: 0;
-  color: rgba(255, 255, 255, calc(0.85 * var(--text-opacity, 1)));
   line-height: 1.3;
-  text-shadow: 0 2px 15px rgba(0, 0, 0, 0.5),
-    0 0 30px var(--vibrant-color, rgba(255, 255, 255, 0.08));
   letter-spacing: -0.01em;
+  color: rgba(255, 255, 255, calc(0.85 * var(--bf-text-opacity)));
+  text-shadow: 0 2px 15px rgba(0, 0, 0, 0.5), 0 0 30px var(--bf-vibrant);
 }
 
 .betterFullscreen-album {
-  font-size: calc(clamp(1rem, 2.5vw, 1.5rem) * var(--font-size-scale, 1));
+  font-size: calc(clamp(1rem, 2.5vw, 1.5rem) * var(--bf-font-scale));
   font-weight: var(--wave-font-weight--medium);
   margin: 0;
-  color: rgba(255, 255, 255, calc(0.65 * var(--text-opacity, 1)));
   line-height: 1.4;
+  color: rgba(255, 255, 255, calc(0.65 * var(--bf-text-opacity)));
   text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
 }
 
@@ -292,81 +451,71 @@
   position: relative;
   z-index: 0;
   max-width: min(90%, 80ch);
-  margin: 0 auto;
-  padding: calc(clamp(0.5rem, 2vw, 1rem) * var(--padding-scale, 1));
-  text-align: center;
   width: 100%;
+  margin: 0 auto;
+  padding: calc(clamp(0.5rem, 2vw, 1rem) * var(--bf-padding-scale));
+  text-align: center;
 }
 
 .betterFullscreen-lyric {
   font-weight: var(--wave-font-weight--bold, 700);
   line-height: 1.6;
-  margin: calc(clamp(1rem, 3vh, 2.5rem) * var(--padding-scale, 1)) 0;
-  transition: all calc(0.6s / var(--animation-speed, 1))
-    cubic-bezier(0.165, 0.84, 0.44, 1);
-  will-change: opacity, transform, filter;
+  margin: calc(clamp(1rem, 3vh, 2.5rem) * var(--bf-padding-scale)) 0;
+  color: rgba(255, 255, 255, calc(0.5 * var(--bf-text-opacity)));
   word-wrap: break-word;
   overflow-wrap: break-word;
-  color: rgba(255, 255, 255, calc(0.5 * var(--text-opacity, 1)));
-  animation: lyricSlideIn calc(0.8s / var(--animation-speed, 1))
+  transition: all var(--bf-transition-slow) cubic-bezier(0.165, 0.84, 0.44, 1);
+  will-change: opacity, transform, filter;
+  animation: bf-lyric-slide-in calc(0.8s / var(--bf-animation-speed))
     cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
-@keyframes lyricSlideIn {
-  0% {
-    opacity: 0;
-    transform: translateY(40px) translateZ(-200px) rotateX(20deg) scale(0.8);
-    filter: blur(8px);
-  }
-  60% {
-    transform: translateY(-5px) translateZ(-20px) rotateX(2deg) scale(1.02);
-  }
-  100% {
-    opacity: 1;
-    transform: translateY(0) translateZ(0) rotateX(0deg) scale(1);
-    filter: blur(0px);
-  }
-}
-
 .betterFullscreen-lyric.previous {
-  opacity: calc(0.6 * var(--text-opacity, 1));
-  font-size: calc(clamp(1.2rem, 2.5vw, 1.8rem) * var(--font-size-scale, 1));
+  opacity: calc(0.6 * var(--bf-text-opacity));
+  font-size: calc(clamp(1.2rem, 2.5vw, 1.8rem) * var(--bf-font-scale));
   transform: translateY(-20px) translateZ(-100px) rotateX(10deg) scale(0.95);
-  animation: lyricFadeOut calc(0.6s / var(--animation-speed, 1)) ease-out both;
-}
-
-@keyframes lyricFadeOut {
-  from {
-    opacity: 1;
-    transform: translateY(0) translateZ(0) rotateX(0deg) scale(1);
-  }
-  to {
-    opacity: 0.6;
-    transform: translateY(-20px) translateZ(-100px) rotateX(10deg) scale(0.95);
-  }
+  animation: bf-lyric-fade-out var(--bf-transition-slow) ease-out both;
 }
 
 .betterFullscreen-lyric.current {
   position: relative;
-  opacity: var(--text-opacity, 1);
-  font-size: calc(clamp(2.25rem, 5.5vw, 3.5rem) * var(--font-size-scale, 1));
-  color: rgba(255, 255, 255, calc(0.92 * var(--text-opacity, 1)));
-  text-shadow: 0 0 calc(6px * var(--text-shadow-intensity, 1))
+  opacity: var(--bf-text-opacity, 1);
+  font-size: calc(clamp(2.25rem, 5.5vw, 3.5rem) * var(--bf-font-scale));
+  color: var(--current-lyric-color, var(--vibrant-color, #fff));
+  text-shadow: 0 0 calc(6px * var(--bf-shadow-intensity, 1))
       var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.5))),
-    0 0 calc(12px * var(--text-shadow-intensity, 1))
-      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.2))),
-    0 0 calc(24px * var(--text-shadow-intensity, 1))
-      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.1)));
-  transform: scale(1.05) translateZ(0) rotateX(0);
-  animation: currentLyricEntrance calc(0.8s / var(--animation-speed, 1))
+    0 0 calc(12px * var(--bf-shadow-intensity, 1))
+      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.3))),
+    0 0 calc(24px * var(--bf-shadow-intensity, 1))
+      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.2)));
+  transform: scale(1.05) translateZ(0);
+  animation: bf-current-entrance calc(0.8s / var(--bf-animation-speed))
       cubic-bezier(0.175, 0.885, 0.32, 1.275) both,
-    pulseCurrent calc(3s / var(--animation-speed, 1)) ease-in-out infinite
-      alternate calc(0.8s / var(--animation-speed, 1));
+    bf-pulse-current calc(3s / var(--bf-animation-speed)) ease-in-out infinite
+      alternate calc(0.8s / var(--bf-animation-speed));
 }
 
-.betterFullscreen-lyric-progress {
+.betterFullscreen-lyric.next {
+  opacity: calc(0.75 * var(--bf-text-opacity));
+  font-size: calc(clamp(1.5rem, 3vw, 2rem) * var(--bf-font-scale));
+  transform: translateY(20px) translateZ(-50px) rotateX(-5deg) scale(0.98);
+  animation: bf-lyric-slide-in var(--bf-transition-slow)
+    cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+  animation-delay: calc(0.2s / var(--bf-animation-speed));
+}
+
+.betterFullscreen-lyric.upcoming {
+  opacity: calc(0.4 * var(--bf-text-opacity));
+  font-size: calc(clamp(1rem, 2vw, 1.5rem) * var(--bf-font-scale));
+  margin: calc(1rem * var(--bf-padding-scale)) 0;
+  transform: translateY(25px) translateZ(-80px) rotateX(-8deg) scale(0.95);
+  animation: bf-lyric-slide-in calc(0.5s / var(--bf-animation-speed))
+    cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
+}
+
+.betterFullscreen-lyrics-progress {
   position: absolute;
-  bottom: calc(-0.8rem * var(--padding-scale, 1));
+  bottom: calc(-0.8rem * var(--bf-padding-scale));
   left: 50%;
   transform: translateX(-50%);
   width: min(400px, 90%);
@@ -377,140 +526,21 @@
   backdrop-filter: blur(10px);
 }
 
-.betterFullscreen-lyric-progress-bar {
+.betterFullscreen-lyrics-progress-bar {
   height: 100%;
   background: linear-gradient(
     90deg,
-    var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.6))),
-    var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.8))),
-    var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.6)))
+    var(--bf-lyric-color),
+    var(--bf-lyric-color),
+    var(--bf-lyric-color)
   );
   background-size: 200% 100%;
-  box-shadow: 0 0 15px
-    var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.4)));
-  transition: width calc(0.1s / var(--animation-speed, 1)) linear;
+  box-shadow: 0 0 15px var(--bf-lyric-color);
+  transition: width calc(0.1s / var(--bf-animation-speed)) linear;
   will-change: width;
   transform: translateZ(0);
-  animation: progressShimmer calc(2s / var(--animation-speed, 1)) linear
+  animation: bf-progress-shimmer calc(2s / var(--bf-animation-speed)) linear
     infinite;
-}
-
-@keyframes progressShimmer {
-  0% {
-    background-position: 0% 50%;
-  }
-  100% {
-    background-position: 200% 50%;
-  }
-}
-
-@keyframes currentLyricEntrance {
-  0% {
-    opacity: 0;
-    transform: scale(0.8) translateY(30px) translateZ(-50px) rotateX(15deg);
-    text-shadow: none;
-    filter: blur(5px);
-  }
-  50% {
-    transform: scale(1.1) translateY(-10px) translateZ(10px) rotateX(-2deg);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1.05) translateZ(0) rotateX(0deg);
-    filter: blur(0px);
-  }
-}
-
-@supports (-webkit-background-clip: text) or (background-clip: text) {
-  .betterFullscreen-lyric.current {
-    background: none !important;
-    background-image: none !important;
-    -webkit-background-clip: initial !important;
-    background-clip: initial !important;
-    -webkit-text-fill-color: currentColor !important;
-  }
-}
-
-@supports (-webkit-background-clip: text) or (background-clip: text) {
-  .betterFullscreen-lyric.current {
-    background-image: linear-gradient(
-      90deg,
-      var(--current-lyric-color, var(--vibrant-color, #fff)) 0%,
-      rgba(255, 255, 255, calc(0.98 * var(--text-opacity, 1))) 50%,
-      var(--current-lyric-color, var(--vibrant-color, #fff)) 100%
-    );
-    background-size: 300% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    animation: currentLyricEntrance calc(0.8s / var(--animation-speed, 1))
-        cubic-bezier(0.175, 0.885, 0.32, 1.275) both,
-      pulseCurrent calc(3s / var(--animation-speed, 1)) ease-in-out infinite
-        alternate calc(0.8s / var(--animation-speed, 1)),
-      gradientShift calc(4s / var(--animation-speed, 1)) ease-in-out infinite;
-  }
-}
-
-@keyframes pulseCurrent {
-  0% {
-    text-shadow: 0 0 calc(6px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.5))
-        ),
-      0 0 calc(12px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.2))
-        ),
-      0 0 calc(24px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.1))
-        );
-    transform: scale(1.05) translateZ(0) rotateX(0deg);
-  }
-  100% {
-    text-shadow: 0 0 calc(10px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.7))
-        ),
-      0 0 calc(20px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.4))
-        ),
-      0 0 calc(40px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.2))
-        ),
-      0 0 calc(60px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.1))
-        );
-    transform: scale(1.08) translateY(-2px) translateZ(5px) rotateX(0deg);
-  }
-}
-
-.betterFullscreen-lyric.next {
-  opacity: calc(0.75 * var(--text-opacity, 1));
-  font-size: calc(clamp(1.5rem, 3vw, 2rem) * var(--font-size-scale, 1));
-  transform: translateY(20px) translateZ(-50px) rotateX(-5deg) scale(0.98);
-  animation: lyricSlideIn calc(0.6s / var(--animation-speed, 1))
-    cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
-  animation-delay: calc(0.2s / var(--animation-speed, 1));
-}
-
-.betterFullscreen-lyric.upcoming {
-  opacity: calc(0.4 * var(--text-opacity, 1));
-  font-size: calc(clamp(1rem, 2vw, 1.5rem) * var(--font-size-scale, 1));
-  margin: calc(1rem * var(--padding-scale, 1)) 0;
-  transform: translateY(25px) translateZ(-80px) rotateX(-8deg) scale(0.95);
-  animation: lyricSlideIn calc(0.5s / var(--animation-speed, 1))
-    cubic-bezier(0.25, 0.46, 0.45, 0.94) both;
 }
 
 .word {
@@ -519,79 +549,69 @@
 }
 
 .word-previous {
-  color: var(--current-lyric-color, var(--vibrant-color, #ffffff));
-  text-shadow: 0 0 calc(5px * var(--text-shadow-intensity, 1))
-      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.5))),
-    0 0 calc(10px * var(--text-shadow-intensity, 1))
-      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.3)));
+  color: var(--bf-lyric-color);
+  text-shadow: 0 0 calc(5px * var(--bf-shadow-intensity)) var(--bf-lyric-color),
+    0 0 calc(10px * var(--bf-shadow-intensity)) var(--bf-lyric-color);
   transform: scale(1.02) translateY(-1px);
-  opacity: calc(0.85 * var(--text-opacity, 1));
-  animation: wordHighlight calc(0.4s / var(--animation-speed, 1))
+  opacity: calc(0.85 * var(--bf-text-opacity));
+  animation: bf-word-highlight var(--bf-transition-normal)
     cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .word-active {
-  color: var(--current-lyric-color, var(--vibrant-color, #ffffff));
-  text-shadow: 0 0 calc(8px * var(--text-shadow-intensity, 1))
-      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.8))),
-    0 0 calc(16px * var(--text-shadow-intensity, 1))
-      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.5))),
-    0 0 calc(24px * var(--text-shadow-intensity, 1))
-      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.2)));
+  color: var(--bf-lyric-color);
+  text-shadow: 0 0 calc(8px * var(--bf-shadow-intensity)) var(--bf-lyric-color),
+    0 0 calc(16px * var(--bf-shadow-intensity)) var(--bf-lyric-color),
+    0 0 calc(24px * var(--bf-shadow-intensity)) var(--bf-lyric-color);
   transform: scale(1.08) translateY(-3px);
-  opacity: var(--text-opacity, 1);
-  animation: wordPulse calc(0.5s / var(--animation-speed, 1))
+  opacity: var(--bf-text-opacity);
+  animation: bf-word-pulse calc(0.5s / var(--bf-animation-speed))
     cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .char {
-  color: inherit;
-  will-change: color, transform, opacity, text-shadow;
   display: inline-block;
+  color: inherit;
   white-space: pre-wrap;
-  transition: color calc(0.5s / var(--animation-speed, 1)) ease-out,
-    transform calc(0.5s / var(--animation-speed, 1))
+  will-change: color, transform, opacity, text-shadow;
+  transition: color calc(0.5s / var(--bf-animation-speed)) ease-out,
+    transform calc(0.5s / var(--bf-animation-speed))
       cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity calc(0.5s / var(--animation-speed, 1)) ease-out,
-    text-shadow calc(0.5s / var(--animation-speed, 1)) ease-out;
+    opacity calc(0.5s / var(--bf-animation-speed)) ease-out,
+    text-shadow calc(0.5s / var(--bf-animation-speed)) ease-out;
 }
 
 .char.char-connected {
   display: inline;
-  will-change: color, opacity, text-shadow;
   white-space: normal;
   transform: none;
   margin: 0;
   padding: 0;
+  will-change: color, opacity, text-shadow;
 }
 
-.char-previous {
-  opacity: calc(0.3 * var(--text-opacity, 1));
-  transform: scale(1);
-  text-shadow: none;
-}
-
+.char-previous,
 .char-upcoming {
-  opacity: calc(0.3 * var(--text-opacity, 1));
+  opacity: calc(0.3 * var(--bf-text-opacity));
   transform: scale(1);
   text-shadow: none;
 }
 
 .char-word-active {
-  opacity: calc(0.8 * var(--text-opacity, 1));
+  opacity: calc(0.8 * var(--bf-text-opacity));
   transform: scale(1.05);
-  text-shadow: 0 0 calc(3px * var(--text-shadow-intensity, 1)) var(--char-color),
-    0 0 calc(6px * var(--text-shadow-intensity, 1)) var(--char-color);
+  text-shadow: 0 0 calc(3px * var(--bf-shadow-intensity)) var(--char-color),
+    0 0 calc(6px * var(--bf-shadow-intensity)) var(--char-color);
 }
 
 .char-active {
-  opacity: var(--text-opacity, 1);
-  transform: scale(1.15) translateY(-3px);
-  text-shadow: 0 0 calc(5px * var(--text-shadow-intensity, 1)) var(--char-color),
-    0 0 calc(10px * var(--text-shadow-intensity, 1)) var(--char-color),
-    0 0 calc(15px * var(--text-shadow-intensity, 1)) var(--char-color);
-  z-index: 1;
   position: relative;
+  z-index: 1;
+  opacity: var(--bf-text-opacity);
+  transform: scale(1.15) translateY(-3px);
+  text-shadow: 0 0 calc(5px * var(--bf-shadow-intensity)) var(--char-color),
+    0 0 calc(10px * var(--bf-shadow-intensity)) var(--char-color),
+    0 0 calc(15px * var(--bf-shadow-intensity)) var(--char-color);
 }
 
 .betterFullscreen-loading,
@@ -600,12 +620,12 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 1.5rem;
-  font-size: calc(1.5rem * var(--font-size-scale, 1));
-  color: rgba(255, 255, 255, calc(0.75 * var(--text-opacity, 1)));
   flex: 1;
+  gap: 1.5rem;
+  font-size: calc(1.5rem * var(--bf-font-scale));
+  color: rgba(255, 255, 255, calc(0.75 * var(--bf-text-opacity)));
   text-shadow: 0 2px 15px rgba(0, 0, 0, 0.5);
-  animation: fadeIn calc(0.6s / var(--animation-speed, 1)) ease-out;
+  animation: bf-fade-in var(--bf-transition-slow) ease-out;
 }
 
 .betterFullscreen-loading::after {
@@ -613,28 +633,21 @@
   width: 48px;
   height: 48px;
   border: 4px solid rgba(255, 255, 255, 0.15);
-  border-top-color: var(
-    --current-lyric-color,
-    var(--vibrant-color, rgba(255, 255, 255, 0.8))
-  );
-  border-right-color: var(
-    --current-lyric-color,
-    var(--vibrant-color, rgba(255, 255, 255, 0.6))
-  );
+  border-top-color: var(--bf-lyric-color);
+  border-right-color: var(--bf-lyric-color);
   border-radius: 50%;
-  animation: spin calc(1s / var(--animation-speed, 1))
+  box-shadow: 0 0 30px var(--bf-lyric-color);
+  animation: bf-spin calc(1s / var(--bf-animation-speed))
     cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-  box-shadow: 0 0 30px
-    var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.2)));
   will-change: transform;
   transform: translateZ(0);
 }
 
 .betterFullscreen-no-lyrics-icon {
-  font-size: calc(5rem * var(--font-size-scale, 1));
-  opacity: calc(0.6 * var(--text-opacity, 1));
-  text-shadow: 0 0 40px var(--vibrant-color, rgba(255, 255, 255, 0.3));
-  animation: gentleFloat calc(6s / var(--animation-speed, 1)) ease-in-out
+  font-size: calc(5rem * var(--bf-font-scale));
+  opacity: calc(0.6 * var(--bf-text-opacity));
+  text-shadow: 0 0 40px var(--bf-vibrant);
+  animation: bf-gentle-float calc(6s / var(--bf-animation-speed)) ease-in-out
     infinite;
   will-change: transform;
   transform: translateZ(0);
@@ -649,8 +662,8 @@
   color: rgba(255, 255, 255, 0.9);
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.2s ease;
   backdrop-filter: blur(5px);
+  transition: all var(--bf-transition-fast) ease;
 }
 
 .betterFullscreen-retry-button:hover {
@@ -660,202 +673,6 @@
 
 .betterFullscreen-retry-button:active {
   transform: scale(0.95);
-}
-
-@keyframes spin {
-  0% {
-    transform: rotate(0deg) scale(1) translateZ(0);
-  }
-  50% {
-    transform: rotate(180deg) scale(1.1) translateZ(0);
-  }
-  100% {
-    transform: rotate(360deg) scale(1) translateZ(0);
-  }
-}
-
-@keyframes wordHighlight {
-  0% {
-    transform: scale(1) translateY(0);
-    opacity: calc(0.6 * var(--text-opacity, 1));
-    text-shadow: 0 0 calc(3px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.3))
-        ),
-      0 0 calc(6px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.2))
-        );
-  }
-  30% {
-    transform: scale(1.12) translateY(-4px);
-    opacity: var(--text-opacity, 1);
-    text-shadow: 0 0 calc(8px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.7))
-        ),
-      0 0 calc(16px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.4))
-        );
-  }
-  100% {
-    transform: scale(1.02) translateY(-1px);
-    opacity: calc(0.85 * var(--text-opacity, 1));
-    text-shadow: 0 0 calc(5px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.5))
-        ),
-      0 0 calc(10px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.3))
-        );
-  }
-}
-
-@keyframes wordPulse {
-  0% {
-    transform: scale(1) translateY(0);
-    opacity: calc(0.7 * var(--text-opacity, 1));
-    text-shadow: 0 0 calc(5px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.4))
-        ),
-      0 0 calc(10px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.2))
-        );
-  }
-  20% {
-    transform: scale(1.15) translateY(-5px);
-    opacity: var(--text-opacity, 1);
-    text-shadow: 0 0 calc(12px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.9))
-        ),
-      0 0 calc(24px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.6))
-        ),
-      0 0 calc(36px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.3))
-        );
-  }
-  100% {
-    transform: scale(1.08) translateY(-3px);
-    opacity: var(--text-opacity, 1);
-    text-shadow: 0 0 calc(8px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.8))
-        ),
-      0 0 calc(16px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.5))
-        ),
-      0 0 calc(24px * var(--text-shadow-intensity, 1))
-        var(
-          --current-lyric-color,
-          var(--vibrant-color, rgba(255, 255, 255, 0.2))
-        );
-  }
-}
-
-@keyframes charHighlight {
-  0% {
-    transform: scale(1) translateY(0);
-    opacity: calc(0.7 * var(--text-opacity, 1));
-    text-shadow: 0 0 calc(3px * var(--text-shadow-intensity, 1)) currentColor;
-  }
-  30% {
-    transform: scale(1.1) translateY(-2px);
-    opacity: var(--text-opacity, 1);
-    text-shadow: 0 0 calc(8px * var(--text-shadow-intensity, 1)) currentColor,
-      0 0 calc(16px * var(--text-shadow-intensity, 1)) currentColor;
-  }
-  100% {
-    transform: scale(1.02) translateY(-1px);
-    opacity: calc(0.9 * var(--text-opacity, 1));
-    text-shadow: 0 0 calc(5px * var(--text-shadow-intensity, 1)) currentColor,
-      0 0 calc(10px * var(--text-shadow-intensity, 1)) currentColor;
-  }
-}
-
-@keyframes charPulse {
-  0% {
-    transform: scale(1) translateY(0);
-    opacity: calc(0.8 * var(--text-opacity, 1));
-    text-shadow: 0 0 calc(5px * var(--text-shadow-intensity, 1)) currentColor;
-  }
-  20% {
-    transform: scale(1.2) translateY(-4px);
-    opacity: var(--text-opacity, 1);
-    text-shadow: 0 0 calc(15px * var(--text-shadow-intensity, 1)) currentColor,
-      0 0 calc(30px * var(--text-shadow-intensity, 1)) currentColor,
-      0 0 calc(40px * var(--text-shadow-intensity, 1)) currentColor;
-  }
-  100% {
-    transform: scale(1.15) translateY(-3px);
-    opacity: var(--text-opacity, 1);
-    text-shadow: 0 0 calc(10px * var(--text-shadow-intensity, 1)) currentColor,
-      0 0 calc(20px * var(--text-shadow-intensity, 1)) currentColor,
-      0 0 calc(30px * var(--text-shadow-intensity, 1)) currentColor;
-  }
-}
-
-.betterFullscreen-no-lyrics-icon {
-  font-size: calc(5rem * var(--font-size-scale, 1));
-  opacity: calc(0.6 * var(--text-opacity, 1));
-  text-shadow: 0 0 40px var(--vibrant-color, rgba(255, 255, 255, 0.3));
-  animation: gentleFloat calc(6s / var(--animation-speed, 1)) ease-in-out
-    infinite;
-  will-change: transform;
-  transform: translateZ(0);
-}
-
-.betterFullscreen-retry-button {
-  margin-top: 1rem;
-  padding: 0.5rem 1.5rem;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.9);
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  backdrop-filter: blur(5px);
-}
-
-.betterFullscreen-retry-button:hover {
-  background: rgba(255, 255, 255, 0.2);
-  transform: scale(1.05);
-}
-
-.betterFullscreen-retry-button:active {
-  transform: scale(0.95);
-}
-
-@keyframes gentleFloat {
-  0%,
-  100% {
-    transform: translateY(0) translateZ(0);
-  }
-  50% {
-    transform: translateY(-10px) translateZ(0);
-  }
 }
 
 @media (max-width: 1024px) {
@@ -867,8 +684,8 @@
 
 @media (max-width: 768px) {
   .betterFullscreen-content {
-    padding: calc(clamp(1rem, 4vw, 2rem) * var(--padding-scale, 1));
-    gap: calc(clamp(1rem, 4vw, 2rem) * var(--padding-scale, 1));
+    padding: calc(clamp(1rem, 4vw, 2rem) * var(--bf-padding-scale));
+    gap: calc(clamp(1rem, 4vw, 2rem) * var(--bf-padding-scale));
   }
 
   .betterFullscreen-lyric.previous {
@@ -899,7 +716,7 @@
 
 .betterFullscreen-player[data-theme="minimal"]
   .betterFullscreen-background::after {
-  opacity: calc(0.1 * var(--vibrant-color-opacity, 1));
+  opacity: calc(0.1 * var(--bf-vibrant-opacity));
   animation: none;
 }
 
@@ -919,7 +736,7 @@
   video {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255, 255, 255, 0.05);
-  border-radius: calc(var(--border-radius, 12px) * 0.5);
+  border-radius: calc(var(--bf-border-radius) * 0.5);
 }
 
 .betterFullscreen-player[data-theme="minimal"] .betterFullscreen-title,
@@ -930,15 +747,14 @@
 
 .betterFullscreen-player[data-theme="minimal"] .betterFullscreen-lyric {
   animation: none;
-  transition: opacity calc(0.3s / var(--animation-speed, 1)) ease;
+  transition: opacity calc(0.3s / var(--bf-animation-speed)) ease;
 }
 
 .betterFullscreen-player[data-theme="minimal"] .betterFullscreen-lyric.current {
   animation: none;
-  text-shadow: 0 0 calc(3px * var(--text-shadow-intensity, 1))
-    var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.3)));
   background-image: none;
   -webkit-text-fill-color: currentColor;
+  text-shadow: 0 0 calc(3px * var(--bf-shadow-intensity)) var(--bf-lyric-color);
 }
 
 .betterFullscreen-player[data-theme="cinematic"] {
@@ -952,7 +768,6 @@
   left: 0;
   right: 0;
   height: 10vh;
-  background: linear-gradient(to bottom, rgba(0, 0, 0, 0.95), transparent);
   z-index: 10;
   pointer-events: none;
 }
@@ -968,14 +783,14 @@
 }
 
 .betterFullscreen-player[data-theme="cinematic"] .betterFullscreen-content {
-  padding: calc(clamp(3rem, 8vw, 5rem) * var(--padding-scale, 1))
-    calc(clamp(2rem, 6vw, 4rem) * var(--padding-scale, 1));
+  padding: calc(clamp(3rem, 8vw, 5rem) * var(--bf-padding-scale))
+    calc(clamp(2rem, 6vw, 4rem) * var(--bf-padding-scale));
 }
 
 .betterFullscreen-player[data-theme="cinematic"] .betterFullscreen-header {
   flex-direction: row;
   align-items: flex-start;
-  gap: calc(clamp(2rem, 5vw, 4rem) * var(--padding-scale, 1));
+  gap: calc(clamp(2rem, 5vw, 4rem) * var(--bf-padding-scale));
 }
 
 .betterFullscreen-player[data-theme="cinematic"]
@@ -986,7 +801,7 @@
   video {
   width: clamp(180px, 28vw, 350px);
   height: clamp(180px, 28vw, 350px);
-  border-radius: calc(var(--border-radius, 12px) * 0.3);
+  border-radius: calc(var(--bf-border-radius) * 0.3);
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.8),
     0 0 0 1px rgba(255, 255, 255, 0.05);
 }
@@ -998,10 +813,10 @@
 
 .betterFullscreen-player[data-theme="cinematic"]
   .betterFullscreen-lyric.current {
-  font-size: calc(clamp(2.5rem, 6vw, 4rem) * var(--font-size-scale, 1));
+  font-size: calc(clamp(2.5rem, 6vw, 4rem) * var(--bf-font-scale));
+  font-weight: 900;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  font-weight: 900;
 }
 
 .betterFullscreen-player[data-theme="neon"] {
@@ -1024,69 +839,38 @@
       rgba(0, 255, 255, 0.06) 0%,
       transparent 50%
     );
-  animation: subtleShimmer calc(10s / var(--animation-speed, 1)) ease-in-out
+  animation: bf-shimmer calc(10s / var(--bf-animation-speed)) ease-in-out
     infinite;
 }
 
 .betterFullscreen-player[data-theme="neon"]
   .betterFullscreen-background::after {
-  opacity: calc(0.35 * var(--vibrant-color-opacity, 1));
+  opacity: calc(0.35 * var(--bf-vibrant-opacity));
   filter: blur(60px);
-  animation: breathe calc(4s / var(--animation-speed, 1)) ease-in-out infinite,
-    neonPulse calc(2s / var(--animation-speed, 1)) ease-in-out infinite;
-}
-
-@keyframes neonPulse {
-  0%,
-  100% {
-    opacity: calc(0.35 * var(--vibrant-color-opacity, 1));
-  }
-  50% {
-    opacity: calc(0.55 * var(--vibrant-color-opacity, 1));
-  }
+  animation: bf-breathe calc(4s / var(--bf-animation-speed)) ease-in-out
+      infinite,
+    bf-neon-pulse calc(2s / var(--bf-animation-speed)) ease-in-out infinite;
 }
 
 .betterFullscreen-player[data-theme="neon"] .betterFullscreen-album-art img,
 .betterFullscreen-player[data-theme="neon"] .betterFullscreen-album-art video {
+  border-radius: calc(var(--bf-border-radius) * 1.5);
   box-shadow: 0 25px 50px rgba(0, 0, 0, 0.7), 0 0 0 2px rgba(255, 255, 255, 0.1),
-    0 0 80px var(--vibrant-color, rgba(255, 255, 255, 0.4)),
-    0 0 120px var(--vibrant-color, rgba(255, 255, 255, 0.2)),
+    0 0 80px var(--bf-vibrant), 0 0 120px var(--bf-vibrant),
     inset 0 0 60px rgba(0, 0, 0, 0.3);
-  border-radius: calc(var(--border-radius, 12px) * 1.5);
 }
 
 .betterFullscreen-player[data-theme="neon"] .betterFullscreen-title {
-  text-shadow: 0 0 10px var(--vibrant-color, rgba(255, 255, 255, 0.8)),
-    0 0 20px var(--vibrant-color, rgba(255, 255, 255, 0.6)),
-    0 0 40px var(--vibrant-color, rgba(255, 255, 255, 0.4)),
-    0 4px 20px rgba(0, 0, 0, 0.6);
-  animation: neonTextGlow calc(3s / var(--animation-speed, 1)) ease-in-out
+  text-shadow: 0 0 10px var(--bf-vibrant), 0 0 20px var(--bf-vibrant),
+    0 0 40px var(--bf-vibrant), 0 4px 20px rgba(0, 0, 0, 0.6);
+  animation: bf-neon-text-glow calc(3s / var(--bf-animation-speed)) ease-in-out
     infinite;
 }
 
-@keyframes neonTextGlow {
-  0%,
-  100% {
-    text-shadow: 0 0 10px var(--vibrant-color, rgba(255, 255, 255, 0.8)),
-      0 0 20px var(--vibrant-color, rgba(255, 255, 255, 0.6)),
-      0 0 40px var(--vibrant-color, rgba(255, 255, 255, 0.4)),
-      0 4px 20px rgba(0, 0, 0, 0.6);
-  }
-  50% {
-    text-shadow: 0 0 15px var(--vibrant-color, rgba(255, 255, 255, 1)),
-      0 0 30px var(--vibrant-color, rgba(255, 255, 255, 0.8)),
-      0 0 60px var(--vibrant-color, rgba(255, 255, 255, 0.6)),
-      0 4px 20px rgba(0, 0, 0, 0.6);
-  }
-}
-
 .betterFullscreen-player[data-theme="neon"] .betterFullscreen-lyric.current {
-  text-shadow: 0 0 calc(15px * var(--text-shadow-intensity, 1))
-      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.9))),
-    0 0 calc(30px * var(--text-shadow-intensity, 1))
-      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.6))),
-    0 0 calc(50px * var(--text-shadow-intensity, 1))
-      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.3)));
+  text-shadow: 0 0 calc(15px * var(--bf-shadow-intensity)) var(--bf-lyric-color),
+    0 0 calc(30px * var(--bf-shadow-intensity)) var(--bf-lyric-color),
+    0 0 calc(50px * var(--bf-shadow-intensity)) var(--bf-lyric-color);
 }
 
 .betterFullscreen-player[data-theme="glass"] {
@@ -1111,25 +895,25 @@
 .betterFullscreen-player[data-theme="glass"] .betterFullscreen-header {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(20px);
-  border-radius: calc(var(--border-radius, 12px) * 2);
-  padding: calc(clamp(1.5rem, 4vw, 3rem) * var(--padding-scale, 1));
+  border-radius: calc(var(--bf-border-radius) * 2);
+  padding: calc(clamp(1.5rem, 4vw, 3rem) * var(--bf-padding-scale));
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
 
 .betterFullscreen-player[data-theme="glass"] .betterFullscreen-album-art img,
 .betterFullscreen-player[data-theme="glass"] .betterFullscreen-album-art video {
+  border-radius: calc(var(--bf-border-radius) * 1.2);
+  backdrop-filter: blur(10px);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.2),
     inset 0 0 0 1px rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(10px);
-  border-radius: calc(var(--border-radius, 12px) * 1.2);
 }
 
 .betterFullscreen-player[data-theme="glass"] .betterFullscreen-lyrics {
   background: rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(30px);
-  border-radius: calc(var(--border-radius, 12px) * 2);
-  padding: calc(clamp(2rem, 5vw, 4rem) * var(--padding-scale, 1));
+  border-radius: calc(var(--bf-border-radius) * 2);
+  padding: calc(clamp(2rem, 5vw, 4rem) * var(--bf-padding-scale));
   border: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 }
@@ -1139,8 +923,7 @@
 }
 
 .betterFullscreen-player[data-theme="glass"] .betterFullscreen-lyric.current {
-  text-shadow: 0 0 calc(8px * var(--text-shadow-intensity, 1))
-      var(--current-lyric-color, var(--vibrant-color, rgba(255, 255, 255, 0.6))),
+  text-shadow: 0 0 calc(8px * var(--bf-shadow-intensity)) var(--bf-lyric-color),
     0 2px 15px rgba(0, 0, 0, 0.4);
 }
 
@@ -1151,7 +934,7 @@
       rgba(20, 15, 10, 0.98)
     ),
     linear-gradient(135deg, #2a1810 0%, #0a0505 100%);
-  font-family: "Georgia", "Times New Roman", serif;
+  font-family: Georgia, "Times New Roman", serif;
 }
 
 .betterFullscreen-player[data-theme="retro"]::before {
@@ -1205,33 +988,33 @@
 .betterFullscreen-player[data-theme="retro"] .betterFullscreen-album-art img,
 .betterFullscreen-player[data-theme="retro"] .betterFullscreen-album-art video {
   border-radius: 50%;
+  filter: sepia(0.15) contrast(1.1);
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6), 0 0 0 3px rgba(40, 30, 20, 0.8),
     0 0 0 6px rgba(100, 80, 60, 0.5), inset 0 0 30px rgba(0, 0, 0, 0.4);
-  filter: sepia(0.15) contrast(1.1);
 }
 
 .betterFullscreen-player[data-theme="retro"] .betterFullscreen-title {
-  font-family: "Georgia", "Times New Roman", serif;
+  font-family: Georgia, "Times New Roman", serif;
   letter-spacing: 0.02em;
   text-shadow: 2px 2px 0 rgba(0, 0, 0, 0.5), 0 0 30px rgba(255, 200, 100, 0.3);
 }
 
 .betterFullscreen-player[data-theme="retro"] .betterFullscreen-artist,
 .betterFullscreen-player[data-theme="retro"] .betterFullscreen-album {
-  font-family: "Georgia", "Times New Roman", serif;
+  font-family: Georgia, "Times New Roman", serif;
   letter-spacing: 0.05em;
 }
 
 .betterFullscreen-player[data-theme="retro"] .betterFullscreen-lyric {
-  font-family: "Georgia", "Times New Roman", serif;
+  font-family: Georgia, "Times New Roman", serif;
   letter-spacing: 0.02em;
 }
 
 .betterFullscreen-player[data-theme="retro"] .betterFullscreen-lyric.current {
-  color: rgba(255, 240, 220, calc(0.95 * var(--text-opacity, 1)));
-  text-shadow: 0 0 calc(8px * var(--text-shadow-intensity, 1))
+  color: rgba(255, 240, 220, calc(0.95 * var(--bf-text-opacity)));
+  text-shadow: 0 0 calc(8px * var(--bf-shadow-intensity))
       rgba(255, 200, 100, 0.6),
-    0 0 calc(16px * var(--text-shadow-intensity, 1)) rgba(255, 200, 100, 0.4),
+    0 0 calc(16px * var(--bf-shadow-intensity)) rgba(255, 200, 100, 0.4),
     2px 2px 4px rgba(0, 0, 0, 0.5);
   background-image: linear-gradient(
     90deg,

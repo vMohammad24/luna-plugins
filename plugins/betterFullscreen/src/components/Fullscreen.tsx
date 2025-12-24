@@ -9,12 +9,13 @@ import React, {
 } from "react";
 import { unloads } from "..";
 import { settings } from "../settings";
-import type { Color, EnhancedSyncedLyric } from "../types";
+import type { Color, SongData } from "../types";
 import { getColors, getDominantColor, getLyrics } from "../util";
+import { DynamicBackground } from "./DynamicBackground";
 import { Lyrics } from "./Lyrics";
 
 function useCurrentTime() {
-    const [currentTime, setCurrentTime] = useState(PlayState.currentTime);
+    const [currentTime, setCurrentTime] = useState(PlayState.currentTime * 1000);
     const lastTimeRef = useRef(PlayState.currentTime);
     const lastUpdateRef = useRef(performance.now());
 
@@ -32,10 +33,10 @@ function useCurrentTime() {
             }
 
             if (isPlaying) {
-                const elapsed = (now - lastUpdateRef.current) / 1000;
-                setCurrentTime(lastTimeRef.current + elapsed);
+                const elapsed = now - lastUpdateRef.current;
+                setCurrentTime(lastTimeRef.current * 1000 + elapsed);
             } else {
-                setCurrentTime(stateTime);
+                setCurrentTime(stateTime * 1000);
             }
 
             animationFrameId = requestAnimationFrame(update);
@@ -44,7 +45,7 @@ function useCurrentTime() {
         update();
         return () => cancelAnimationFrame(animationFrameId);
     }, []);
-    return currentTime;
+    return currentTime + settings.lyricsOffset;
 }
 
 function useMediaItem() {
@@ -86,12 +87,14 @@ export const FullScreen = memo(() => {
         catJam,
         styleTheme,
         showLyricProgress,
-        lyricsOffset,
     } = settings;
     const currentTime = useCurrentTime();
+    const currentTimeRef = useRef(currentTime);
+    currentTimeRef.current = currentTime;
+
     const mediaItem = useMediaItem();
     const playing = usePlaying();
-    const [lyrics, setLyrics] = useState<EnhancedSyncedLyric[]>([]);
+    const [lyrics, setLyrics] = useState<SongData | undefined>(undefined);
     const [loading, setLoading] = useState(false);
     const [errorStatus, setErrorStatus] = useState<number | null>(null);
     const [albumArt, setAlbumArt] = useState<string>("");
@@ -101,15 +104,10 @@ export const FullScreen = memo(() => {
     const artVideoRef = useRef<HTMLVideoElement | null>(null);
     const currentTrackIdRef = useRef<string | null>(null);
 
-    const coverUrl = mediaItem?.coverUrl;
-    const tidalItem = mediaItem?.tidalItem;
-    const title = tidalItem?.title;
-    const artists = tidalItem?.artists;
-    const album = tidalItem?.album;
-    const artist = tidalItem?.artist;
-    const bpm = tidalItem?.bpm;
-    const releaseDate = album?.releaseDate;
-    const vibrantColor = album?.vibrantColor;
+    const { tidalItem, coverUrl } = mediaItem || {};
+    const { title, artists, album, artist, bpm, releaseDate, } = tidalItem || {};
+    const { vibrantColor } = album || {};
+
 
     if (tidalItem?.id) {
         currentTrackIdRef.current = tidalItem.id as string;
@@ -231,7 +229,7 @@ export const FullScreen = memo(() => {
             setLoading(true);
             setErrorStatus(null);
             let isCancelled = false;
-            const trackId = parseInt(tidalItem.id as string, 10);
+            const trackId = tidalItem.id.toString();
 
             getLyrics(trackId)
                 .then((lyricsData) => {
@@ -241,7 +239,7 @@ export const FullScreen = memo(() => {
                 })
                 .catch((e) => {
                     if (!isCancelled) {
-                        setLyrics([]);
+                        setLyrics(undefined);
                         setErrorStatus(e?.status || 500);
                         console.error("Failed to fetch lyrics for track ID:", trackId, e);
                     }
@@ -272,7 +270,7 @@ export const FullScreen = memo(() => {
         if (tidalItem?.id) {
             setLoading(true);
             setErrorStatus(null);
-            const trackId = parseInt(tidalItem.id as string, 10);
+            const trackId = tidalItem.id.toString();
 
             getLyrics(trackId)
                 .then((lyricsData) => {
@@ -282,7 +280,7 @@ export const FullScreen = memo(() => {
                 })
                 .catch((e) => {
                     if (currentTrackIdRef.current === String(trackId)) {
-                        setLyrics([]);
+                        setLyrics(undefined);
                         setErrorStatus(e?.status || 500);
                         console.error("Failed to fetch lyrics for track ID:", trackId, e);
                     }
@@ -341,8 +339,15 @@ export const FullScreen = memo(() => {
                         preload="auto"
                     />
                 ) : (
-                    <img src={albumArt} alt="" className="betterFullscreen-bg-image" />
+                    <DynamicBackground
+                        songData={lyrics}
+                        colors={gradientColors}
+                        isPlaying={playing}
+                        currentTimeRef={currentTimeRef}
+                        albumArt={albumArt}
+                    />
                 )}
+
                 <div className="betterFullscreen-overlay"></div>
             </div>
 
@@ -381,8 +386,8 @@ export const FullScreen = memo(() => {
                 </div>
 
                 <Lyrics
-                    lyrics={lyrics}
-                    currentTime={currentTime + lyricsOffset}
+                    songData={lyrics}
+                    currentTime={currentTime}
                     syncLevel={syncLevel}
                     loading={loading}
                     showLyricProgress={showLyricProgress}
