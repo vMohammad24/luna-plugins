@@ -23,7 +23,7 @@ jobs:
       - name: Delete Unwanted plugins for production
         run: |
           if [ "${{ github.ref_name }}" = "master" ]; then
-            rm -rf plugins/betterPlayer
+            rm -rf plugins/betterPlayer plugins/lrclib # lrclib is broken as of now, betterPlayer requires an exe that doesnt get auto installed
             echo "Deleted unwanted plugins for production build"
           else
             echo "Not on master branch, keeping all plugins"
