@@ -13,8 +13,8 @@ export const Settings = () => {
                 desc="Enable or disable controllable volume for all your devices"
                 value={controllableVolume}
                 type="number"
-                onChange={(e) => {
-                    setControllableVolume(settings.controllableVolume = e.target.checked);
+                onChange={(_, v) => {
+                    setControllableVolume(settings.controllableVolume = v);
                 }}
             />
         </LunaSettings>

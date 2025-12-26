@@ -20,6 +20,15 @@ jobs:
             echo "Not on dev branch, keeping original package.json name"
           fi
 
+      - name: Delete Unwanted plugins for production
+        run: |
+          if [ "${{ github.ref_name }}" = "master" ]; then
+            rm -rf plugins/betterPlayer
+            echo "Deleted unwanted plugins for production build"
+          else
+            echo "Not on master branch, keeping all plugins"
+          fi
+
       - name: Install pnpm 📥
         uses: pnpm/action-setup@v4
         with:
