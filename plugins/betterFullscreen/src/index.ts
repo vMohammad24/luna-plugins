@@ -61,9 +61,7 @@ safeTimeout(unloads, doObserve);
 
 unloads.add(styleTag.remove.bind(styleTag))
 
-MediaItem.onPreload(unloads, (item) => {
-    getLyrics(item.id as number)
-})
+MediaItem.onPreload(unloads, (item) => getLyrics(String(item.id)))
 
 
 const addFullscreenButton = () => {

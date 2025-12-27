@@ -4,7 +4,7 @@ import { settings } from "./settings";
 import { Color, SongData } from "./types";
 
 export const getLyrics = memoize(async (trackId: string, retries = 3): Promise<SongData | undefined> => {
-    const url = settings.apiURL.replace("%s", trackId);
+    const url = settings.apiURL.replace("%s", trackId).replace("&minimal=true", "");
     for (let attempt = 0; attempt < retries; attempt++) {
         try {
             return ftch.json<SongData>(url);
