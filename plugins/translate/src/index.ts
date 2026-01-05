@@ -1,5 +1,5 @@
 import { ftch, LunaUnload, Tracer } from "@luna/core";
-import { redux } from "@luna/lib";
+import { redux, MediaItem } from "@luna/lib";
 import { languages, settings, Settings } from "./Settings";
 
 export const { trace } = Tracer("[Translate]");
@@ -49,26 +49,18 @@ async function translate(text: string, targetLang: string = 'en', romanize = fal
     return ftch.json<GoogleData>(`https://translate.googleapis.com/translate_a/single?${params.toString()}`)
 }
 
-let currentLyrics: redux.Lyrics | null = null;
-
-redux.intercept('content/LOAD_ITEM_LYRICS_SUCCESS', unloads, (payload) => {
-    currentLyrics = payload;
-    if (settings.alwaysTranslate) {
-        handleTranslate();
-        return true;
-    } else {
-        createTranslateButton();
-    }
-})
-
-redux.intercept('content/LOAD_ITEM_LYRICS_FAIL', unloads, () => {
-    currentLyrics = null;
-})
+// Original lyrics either declared through MediaItem or null
+let mediaItem = await MediaItem?.fromPlaybackContext();
+let lyricsResult = await mediaItem?.lyrics();
+let currentLyrics = null;
+if (typeof lyricsResult !== undefined) {
+    currentLyrics = lyricsResult;
+}
 
 async function processLyrics(
     lyrics: redux.Lyrics,
     targetLang: string,
-): Promise<redux.Lyrics | null> {
+): Promise<[redux.Lyrics, Map<string,string>] | null> {
     if (!lyrics) return null;
 
     try {
@@ -102,34 +94,56 @@ async function processLyrics(
             }
             return subtitle;
         }).join("\n");
-        return {
+        
+        // I am returning the map as well to make it easier to update the lyrics in the Tidal window
+        return [{
             ...lyrics,
             lyrics: translatedLyrics,
             subtitles: translatedSubtitlesText,
-            isRightToLeft: settings.targetLanguage ? languages.find(lang => lang.value === settings.targetLanguage)?.rightToLeft ?? false : false,
-        };
-    } catch (error) {
-        trace.msg.err('Error translating lyrics:', error);
-        return null;
-    }
+            isRightToLeft: settings.targetLanguage ? languages.find(lang => lang.value === settings.targetLanguage)?.rightToLeft ?? false : false, 
+        }, translationMap];
+        } catch (error) {
+            trace.msg.err('Error translating lyrics:', error);
+            return null;
+        }
 }
 
 
 
 async function handleTranslate() {
+    // Original lyrics either declared through MediaItem or null
+    let mediaItem = await MediaItem?.fromPlaybackContext();
+    let lyricsResult = await mediaItem?.lyrics();
+    let currentLyrics = null;
+    if (typeof lyricsResult !== undefined) {
+        currentLyrics = lyricsResult;
+    }
+    
     if (!currentLyrics) {
         trace.msg.log('No lyrics available to translate');
         return;
     }
 
     try {
-        const translatedLyrics = await processLyrics(currentLyrics, settings.targetLanguage ?? 'en');
-        if (translatedLyrics) {
-            // force refresh
-            await redux.actions["content/LOAD_ITEM_LYRICS_FAIL"]({
-                itemId: currentLyrics.trackId,
+        const result = await processLyrics(currentLyrics, settings.targetLanguage ?? 'en');
+        const translatedLyrics = result![0] as redux.Lyrics;
+        const map = result![1] as Map<string, string>;
+        if (translatedLyrics && map) {
+            // From LangRomanizer: https://github.com/Henr1ES/TidalLunaPlugins
+            const lyricsSpans = document.querySelector('[class^="_lyricsText"]')
+            ?.querySelector("div")
+            ?.querySelectorAll("span[class]") as NodeListOf<HTMLSpanElement>;
+            
+            lyricsSpans.forEach(span => {
+                const originalText = span.textContent?.trim();
+                if (!originalText) return;
+                
+                const translatedText = map.get(originalText)!;
+
+                 span.innerHTML = '';  // Full reset
+                 span.appendChild(document.createTextNode(translatedText));
+
             });
-            await redux.actions["content/LOAD_ITEM_LYRICS_SUCCESS"](translatedLyrics);
             trace.msg.log('Lyrics translated successfully');
         } else {
             trace.msg.err('Failed to translate lyrics');

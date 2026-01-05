@@ -1,2 +1,10 @@
 packages:
- - "plugins/*"
+  - plugins/*
+
+# Electron and http-server have outdated dependencies
+allowedDeprecatedVersions:
+  boolean: 3.2.0
+  whatwg-encoding: 2.0.0
+
+onlyBuiltDependencies:
+  - electron

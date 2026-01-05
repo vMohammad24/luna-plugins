@@ -11,21 +11,21 @@
 	"devDependencies": {
 		"@emotion/react": "^11.14.0",
 		"@emotion/styled": "^11.14.1",
-		"@inrixia/helpers": "^3.20.3",
-		"@mui/icons-material": "^7.3.4",
-		"@mui/material": "^7.2.0",
-		"@types/node": "^22.15.29",
-		"@types/react": "^19.2.6",
+		"@inrixia/helpers": "^3.21.0",
+		"@mui/icons-material": "^7.3.6",
+		"@mui/material": "^7.3.6",
+		"@types/node": "^22.19.3",
+		"@types/react": "^19.2.7",
 		"@types/react-dom": "^19.2.3",
 		"@types/ws": "^8.18.1",
-		"concurrently": "^9.1.2",
-		"electron": "^37.2.5",
+		"concurrently": "^9.2.1",
+		"electron": "^37.10.3",
 		"http-server": "^14.1.1",
-		"luna": "github:Inrixia/TidaLuna#af2a18b",
+		"luna": "github:Inrixia/TidaLuna",
 		"oby": "^15.1.2",
-		"rimraf": "^6.0.1",
-		"tsx": "^4.19.4",
-		"typescript": "^5.8.3"
+		"rimraf": "^6.1.2",
+		"tsx": "^4.21.0",
+		"typescript": "^5.9.3"
 	},
 	"dependencies": {
 		"ws": "^8.18.3"
