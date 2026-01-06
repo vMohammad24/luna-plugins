@@ -50,6 +50,9 @@
 				}
 			);
 			editor.onDidChangeModelContent(() => ipcRenderer.setCSS(editor.getValue()));
+			setTimeout(() => {
+				editor.setValue(window.themerCSS);
+			}, 50);
 			window.addEventListener("resize", editor.layout.bind(editor));
 		});
 	</script>

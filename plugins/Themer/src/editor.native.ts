@@ -30,6 +30,7 @@ export const openEditor = async (css: string) => {
 		});
 
 		await win.loadURL(`data:text/html;base64,${editor}`);
+		await win.webContents.executeJavaScript(`window.themerCSS = ${JSON.stringify(css)}`);
 	} finally {
 		await rm(preloadPath, { force: true });
 	}
